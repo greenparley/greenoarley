@@ -1,43 +1,39 @@
 // ==========================================
-// 1. CONFIGURACIÓN API-SPORTS
+// 1. CONFIGURACIÓN FOOTBALL-DATA.ORG
 // ==========================================
-// Tu llave real de API-Sports ya integrada para reactivar el sistema
-const API_KEY = "0464d33c8013d01fb7387b5148f18a9a"; 
+// Esta API es súper estable, no se cuelga y permite 10 peticiones POR MINUTO.
+const API_KEY = "a36999d3627d43a2a6f11c449243634e"; 
 
 let baseDeDatosHoy = [];
-
-// Filtros globales
 let estadoFiltroActual = 'proximos'; 
 let ligaRapidaActiva = null; 
 
-// Códigos de estado de API-Sports
-const estadosEnVivo = ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'SUSP', 'INT', 'LIVE'];
-const estadosProximos = ['NS', 'TBD'];
+// Códigos de estado de Football-Data
+const estadosEnVivo = ['IN_PLAY', 'PAUSED'];
+const estadosProximos = ['TIMED', 'SCHEDULED'];
 
-// Motor de peticiones principal
-async function fetchApiSports(endpoint) {
-    const url = `https://v3.football.api-sports.io${endpoint}`;
+// Motor de peticiones principal (con proxy para evitar bloqueos de GitHub)
+async function fetchFootballData(endpoint) {
+    // Usamos corsproxy para asegurarnos de que el navegador no bloquee la conexión desde GitHub
+    const targetUrl = encodeURIComponent(`https://api.football-data.org/v4${endpoint}`);
+    const url = `https://corsproxy.io/?${targetUrl}`;
+    
     const options = { 
         method: 'GET', 
         headers: { 
-            'x-apisports-key': API_KEY 
+            'X-Auth-Token': API_KEY 
         } 
     };
     
     try {
         const respuesta = await fetch(url, options);
+        if (!respuesta.ok) {
+            throw new Error(`Error en la conexión. Código: ${respuesta.status}`);
+        }
         const data = await respuesta.json();
-        
-        if (data.errors && data.errors.requests) {
-            throw new Error("Límite de peticiones diarias agotado (100/100).");
-        }
-        if (data.errors && data.errors.token) {
-            throw new Error("API Key inválida. Revisá que esté bien escrita.");
-        }
-        
-        return data.response;
+        return data;
     } catch (e) {
-        console.error("Error:", e);
+        console.error("Error Fetch:", e);
         throw e;
     }
 }
@@ -47,24 +43,23 @@ async function fetchApiSports(endpoint) {
 // ==========================================
 async function iniciarApp() {
     try {
-        // Pedimos TODOS los partidos del día de hoy
-        const hoy = new Date().toISOString().split('T')[0];
-        document.getElementById('contenedor-partidos').innerHTML = `<p style="color: var(--celeste-1xbet);">⏳ Descargando todos los partidos de hoy...</p>`;
+        document.getElementById('contenedor-partidos').innerHTML = `<p style="color: var(--celeste-1xbet);">⏳ Descargando partidos del día...</p>`;
         
-        const partidos = await fetchApiSports(`/fixtures?date=${hoy}`);
+        // Pide los partidos de hoy automáticamente
+        const data = await fetchFootballData(`/matches`);
         
-        if (partidos && partidos.length > 0) {
-            baseDeDatosHoy = partidos;
+        if (data.matches && data.matches.length > 0) {
+            baseDeDatosHoy = data.matches;
             cargarBuscadorLigas(baseDeDatosHoy);
             aplicarFiltrosMaster(); 
         } else {
-            document.getElementById('contenedor-partidos').innerHTML = `<p style="margin-top:20px; color:var(--texto-gris)">No hay partidos registrados para el día de hoy.</p>`;
+            document.getElementById('contenedor-partidos').innerHTML = `<p style="margin-top:20px; color:var(--texto-gris)">Hoy no hay partidos programados en las ligas principales.</p>`;
         }
 
     } catch (error) {
         document.getElementById('contenedor-partidos').innerHTML = `
             <div style="background:var(--tarjeta-bg); padding:20px; border-radius:10px; border:1px solid var(--alerta);">
-                <h3 style="color:var(--alerta); margin-top:0;">⚠️ Error</h3>
+                <h3 style="color:var(--alerta); margin-top:0;">⚠️ Error de conexión</h3>
                 <p style="color:var(--texto-gris); font-size:0.9rem;">${error.message}</p>
                 <button onclick="iniciarApp()" style="margin-top:10px; background:var(--azul-1xbet); color:white; border:none; padding:10px 15px; border-radius:5px; cursor:pointer;">Reintentar</button>
             </div>
@@ -73,14 +68,13 @@ async function iniciarApp() {
 }
 
 // ==========================================
-// 3. FILTROS Y ACTUALIZACIÓN MANUAL
+// 3. FILTROS
 // ==========================================
 function setFiltroEstado(estado) {
     estadoFiltroActual = estado;
     document.getElementById('btn-proximos').classList.toggle('activo', estado === 'proximos');
     document.getElementById('btn-envivo').classList.toggle('activo', estado === 'envivo');
     
-    // El botón de actualizar solo aparece en la pestaña En Vivo
     const btnRefresh = document.getElementById('btn-refresh');
     if(estado === 'envivo') {
         btnRefresh.classList.remove('oculto');
@@ -92,26 +86,34 @@ function setFiltroEstado(estado) {
 }
 
 function toggleLigaRapida(idLiga, botonElem) {
-    if (ligaRapidaActiva === idLiga) {
+    // Acá actualicé los IDs de las ligas porque Football-Data usa otros números
+    const idConvertido = adaptarIdLiga(idLiga);
+
+    if (ligaRapidaActiva === idConvertido) {
         ligaRapidaActiva = null;
         botonElem.classList.remove('activo');
     } else {
         document.querySelectorAll('.btn-rapido').forEach(b => b.classList.remove('activo'));
-        ligaRapidaActiva = idLiga;
+        ligaRapidaActiva = idConvertido;
         botonElem.classList.add('activo');
         document.getElementById('filtro-ligas-input').value = '';
     }
     aplicarFiltrosMaster();
 }
 
+// Adapta los IDs que tenías en el HTML a los que usa Football-Data
+function adaptarIdLiga(idViejo) {
+    const mapa = { 39: 2021, 140: 2014, 135: 2019, 78: 2002, 2: 2001, 128: 2023 };
+    return mapa[idViejo] || idViejo;
+}
+
 function aplicarFiltrosMaster() {
     let filtrados = baseDeDatosHoy;
 
-    // 1. Filtrar por Estado (Proximos o En Vivo)
     if (estadoFiltroActual === 'proximos') {
-        filtrados = filtrados.filter(p => estadosProximos.includes(p.fixture.status.short));
+        filtrados = filtrados.filter(p => estadosProximos.includes(p.status));
     } else if (estadoFiltroActual === 'envivo') {
-        filtrados = filtrados.filter(p => estadosEnVivo.includes(p.fixture.status.short));
+        filtrados = filtrados.filter(p => estadosEnVivo.includes(p.status));
     }
 
     const divAccesos = document.getElementById('contenedor-accesos-rapidos');
@@ -123,16 +125,15 @@ function aplicarFiltrosMaster() {
         document.querySelectorAll('.btn-rapido').forEach(b => b.classList.remove('activo'));
     }
 
-    // 2. Filtrar por texto o botón rápido
     if (ligaRapidaActiva !== null) {
-        filtrados = filtrados.filter(p => p.league.id === ligaRapidaActiva);
+        filtrados = filtrados.filter(p => p.competition.id === ligaRapidaActiva);
     } else {
         const textoBuscado = document.getElementById('filtro-ligas-input').value.toLowerCase().trim();
         if (textoBuscado !== '') {
             filtrados = filtrados.filter(p => {
-                const nomLiga = p.league.name.toLowerCase();
-                const equipoL = p.teams.home.name.toLowerCase();
-                const equipoV = p.teams.away.name.toLowerCase();
+                const nomLiga = p.competition.name.toLowerCase();
+                const equipoL = p.homeTeam.name.toLowerCase();
+                const equipoV = p.awayTeam.name.toLowerCase();
                 return nomLiga.includes(textoBuscado) || equipoL.includes(textoBuscado) || equipoV.includes(textoBuscado);
             });
         }
@@ -141,7 +142,7 @@ function aplicarFiltrosMaster() {
     if (filtrados.length > 0) {
         renderizarPartidos(filtrados);
     } else {
-        let msg = estadoFiltroActual === 'envivo' ? "No hay partidos jugándose en este momento." : "No se encontraron partidos próximos bajo estos filtros.";
+        let msg = estadoFiltroActual === 'envivo' ? "No hay partidos jugándose en este momento." : "No se encontraron partidos bajo estos filtros.";
         document.getElementById('contenedor-partidos').innerHTML = `<p style="margin-top:20px; color:var(--texto-gris); padding:0 20px;">${msg}</p>`;
     }
 }
@@ -151,8 +152,8 @@ function cargarBuscadorLigas(partidos) {
     datalist.innerHTML = '';
     const ligasUnicas = [];
     partidos.forEach(p => {
-        if(!ligasUnicas.find(l => l.id === p.league.id)) {
-            ligasUnicas.push({id: p.league.id, name: p.league.name});
+        if(!ligasUnicas.find(l => l.id === p.competition.id)) {
+            ligasUnicas.push({id: p.competition.id, name: p.competition.name});
         }
     });
     ligasUnicas.forEach(liga => {
@@ -166,40 +167,39 @@ function simularSemaforo(id) {
 }
 
 // ==========================================
-// 4. RENDERIZADO Y ACTUALIZACIÓN EN VIVO (MANUAL)
+// 4. RENDERIZADO
 // ==========================================
 function renderizarPartidos(partidos) {
     const contenedor = document.getElementById('contenedor-partidos');
     contenedor.innerHTML = '';
 
     partidos.forEach(p => {
-        const isLive = estadosEnVivo.includes(p.fixture.status.short);
+        const isLive = estadosEnVivo.includes(p.status);
         
-        // Formatear hora
-        const fechaObj = new Date(p.fixture.date);
+        const fechaObj = new Date(p.utcDate);
         const horaLocal = fechaObj.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
         
-        // Goles
-        const golesL = p.goals.home !== null ? p.goals.home : 0;
-        const golesV = p.goals.away !== null ? p.goals.away : 0;
+        // Goles (En Football-Data vienen en score.fullTime)
+        const golesL = p.score.fullTime.home !== null ? p.score.fullTime.home : 0;
+        const golesV = p.score.fullTime.away !== null ? p.score.fullTime.away : 0;
 
         const marcadorHTML = isLive 
-            ? `<span style="font-size:0.7rem; color:var(--alerta);">${p.fixture.status.elapsed}'</span>
-               <span id="goles-${p.fixture.id}-l">${golesL}</span><span id="goles-${p.fixture.id}-v">${golesV}</span>` 
+            ? `<span style="font-size:0.7rem; color:var(--alerta);">⏱️</span>
+               <span id="goles-${p.id}-l">${golesL}</span><span id="goles-${p.id}-v">${golesV}</span>` 
             : `<span style="font-size:0.8rem; color:var(--texto-gris);">${horaLocal}</span>`;
 
-        const escudoL = p.teams.home.logo;
-        const escudoV = p.teams.away.logo;
-        const nomL = p.teams.home.name;
-        const nomV = p.teams.away.name;
+        const escudoL = p.homeTeam.crest || '';
+        const escudoV = p.awayTeam.crest || '';
+        const nomL = p.homeTeam.shortName || p.homeTeam.name;
+        const nomV = p.awayTeam.shortName || p.awayTeam.name;
 
-        const prob = simularSemaforo(p.teams.home.id + p.teams.away.id);
+        const prob = simularSemaforo(p.homeTeam.id + p.awayTeam.id);
 
         const tarjeta = `
-            <div class="tarjeta-partido" onclick="abrirDetalle(${p.fixture.id}, ${p.teams.home.id}, ${p.teams.away.id}, '${nomL}', '${nomV}', '${escudoL}', '${escudoV}', '${p.fixture.status.short}', '${horaLocal}')">
+            <div class="tarjeta-partido" onclick="abrirDetalle(${p.id}, ${p.homeTeam.id}, ${p.awayTeam.id}, '${nomL.replace(/'/g, "")}', '${nomV.replace(/'/g, "")}', '${escudoL}', '${escudoV}', '${p.status}', '${horaLocal}')">
                 ${isLive ? '<div class="live-badge">EN VIVO</div>' : ''}
                 <div class="encabezado-liga">
-                    <span><img src="${p.league.flag || p.league.logo}" onerror="this.style.display='none'"> ${p.league.name}</span>
+                    <span><img src="${p.competition.emblem || ''}" onerror="this.style.display='none'"> ${p.competition.name}</span>
                 </div>
                 <div class="cuerpo-partido">
                     <div class="equipos">
@@ -221,25 +221,22 @@ function renderizarPartidos(partidos) {
     });
 }
 
-// ¡Función manual para no gastar créditos solos!
 async function forzarActualizacionLive() {
     const btn = document.getElementById('btn-refresh');
     btn.innerText = "⏳ Actualizando..."; 
     btn.disabled = true;
     
     try {
-        const hoy = new Date().toISOString().split('T')[0];
-        const partidosRefresh = await fetchApiSports(`/fixtures?date=${hoy}`);
-        
-        if(partidosRefresh && partidosRefresh.length > 0) {
-            baseDeDatosHoy = partidosRefresh;
+        const data = await fetchFootballData(`/matches`);
+        if(data && data.matches) {
+            baseDeDatosHoy = data.matches;
             aplicarFiltrosMaster(); 
         }
     } catch (e) {
-        alert("Hubo un problema al actualizar los datos.");
+        alert("Hubo un problema al actualizar.");
     }
     
-    btn.innerText = "🔄 Actualizar (1 Crédito)";
+    btn.innerText = "🔄 Actualizar";
     btn.disabled = false;
 }
 
