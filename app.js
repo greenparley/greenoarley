@@ -101,7 +101,7 @@ async function fetchAPISecundaria() {
 
 async function iniciarApp() {
     const contenedor = document.getElementById('contenedor-partidos');
-    contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px;">⏳ Conectando servidores y calculando cuotas...</p>`;
+    contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px;">⏳ Conectando servidores y procesando cuotas...</p>`;
     
     const [d1, d2] = await Promise.all([ fetchAPIPrincipal(), fetchAPISecundaria() ]);
     baseDeDatosHoy = [...d1, ...d2];
@@ -286,12 +286,21 @@ function abrirTab(evt, nom) { document.querySelectorAll('.tab-content, .tab-btn'
 // ==========================================
 function generarCombinadaDelDia() {
     let t = []; baseDeDatosHoy.forEach(p => { analizarMercadosPartido(p).forEach(m => t.push({ p: p, m: m })); });
+    
     let s = t.filter(c => c.m.prob >= 75).sort((a,b) => b.m.prob - a.m.prob).slice(0, 3);
     let md = t.filter(c => c.m.prob >= 55 && c.m.prob < 75).sort((a,b) => b.m.prob - a.m.prob).slice(0, 3);
+    let arrg = t.filter(c => c.m.prob >= 35 && c.m.prob < 55).sort((a,b) => a.m.prob - b.m.prob).slice(0, 3);
 
-    ticketsMultiplesGenerados = { 'seguro': s.map(x=>({m:x.m.mercado, c:x.m.cuota, pId:x.p.id, h:x.p.homeTeam.shortName, a:x.p.awayTeam.shortName})), 'medio': md.map(x=>({m:x.m.mercado, c:x.m.cuota, pId:x.p.id, h:x.p.homeTeam.shortName, a:x.p.awayTeam.shortName})) };
+    ticketsMultiplesGenerados = { 
+        'seguro': s.map(x=>({m:x.m.mercado, c:x.m.cuota, pId:x.p.id, h:x.p.homeTeam.shortName, a:x.p.awayTeam.shortName})), 
+        'medio': md.map(x=>({m:x.m.mercado, c:x.m.cuota, pId:x.p.id, h:x.p.homeTeam.shortName, a:x.p.awayTeam.shortName})),
+        'arriesgado': arrg.map(x=>({m:x.m.mercado, c:x.m.cuota, pId:x.p.id, h:x.p.homeTeam.shortName, a:x.p.awayTeam.shortName}))
+    };
     
-    document.getElementById('seccion-combinada').innerHTML = (s.length ? renderHTMLTick(s, "seguro", "🛡️ Segura") : "") + (md.length ? renderHTMLTick(md, "medio", "⚖️ Equilibrada") : "");
+    document.getElementById('seccion-combinada').innerHTML = 
+        (s.length ? renderHTMLTick(s, "seguro", "🛡️ Segura") : "") + 
+        (md.length ? renderHTMLTick(md, "medio", "⚖️ Equilibrada") : "") +
+        (arrg.length ? renderHTMLTick(arrg, "arriesgado", "🔥 Arriesgada (Cuota Alta)") : "");
 }
 
 function renderHTMLTick(arr, id, tit) {
