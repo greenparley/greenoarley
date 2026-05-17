@@ -98,13 +98,20 @@ body {
 .btn-rapido.activo { background: var(--verde-principal); border-color: var(--verde-principal); color: #000; font-weight: bold;}
 
 /* COMBINADA DEL DIA */
-.seccion-destacada { margin-bottom: 20px; }
+/* COMBINADA DEL DIA (MULTINIVEL) */
+.seccion-destacada { margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px; }
 .tarjeta-combinada {
-    background: linear-gradient(135deg, #122119 0%, #0d171e 100%);
-    border: 2px solid var(--oro);
     border-radius: 10px;
     padding: 15px;
+    border: 2px solid;
 }
+/* Colores según nivel de riesgo */
+.ticket-seguro { border-color: var(--verde-principal); background: linear-gradient(135deg, #0f2117 0%, #0d171e 100%); }
+.ticket-medio { border-color: var(--oro); background: linear-gradient(135deg, #241d0b 0%, #0d171e 100%); }
+.ticket-riesgo { border-color: var(--alerta); background: linear-gradient(135deg, #2b1111 0%, #0d171e 100%); }
+
+.ticket-items-lista { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+.ticket-item { background: rgba(255,255,255,0.03); padding: 8px; border-radius: 4px; font-size: 0.85rem; }
 .ticket-items-lista { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
 .ticket-item {
     background: rgba(255,255,255,0.03);
