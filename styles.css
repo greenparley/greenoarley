@@ -2,7 +2,7 @@
     --bg-color: #0b111e;
     --tarjeta-bg: #151f32;
     --tarjeta-borde: #22314d;
-    --verde-principal: #00e676; /* Nuevo color principal GreenParley */
+    --verde-principal: #00e676;
     --verde-oscuro: #00a355;
     --oro: #ffca28;
     --alerta: #ff5252;
@@ -64,7 +64,7 @@ body {
     border: none;
     font-size: 1.1rem;
     cursor: pointer;
-    opacity: 0.4; /* Se ve a medias */
+    opacity: 0.4;
     padding: 0 4px;
     transition: opacity 0.3s;
 }
