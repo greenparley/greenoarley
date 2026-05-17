@@ -30,108 +30,37 @@ body {
     top: 0;
     z-index: 100;
 }
-.logo-seccion h2 {
-    margin: 0;
-    font-size: 1.3rem;
-    font-weight: 700;
-}
+.logo-seccion h2 { margin: 0; font-size: 1.3rem; font-weight: 700; }
 .logo-seccion span { color: var(--verde-principal); }
-
-.filtros-estado-header {
-    margin-left: auto;
-    display: flex;
-    gap: 6px;
-    align-items: center;
-}
-.btn-filto-main {
-    background: #1e2d4a;
-    border: none;
-    color: var(--texto-gris);
-    padding: 6px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    font-weight: bold;
-}
-.btn-filto-main.activo {
-    background: var(--verde-oscuro);
-    color: white;
-}
-
-/* Botón actualizar transparente ("a la mitad") */
-.btn-refresh-live { 
-    background: none; 
-    border: none;
-    font-size: 1.1rem;
-    cursor: pointer;
-    opacity: 0.4;
-    padding: 0 4px;
-    transition: opacity 0.3s;
-}
+.filtros-estado-header { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+.btn-filto-main { background: #1e2d4a; border: none; color: var(--texto-gris); padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
+.btn-filto-main.activo { background: var(--verde-oscuro); color: white; }
+.btn-refresh-live { background: none; border: none; font-size: 1.1rem; cursor: pointer; opacity: 0.4; padding: 0 4px; transition: opacity 0.3s; }
 .btn-refresh-live:hover { opacity: 1; }
 
 /* CONTENEDOR PRINCIPAL */
 .contenedor-app { padding: 15px; max-width: 1200px; margin: 0 auto; }
 
 /* BUSCADOR Y LIGAS */
-.herramientas-busqueda input {
-    width: 100%;
-    padding: 10px;
-    background: var(--tarjeta-bg);
-    border: 1px solid var(--tarjeta-borde);
-    border-radius: 6px;
-    color: white;
-    box-sizing: border-box;
-    font-size: 0.9rem;
-}
+.herramientas-busqueda input { width: 100%; padding: 10px; background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); border-radius: 6px; color: white; box-sizing: border-box; font-size: 0.9rem; }
 .accesos-rapidos { display: flex; gap: 8px; margin: 12px 0; overflow-x: auto; padding-bottom: 5px; }
-.btn-rapido {
-    background: var(--tarjeta-bg);
-    border: 1px solid var(--tarjeta-borde);
-    color: white;
-    padding: 6px 12px;
-    border-radius: 20px;
-    white-space: nowrap;
-    cursor: pointer;
-    font-size: 0.8rem;
-}
-.btn-rapido.activo { background: var(--verde-principal); border-color: var(--verde-principal); color: #000; font-weight: bold;}
+.btn-rapido { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); color: white; padding: 6px 12px; border-radius: 20px; white-space: nowrap; cursor: pointer; font-size: 0.8rem; }
+.btn-rapido.activo { background: var(--verde-principal); border-color: var(--verde-principal); color: #000; font-weight: bold; }
 
-/* COMBINADA DEL DIA */
-/* COMBINADA DEL DIA (MULTINIVEL) */
+/* COMBINADAS (3 NIVELES) */
 .seccion-destacada { margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px; }
-.tarjeta-combinada {
-    border-radius: 10px;
-    padding: 15px;
-    border: 2px solid;
-}
-/* Colores según nivel de riesgo */
+.tarjeta-combinada { border-radius: 10px; padding: 15px; border: 2px solid; }
 .ticket-seguro { border-color: var(--verde-principal); background: linear-gradient(135deg, #0f2117 0%, #0d171e 100%); }
 .ticket-medio { border-color: var(--oro); background: linear-gradient(135deg, #241d0b 0%, #0d171e 100%); }
 .ticket-riesgo { border-color: var(--alerta); background: linear-gradient(135deg, #2b1111 0%, #0d171e 100%); }
-
 .ticket-items-lista { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
 .ticket-item { background: rgba(255,255,255,0.03); padding: 8px; border-radius: 4px; font-size: 0.85rem; }
-.ticket-items-lista { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
-.ticket-item {
-    background: rgba(255,255,255,0.03);
-    padding: 8px;
-    border-radius: 4px;
-    font-size: 0.85rem;
-}
 
 /* GRILLA PARTIDOS */
 .grilla-partidos { display: flex; flex-direction: column; gap: 10px; }
-.tarjeta-partido {
-    background: var(--tarjeta-bg);
-    border: 1px solid var(--tarjeta-borde);
-    border-radius: 8px;
-    padding: 12px;
-    cursor: pointer;
-    position: relative;
-}
+.tarjeta-partido { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); border-radius: 8px; padding: 12px; cursor: pointer; position: relative; }
 .encabezado-liga { font-size: 0.75rem; color: var(--texto-gris); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px; margin-bottom: 8px; }
-.encabezado-liga img { width: 12px; height: 12px; margin-right: 5px; vertical-align: middle;}
+.encabezado-liga img { width: 12px; height: 12px; margin-right: 5px; vertical-align: middle; }
 .cuerpo-partido { display: flex; align-items: center; justify-content: space-between; }
 .equipos { flex-grow: 1; display: flex; flex-direction: column; gap: 6px; }
 .equipo-linea { display: flex; align-items: center; font-size: 0.9rem; font-weight: 500; }
@@ -163,23 +92,18 @@ body {
 .caja-lazy { background: #0e1726; border-radius: 6px; padding: 10px; border: 1px solid var(--tarjeta-borde); }
 .btn-lazy-cargar { width: 100%; background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); color: white; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
 .lazy-resultado-render { margin-top: 10px; font-size: 0.85rem; }
-
-/* TABLA RENDERIZADA */
 .mini-tabla { width: 100%; border-collapse: collapse; text-align: left; }
 .mini-tabla th, .mini-tabla td { padding: 6px; border-bottom: 1px solid var(--tarjeta-borde); }
 .mini-tabla tr.resaltado { background: rgba(0, 230, 118, 0.15); }
 
-/* FAB TICKET BUTTON */
+/* FAB TICKET BUTTON & PANEL */
 .fab-ticket { position: fixed; bottom: 20px; right: 20px; width: 56px; height: 56px; background: var(--verde-oscuro); border-radius: 50%; border: none; font-size: 1.5rem; color: white; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.4); z-index: 120; display: flex; align-items: center; justify-content: center; }
 .badge-contador { position: absolute; top: -2px; right: -2px; background: var(--alerta); font-size: 0.75rem; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-
 .panel-tickets-lateral { position: fixed; top: 0; right: 0; width: 320px; height: 100%; background: var(--tarjeta-bg); z-index: 200; transition: transform 0.3s ease; box-shadow: -4px 0 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; border-left: 1px solid var(--tarjeta-borde); }
 .oculto-panel { transform: translateX(100%); }
 .panel-picks-header { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--tarjeta-borde); }
 .btn-cerrar-panel { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
 .panel-picks-content { padding: 15px; overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; gap: 10px; }
-
-/* TARJETAS INTERNAS DE PICKS */
 .item-pick-guardado { background: #0e1726; border-radius: 6px; padding: 10px; border-left: 4px solid var(--texto-gris); }
 .item-pick-guardado.ganada { border-left-color: var(--verde-principal); }
 .item-pick-guardado.perdida { border-left-color: var(--alerta); }
