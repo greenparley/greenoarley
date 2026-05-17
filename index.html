@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
     <header class="navbar">
         <div class="logo-seccion">
             <h2>Green<span>Parley</span></h2>
@@ -15,21 +14,18 @@
         <div class="filtros-estado-header">
             <button id="btn-proximos" class="btn-filto-main activo" onclick="setFiltroEstado('proximos')">Próximos</button>
             <button id="btn-envivo" class="btn-filto-main" onclick="setFiltroEstado('envivo')">En Vivo</button>
-            <button id="btn-combinada" class="btn-filto-main" onclick="setFiltroEstado('combinada')">Combinada</button>
+            <button id="btn-combinada" class="btn-filto-main" onclick="setFiltroEstado('combinada')">Combinadas</button>
             <button id="btn-refresh" class="btn-refresh-live oculto" onclick="forzarActualizacionLive()" title="Actualizar Datos">🔄</button>
         </div>
     </header>
 
     <main class="contenedor-app">
-        
         <div id="vista-principal">
-            
             <div id="herramientas-top">
                 <div class="herramientas-busqueda">
                     <input type="text" id="filtro-ligas-input" placeholder="Buscar equipo o liga..." list="lista-ligas" oninput="aplicarFiltrosMaster()" />
                     <datalist id="lista-ligas"></datalist>
                 </div>
-
                 <div id="contenedor-accesos-rapidos" class="accesos-rapidos">
                     <button class="btn-rapido" onclick="toggleLigaRapida(39, this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier</button>
                     <button class="btn-rapido" onclick="toggleLigaRapida(140, this)">🇪🇸 LaLiga</button>
@@ -46,21 +42,17 @@
 
         <div id="vista-detalle" class="detalle-partido-panel oculto">
             <button class="btn-volver" onclick="cerrarDetalle()">⬅️ Volver al Dashboard</button>
-            
             <div class="tarjeta-detalle-header">
                 <div id="detalle-status" class="status-box"></div>
                 <div id="detalle-cabecera" class="marcador-cabecera-completo"></div>
             </div>
-
             <div class="tabs-navegacion">
                 <button class="tab-btn activo" onclick="abrirTab(event, 'tab-stats')">🎯 Análisis y Cuotas</button>
                 <button class="tab-btn" onclick="abrirTab(event, 'tab-info')">📊 Información</button>
             </div>
-
             <div id="tab-stats" class="tab-content activo">
                 <div id="detalle-barras" class="contenedor-metricas-barras"></div>
             </div>
-
             <div id="tab-info" class="tab-content">
                 <div id="detalle-info-base" class="info-bloque-estadio"></div>
                 <div class="bloques-lazy-data">
@@ -80,7 +72,6 @@
     <button id="btn-flotante-picks" class="fab-ticket" onclick="togglePanelPicks()">
         🎫 <span id="contador-picks-badge" class="badge-contador">0</span>
     </button>
-
     <div id="panel-picks" class="panel-tickets-lateral oculto-panel">
         <div class="panel-picks-header">
             <h3>🎫 Mis Picks Guardados</h3>
