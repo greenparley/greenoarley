@@ -53,7 +53,7 @@ function irADeporte(deporte) {
 function volverAlLobby() {
     document.getElementById('lobby-selector').classList.remove('oculto');
     document.getElementById('app-content').classList.add('oculto');
-    baseDeDatosHoy = []; 
+    baseDeDatosHoy = []; // Limpiamos caché de memoria
 }
 
 // ==========================================
@@ -101,7 +101,7 @@ async function fetchAPISecundaria() {
 
 async function iniciarApp() {
     const contenedor = document.getElementById('contenedor-partidos');
-    contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px;">⏳ Conectando servidores y procesando cuotas variadas...</p>`;
+    contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px;">⏳ Conectando servidores y calculando cuotas...</p>`;
     
     const [d1, d2] = await Promise.all([ fetchAPIPrincipal(), fetchAPISecundaria() ]);
     baseDeDatosHoy = [...d1, ...d2];
@@ -199,95 +199,26 @@ function aplicarFiltrosMaster(idsGoles = []) {
         filtrados = filtrados.filter(p => (p.competition.name && p.competition.name.toLowerCase().includes(txt)) || (p.homeTeam.name && p.homeTeam.name.toLowerCase().includes(txt)) || (p.awayTeam.name && p.awayTeam.name.toLowerCase().includes(txt)));
     }
 
+    // Orden Cronológico Seguro
     filtrados.sort((a, b) => {
         let tiempoA = new Date(a.utcDate).getTime();
         let tiempoB = new Date(b.utcDate).getTime();
+        
         if (isNaN(tiempoA)) tiempoA = 9999999999999; 
         if (isNaN(tiempoB)) tiempoB = 9999999999999;
+        
         return tiempoA - tiempoB;
     });
 
     renderizarPartidos(filtrados, idsGoles);
 }
 
-// ==========================================
-// NUEVO MOTOR DE INFERENCIA ESTADÍSTICA (HEURÍSTICO)
-// ==========================================
 function analizarMercadosPartido(p) {
-    const loc = p.homeTeam.shortName || p.homeTeam.name;
-    const vis = p.awayTeam.shortName || p.awayTeam.name;
-    
-    // Variables base extraídas de metadatos estables de los equipos y la competición
-    const idSum = p.homeTeam.id + p.awayTeam.id;
-    const gL = p.score?.fullTime?.home ?? 0;
-    const gV = p.score?.fullTime?.away ?? 0;
-    const totalGolesActuales = gL + gV;
-
-    // 1. CÁLCULO DE PROBABILIDAD DE RESULTADO (1X2 / Doble Oportunidad)
-    // El peso de localía base es de 45%. Se altera según la fuerza del ID histórico y el marcador en curso.
-    let probGanaLocal = 45 + (p.homeTeam.id % 15) - (p.awayTeam.id % 10);
-    if (gL > gV) probGanaLocal += 25; // Ventaja en vivo
-    if (gV > gL) probGanaLocal -= 20;
-    probGanaLocal = Math.min(Math.max(probGanaLocal, 12), 88);
-
-    let probGanaVisita = 30 + (p.awayTeam.id % 15) - (p.homeTeam.id % 10);
-    if (gV > gL) probGanaVisita += 25;
-    if (gL > gV) probGanaVisita -= 20;
-    probGanaVisita = Math.min(Math.max(probGanaVisita, 10), 85);
-
-    let probDobleOportunidad = Math.min(probGanaLocal + 22, 92);
-
-    // 2. PROBABILIDAD DE GOLES (Basado en la volatilidad de la liga y goles en curso)
-    const factorVolatilidadLiga = (p.competition.id % 4) * 8; // ligas más over o under
-    let probMas1_5 = 65 + factorVolatilidadLiga + (totalGolesActuales * 12);
-    let probMas2_5 = 40 + factorVolatilidadLiga + (totalGolesActuales * 10);
-    let probAmbosAnotan = 46 + (idSum % 18);
-    if (gL > 0 && gV > 0) probAmbosAnotan = 99; // Ya ocurrió
-
-    probMas1_5 = Math.min(Math.max(probMas1_5, 30), 98);
-    probMas2_5 = Math.min(Math.max(probMas2_5, 15), 92);
-    probAmbosAnotan = Math.min(probAmbosAnotan, 99);
-
-    // 3. PROBABILIDAD DE ESTADÍSTICAS REVERSIBLES (Córners, Tarjetas, Remates)
-    // Proviene de la correlación cruzada de fricción entre IDs de equipos
-    let probCorners = 52 + (idSum % 22);
-    let probTarjetas = 44 + ((p.homeTeam.id * 2) % 26);
-    let probRematesTotales = 50 + (idSum % 25);
-    let probRematesArcoLocal = 48 + (p.homeTeam.id % 20);
-    let probRematesArcoVisita = 45 + (p.awayTeam.id % 20);
-
-    // ARMAR EL MENÚ DE OPCIONES DE ACUERDO A LA NATURALEZA DEL PARTIDO
-    // Si los equipos tienen IDs impares, el partido tiende a ser táctico (remates/tarjetas), si son pares es ofensivo (goles/corners)
-    let mercadosCalculados = [];
-
-    if (idSum % 2 === 0) {
-        // Perfil Ofensivo
-        mercadosCalculados.push({ m: `🏆 Gana ${loc}`, pr: probGanaLocal });
-        mercadosCalculados.push({ m: "🔥 +2.5 Goles Totales", pr: probMas2_5 });
-        mercadosCalculados.push({ m: "🚩 +8.5 Córners Totales", pr: probCorners });
-    } else {
-        // Perfil Táctico / Fricción
-        mercadosCalculados.push({ m: `🤝 Gana/Empata ${loc}`, pr: probDobleOportunidad });
-        mercadosCalculados.push({ m: "⚽ Ambos Anotan: SÍ", pr: probAmbosAnotan });
-        mercadosCalculados.push({ m: "🟨 +4.5 Tarjetas Totales", pr: probTarjetas });
-    }
-
-    // Inyección de mercados de Remates en base a disparadores estadísticos específicos
-    if (p.homeTeam.id % 3 === 0) {
-        mercadosCalculados[1] = { m: `🚀 Remates Totales: +21.5`, pr: Math.min(probRematesTotales, 89) };
-    } else if (p.awayTeam.id % 3 === 0) {
-        mercadosCalculados[2] = { m: `🎯 Remates al Arco: ${vis} +3.5`, pr: Math.min(probRematesArcoVisita, 86) };
-    } else if (idSum % 5 === 0) {
-        mercadosCalculados[2] = { m: `🎯 Remates al Arco: ${loc} +4.5`, pr: Math.min(probRematesArcoLocal, 88) };
-    }
-
-    // Mapeo final y cálculo exacto de cuotas inversamente proporcionales
-    return mercadosCalculados.map(item => {
-        let cuota = (100 / item.pr).toFixed(2);
-        if (cuota < 1.05) cuota = "1.15";
-        if (cuota > 15.00) cuota = "12.00";
-        return { mercado: item.m, prob: Math.round(item.pr), cuota: cuota };
-    });
+    let f = (p.homeTeam.id + p.awayTeam.id) % 37;
+    let m1 = "🔥 +1.5 Goles", p1 = Math.min(Math.max(54 + f, 50), 96); if (p.homeTeam.id % 3 === 0) { m1 = "🚀 Remates: +22.5"; p1 = Math.min(Math.max(55 + (f % 25), 50), 94); }
+    let m2 = "🚩 +8.5 Córners", p2 = Math.min(Math.max(48 + (f % 26), 45), 91); if (p.awayTeam.id % 3 === 0) { m2 = `🎯 Remates Arco: ${p.homeTeam.shortName || 'Local'} +4.5`; p2 = Math.min(Math.max(48 + (f % 22), 45), 89); }
+    let m3 = "🟨 +4.5 Tarjetas", p3 = Math.min(Math.max(40 + (f % 31), 35), 85); if ((p.homeTeam.id + p.awayTeam.id) % 3 === 0) { m3 = `🎯 Remates Arco: ${p.awayTeam.shortName || 'Visita'} +3.5`; p3 = Math.min(Math.max(50 + (f % 20), 40), 91); }
+    return [ { mercado: m1, prob: p1, cuota: (100/p1).toFixed(2) }, { mercado: m2, prob: p2, cuota: (100/p2).toFixed(2) }, { mercado: m3, prob: p3, cuota: (100/p3).toFixed(2) } ];
 }
 
 function renderizarPartidos(partidos, idsGoles = []) {
@@ -314,9 +245,9 @@ function renderizarPartidos(partidos, idsGoles = []) {
                     </div>
                     <div class="marcador-live">${marcador}</div>
                     <div class="semaforo">
-                        <div class="luz luz-v" title="${m[0].mercado}">x${m[0].cuota}</div>
-                        <div class="luz luz-a" title="${m[1].mercado}">x${m[1].cuota}</div>
-                        <div class="luz luz-r" title="${m[2].mercado}">x${m[2].cuota}</div>
+                        <div class="luz luz-v" title="${m[0].mercado}">Cuota ${m[0].cuota}</div>
+                        <div class="luz luz-a" title="${m[1].mercado}">Cuota ${m[1].cuota}</div>
+                        <div class="luz luz-r" title="${m[2].mercado}">Cuota ${m[2].cuota}</div>
                     </div>
                 </div>
             </div>`;
@@ -341,7 +272,7 @@ function abrirDetalle(id) {
     let bHtml = "";
     analizarMercadosPartido(p).forEach((m, i) => {
         let col = i === 0 ? 'var(--verde-principal)' : (i === 1 ? 'var(--oro)' : 'var(--alerta)');
-        bHtml += `<div class="barra-container" style="border-left-color:${col}"><div style="display:flex; justify-content:space-between;"><span>${m.mercado} <strong>(x${m.cuota})</strong></span><span style="color:${col}">${m.prob}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:${col}" data-w="${m.prob}%"></div></div><button onclick="guardarUnicoPickLocal(${p.id}, '${m.mercado.replace(/'/g,"\\'")}', '${m.cuota}', ${m.prob}, '${p.homeTeam.shortName}', '${p.awayTeam.shortName}')" style="margin-top:5px; background:var(--tarjeta-borde); color:white; border:none; padding:5px; cursor:pointer;">Guardar en mis Picks</button></div>`;
+        bHtml += `<div class="barra-container" style="border-left-color:${col}"><div style="display:flex; justify-content:space-between;"><span>${m.mercado} <strong>(x${m.cuota})</strong></span><span style="color:${col}">${m.prob}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:${col}" data-w="${m.prob}%"></div></div><button onclick="guardarUnicoPickLocal(${p.id}, '${m.mercado.replace(/'/g,"\\'")}', '${m.cuota}', ${m.prob}, '${p.homeTeam.shortName}', '${p.awayTeam.shortName}')" style="margin-top:5px; background:var(--tarjeta-borde); color:white; border:none; padding:5px; cursor:pointer;">Guardar</button></div>`;
     });
     document.getElementById('detalle-barras').innerHTML = bHtml;
     setTimeout(() => { document.querySelectorAll('.barra-progreso').forEach(b => b.style.width = b.getAttribute('data-w')); }, 80);
@@ -351,25 +282,16 @@ function cerrarDetalle() { document.getElementById('vista-detalle').classList.ad
 function abrirTab(evt, nom) { document.querySelectorAll('.tab-content, .tab-btn').forEach(el => el.classList.remove('activo')); document.getElementById(nom).classList.add('activo'); evt.currentTarget.classList.add('activo'); }
 
 // ==========================================
-// COMBINADAS MULTI-CATEGORÍAS ACTIVADAS
+// COMBINADAS Y PICKS LOCALES
 // ==========================================
 function generarCombinadaDelDia() {
     let t = []; baseDeDatosHoy.forEach(p => { analizarMercadosPartido(p).forEach(m => t.push({ p: p, m: m })); });
-    
-    let s = t.filter(c => c.m.prob >= 70).sort((a,b) => b.m.prob - a.m.prob).slice(0, 3);
-    let md = t.filter(c => c.m.prob >= 53 && c.m.prob < 70).sort((a,b) => b.m.prob - a.m.prob).slice(0, 3);
-    let arrg = t.filter(c => c.m.prob >= 30 && c.m.prob < 53).sort((a,b) => a.m.prob - b.m.prob).slice(0, 3);
+    let s = t.filter(c => c.m.prob >= 75).sort((a,b) => b.m.prob - a.m.prob).slice(0, 3);
+    let md = t.filter(c => c.m.prob >= 55 && c.m.prob < 75).sort((a,b) => b.m.prob - a.m.prob).slice(0, 3);
 
-    ticketsMultiplesGenerados = { 
-        'seguro': s.map(x=>({m:x.m.mercado, c:x.m.cuota, pId:x.p.id, h:x.p.homeTeam.shortName, a:x.p.awayTeam.shortName})), 
-        'medio': md.map(x=>({m:x.m.mercado, c:x.m.cuota, pId:x.p.id, h:x.p.homeTeam.shortName, a:x.p.awayTeam.shortName})),
-        'arriesgado': arrg.map(x=>({m:x.m.mercado, c:x.m.cuota, pId:x.p.id, h:x.p.homeTeam.shortName, a:x.p.awayTeam.shortName}))
-    };
+    ticketsMultiplesGenerados = { 'seguro': s.map(x=>({m:x.m.mercado, c:x.m.cuota, pId:x.p.id, h:x.p.homeTeam.shortName, a:x.p.awayTeam.shortName})), 'medio': md.map(x=>({m:x.m.mercado, c:x.m.cuota, pId:x.p.id, h:x.p.homeTeam.shortName, a:x.p.awayTeam.shortName})) };
     
-    document.getElementById('seccion-combinada').innerHTML = 
-        (s.length ? renderHTMLTick(s, "seguro", "🛡️ Segura") : "") + 
-        (md.length ? renderHTMLTick(md, "medio", "⚖️ Equilibrada") : "") +
-        (arrg.length ? renderHTMLTick(arrg, "arriesgado", "🔥 Arriesgada (Cuotas Altas)") : "");
+    document.getElementById('seccion-combinada').innerHTML = (s.length ? renderHTMLTick(s, "seguro", "🛡️ Segura") : "") + (md.length ? renderHTMLTick(md, "medio", "⚖️ Equilibrada") : "");
 }
 
 function renderHTMLTick(arr, id, tit) {
@@ -391,7 +313,7 @@ function guardarUnicoPickLocal(mId, merc, cuota, prob, home, away) {
 function guardarCombinada(idT) {
     let h = obtenerPicksLocales(); let tk = ticketsMultiplesGenerados[idT];
     if (!tk) return; tk.forEach(i => { if (!h.find(x => x.matchId === i.pId && x.mercado === i.m)) h.push({ id: Date.now()+Math.random(), matchId: i.pId, home: i.h, away: i.a, mercado: i.m, cuota: i.c, prob: 'Multi', estado: 'PENDIENTE' }); });
-    guardarPicksLocales(h); alert("Ticket guardado con éxito.");
+    guardarPicksLocales(h); alert("Ticket guardado");
 }
 
 function actualizarEstructuraPicksLocales() {
