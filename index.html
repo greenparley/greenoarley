@@ -3,141 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Greenparley - Pro Dashboard</title>
-    <style>
-        /* PALETA DE COLORES */
-        :root {
-            --fondo-oscuro: #121A23; 
-            --tarjeta-bg: #222A32; 
-            --verde-flash: #00D26A; 
-            --azul-1xbet: #1B5A90; 
-            --celeste-1xbet: #4AA1E3; 
-            --texto-claro: #FFFFFF;
-            --texto-gris: #AAB8C2;
-            --alerta: #FF4A4A;
-            --oro: #FFC107;
-        }
-
-        body { background-color: var(--fondo-oscuro); color: var(--texto-claro); font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; padding: 15px; }
-        .oculto { display: none !important; }
-
-        /* VISTA PRINCIPAL */
-        header h1 { color: var(--verde-flash); font-size: 2.2rem; margin: 10px 0 5px; text-transform: uppercase; letter-spacing: 2px; }
-        
-        .filtros-estado { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .btn-estado { background: var(--tarjeta-bg); border: 2px solid #333; color: var(--texto-gris); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.9rem; transition: 0.2s; }
-        .btn-estado.activo { border-color: var(--azul-1xbet); background: rgba(27, 90, 144, 0.2); color: var(--texto-claro); }
-        .btn-estado#btn-envivo.activo { border-color: var(--alerta); background: rgba(255, 74, 74, 0.1); color: white; }
-        .btn-refresh { background: var(--azul-1xbet); border: none; color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight:bold; transition: 0.3s; }
-        .btn-refresh:hover { background: var(--celeste-1xbet); }
-        
-        .contenedor-buscador { position: relative; width: 80%; max-width: 400px; margin: 0 auto 15px; }
-        .input-buscador { width: 100%; background: var(--tarjeta-bg); color: var(--texto-claro); border: 1px solid var(--azul-1xbet); padding: 10px; border-radius: 5px; box-sizing: border-box; outline: none; font-size: 0.9rem; }
-        .input-buscador::placeholder { color: var(--texto-gris); }
-
-        .accesos-rapidos { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin: 0 auto 20px; max-width: 600px; justify-content: center; flex-wrap: wrap; }
-        .btn-rapido { background: var(--fondo-oscuro); border: 1px solid rgba(255,255,255,0.1); color: var(--texto-gris); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; transition: 0.3s; white-space: nowrap; }
-        .btn-rapido:hover { border-color: var(--celeste-1xbet); color: white; }
-        .btn-rapido.activo { background: var(--celeste-1xbet); color: white; border-color: var(--celeste-1xbet); font-weight: bold; }
-
-        #contenedor-partidos { display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 600px; margin: 0 auto; }
-        
-        .tarjeta-partido { background-color: var(--tarjeta-bg); border-left: 5px solid var(--azul-1xbet); border-radius: 8px; padding: 12px; width: 100%; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; transition: 0.2s; position: relative; }
-        .tarjeta-partido:hover { border-left-color: var(--verde-flash); transform: translateY(-2px); }
-        .encabezado-liga { font-size: 0.75rem; color: var(--texto-gris); margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center;}
-        .encabezado-liga img { height: 16px; margin-right: 5px; vertical-align: middle; }
-        
-        .cuerpo-partido { display: flex; justify-content: space-between; align-items: center; }
-        .equipos { width: 50%; text-align: left; }
-        .equipo-linea { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-weight: bold; font-size: 0.9rem;}
-        .equipo-linea img { width: 20px; height: 20px; object-fit: contain; }
-        .marcador-live { width: 15%; text-align: center; font-size: 1.2rem; font-weight: bold; color: var(--verde-flash); }
-        .marcador-live span { display: block; margin: 4px 0; }
-        
-        .semaforo { width: 30%; display: flex; gap: 4px; }
-        .luz { flex: 1; text-align: center; font-size: 0.7rem; font-weight: bold; padding: 5px 0; border-radius: 4px; color: #000; }
-        .luz-v { background: var(--verde-flash); } .luz-a { background: var(--oro); } .luz-r { background: var(--alerta); color: white; }
-
-        /* VISTA DETALLE */
-        #vista-detalle { max-width: 600px; margin: 0 auto; text-align: left; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        .cabecera-detalle { background: var(--tarjeta-bg); padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 15px; position: relative; }
-        .btn-volver { position: absolute; top: 15px; left: 15px; background: rgba(255,255,255,0.1); border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
-        .enfrentamiento { display: flex; justify-content: space-around; align-items: center; margin-top: 20px; }
-        .enfrentamiento img { width: 60px; height: 60px; object-fit: contain; }
-        .enfrentamiento h2 { margin: 0; font-size: 1.8rem; color: var(--oro); }
-        
-        .tabs-nav { display: flex; background: var(--tarjeta-bg); border-radius: 8px; margin-bottom: 15px; overflow: hidden; font-size: 0.85rem; }
-        .tab-btn { flex: 1; background: none; border: none; color: var(--texto-gris); padding: 10px 2px; cursor: pointer; font-weight: bold; border-bottom: 3px solid transparent; transition: 0.3s; font-size: 0.8rem; }
-        .tab-btn.activo { color: var(--texto-claro); border-bottom-color: var(--celeste-1xbet); background: rgba(74, 161, 227, 0.1); }
-        .tab-content { display: none; background: var(--tarjeta-bg); padding: 15px; border-radius: 8px; }
-        .tab-content.activo { display: block; }
-
-        .barra-container { margin-bottom: 15px; }
-        .barra-header { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px; }
-        .barra-fondo { width: 100%; background: #1a222a; border-radius: 4px; height: 10px; overflow: hidden; }
-        .barra-progreso { height: 100%; background: var(--verde-flash); transition: width 1s; }
-        
-        .live-badge { background: var(--alerta); color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); font-weight: bold; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-    </style>
+    <title>SmarterBet Dashboard - Pro Premium</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <div id="vista-principal">
-        <header>
-            <h1>Greenparley</h1>
-            
-            <div class="filtros-estado">
-                <button id="btn-proximos" class="btn-estado activo" onclick="setFiltroEstado('proximos')">⏳ Próximos</button>
-                <button id="btn-envivo" class="btn-estado" onclick="setFiltroEstado('envivo')">🔴 En Vivo</button>
-                <button id="btn-refresh" class="btn-refresh oculto" onclick="forzarActualizacionLive()">🔄 Actualizar (1 Crédito)</button>
+    <div id="menu-lateral" class="sidebar oculto-sidebar">
+        <div class="sidebar-header">
+            <h3>⚙️ Opciones</h3>
+            <button class="btn-cerrar-sidebar" onclick="toggleMenu()">×</button>
+        </div>
+        <div class="sidebar-content">
+            <div class="opcion-item">
+                <label>Clave API (Token):</label>
+                <input type="text" id="api-key-input" value="a36999d3627d43a2a6f11c449243634e">
+                <button onclick="guardarConfiguracion()" class="btn-guardar-sidebar">Guardar Cambios</button>
             </div>
+            <hr class="divisor">
+            <button onclick="limpiarHistorialCompleto()" class="btn-accion-sidebar btn-borrar">🧹 Limpiar Historial de Picks</button>
+            <hr class="divisor">
+            <div class="info-app-sidebar">
+                <h4>ℹ️ Acerca de la App</h4>
+                <p>Métricas predictivas de fútbol real basadas en correlaciones matemáticas e IDs de competición. Algoritmo de Cuota Justa optimizado.</p>
+            </div>
+        </div>
+    </div>
+    <div id="sidebar-overlay" class="oculto" onclick="toggleMenu()"></div>
+
+    <header class="navbar">
+        <button class="btn-menu-hamburguesa" onclick="toggleMenu()">☰</button>
+        <div class="logo-seccion">
+            <h2>Smarter<span>Bet</span></h2>
+        </div>
+        <div class="filtros-estado-header">
+            <button id="btn-proximos" class="btn-filto-main activo" onclick="setFiltroEstado('proximos')">Próximos</button>
+            <button id="btn-envivo" class="btn-filto-main" onclick="setFiltroEstado('envivo')">En Vivo</button>
+            <button id="btn-refresh" class="btn-refresh-live oculto" onclick="forzarActualizacionLive()">🔄 Actualizar</button>
+        </div>
+    </header>
+
+    <main class="contenedor-app">
+        
+        <div id="vista-principal">
             
-            <div class="contenedor-buscador">
-                <input type="text" id="filtro-ligas-input" class="input-buscador" list="lista-ligas" placeholder="🔍 Buscar liga o equipo..." oninput="aplicarFiltrosMaster()">
+            <div class="herramientas-busqueda">
+                <input type="text" id="filtro-ligas-input" placeholder="🔍 Buscar equipo o liga..." list="lista-ligas" oninput="aplicarFiltrosMaster()">
                 <datalist id="lista-ligas"></datalist>
             </div>
 
             <div id="contenedor-accesos-rapidos" class="accesos-rapidos">
-                <button class="btn-rapido" onclick="toggleLigaRapida(39, this)">🇬🇧 Premier</button>
-                <button class="btn-rapido" onclick="toggleLigaRapida(140, this)">🇪🇸 España</button>
-                <button class="btn-rapido" onclick="toggleLigaRapida(135, this)">🇮🇹 Italia</button>
-                <button class="btn-rapido" onclick="toggleLigaRapida(78, this)">🇩🇪 Alemania</button>
-                <button class="btn-rapido" onclick="toggleLigaRapida(2, this)">⭐ Champions</button>
-                <button class="btn-rapido" onclick="toggleLigaRapida(128, this)">🇦🇷 Argentina</button>
+                <button class="btn-rapido" onclick="toggleLigaRapida(39, this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier</button>
+                <button class="btn-rapido" onclick="toggleLigaRapida(140, this)">🇪🇸 LaLiga</button>
+                <button class="btn-rapido" onclick="toggleLigaRapida(135, this)">🇮🇹 Serie A</button>
+                <button class="btn-rapido" onclick="toggleLigaRapida(78, this)">🇩🇪 Bundesliga</button>
+                <button class="btn-rapido" onclick="toggleLigaRapida(2, this)">🇪🇺 Champions</button>
             </div>
-        </header>
 
-        <div id="contenedor-partidos">
-            <p style="color: var(--celeste-1xbet);">⏳ Conectando con API-Sports...</p>
-        </div>
-    </div>
+            <section id="seccion-combinada" class="seccion-destacada"></section>
 
-    <div id="vista-detalle" class="oculto">
-        <div class="cabecera-detalle">
-            <button class="btn-volver" onclick="cerrarDetalle()">⬅ Volver</button>
-            <div id="detalle-status" style="position: relative; margin-top: 10px;"></div>
-            <div class="enfrentamiento" id="detalle-cabecera"></div>
+            <div id="contenedor-partidos" class="grilla-partidos"></div>
         </div>
 
-        <div class="tabs-nav">
-            <button class="tab-btn activo" onclick="abrirTab(event, 'tab-stats')">📊 Ticket Algoritmo</button>
-            <button class="tab-btn" onclick="abrirTab(event, 'tab-info')">ℹ️ Info</button>
-        </div>
+        <div id="vista-detalle" class="detalle-partido-panel oculto">
+            <button class="btn-volver" onclick="cerrarDetalle()">⬅️ Volver al Dashboard</button>
+            
+            <div class="tarjeta-detalle-header">
+                <div id="detalle-status" class="status-box"></div>
+                <div id="detalle-cabecera" class="marcador-cabecera-completo"></div>
+            </div>
 
-        <div id="tab-stats" class="tab-content activo">
-            <h4 style="margin-top:0; color: var(--texto-gris);">Probabilidades Simuladas</h4>
-            <div id="detalle-barras"></div>
-        </div>
+            <div class="tabs-navegacion">
+                <button class="tab-btn activo" onclick="abrirTab(event, 'tab-stats')">🎯 Análisis y Cuotas</button>
+                <button class="tab-btn" onclick="abrirTab(event, 'tab-info')">📊 Información del Partido</button>
+            </div>
 
-        <div id="tab-info" class="tab-content">
-            <h4 style="margin-top:0; color: var(--texto-gris);">Detalles</h4>
-            <div id="detalle-info-extra">
-                <p style="font-size:0.85rem; color:var(--texto-gris)">Diseño profesional con conexión segura y ahorro de créditos.</p>
+            <div id="tab-stats" class="tab-content activo">
+                <div id="detalle-barras" class="contenedor-metricas-barras"></div>
+            </div>
+
+            <div id="tab-info" class="tab-content">
+                <div id="detalle-info-base" class="info-bloque-estadio"></div>
+                
+                <div class="bloques-lazy-data">
+                    <div class="caja-lazy">
+                        <button id="btn-load-tabla" class="btn-lazy-cargar" onclick="cargarTablaTorneoAPI()">📊 Cargar Tabla de Posiciones</button>
+                        <div id="contenido-lazy-tabla" class="lazy-resultado-render"></div>
+                    </div>
+                    
+                    <div class="caja-lazy">
+                        <button id="btn-load-h2h" class="btn-lazy-cargar" onclick="cargarHistorialH2HAPI()">⚔️ Cargar Historial H2H Directo</button>
+                        <div id="contenido-lazy-h2h" class="lazy-resultado-render"></div>
+                    </div>
+                </div>
             </div>
         </div>
+    </main>
+
+    <button id="btn-flotante-picks" class="fab-ticket" onclick="togglePanelPicks()">
+        🎫 <span id="contador-picks-badge" class="badge-contador">0</span>
+    </button>
+
+    <div id="panel-picks" class="panel-tickets-lateral oculto-panel">
+        <div class="panel-picks-header">
+            <h3>🎫 Mis Picks Guardados</h3>
+            <button class="btn-cerrar-panel" onclick="togglePanelPicks()">×</button>
+        </div>
+        <div id="contenedor-lista-picks" class="panel-picks-content">
+            </div>
     </div>
 
     <script src="app.js"></script>
