@@ -3,81 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GreenParley Dashboard</title>
+    <title>GreenParley Multi-Sport Hub</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
-    <header class="navbar">
-        <div class="logo-seccion">
-            <h2>Green<span>Parley</span></h2>
-        </div>
-        <div class="filtros-estado-header">
-            <button id="btn-proximos" class="btn-filto-main activo" onclick="setFiltroEstado('proximos')">Próximos</button>
-            <button id="btn-envivo" class="btn-filto-main" onclick="setFiltroEstado('envivo')">En Vivo</button>
-            <button id="btn-combinada" class="btn-filto-main" onclick="setFiltroEstado('combinada')">Combinadas</button>
-            <button id="btn-refresh" class="btn-refresh-live oculto" onclick="forzarActualizacionLive()" title="Actualizar Datos">🔄</button>
-        </div>
-    </header>
 
-    <main class="contenedor-app">
-        <div id="vista-principal">
-            <div id="herramientas-top">
-                <div class="herramientas-busqueda">
-                    <input type="text" id="filtro-ligas-input" placeholder="Buscar equipo o liga..." list="lista-ligas" oninput="aplicarFiltrosMaster()" />
-                    <datalist id="lista-ligas"></datalist>
+    <div id="lobby-selector" class="lobby-container">
+        <div class="lobby-header">
+            <h1>Green<span>Parley</span></h1>
+            <p>Selecciona una disciplina para comenzar el análisis</p>
+        </div>
+        <div class="lobby-grid">
+            <div class="sport-card" onclick="irADeporte('futbol')">
+                <div class="sport-badge">POPULAR</div>
+                <i class="fa-solid fa-futbol"></i>
+                <h3>Fútbol</h3>
+                <p>Ligas Top, Sudamérica y Copas</p>
+            </div>
+            <div class="sport-card coming-soon" onclick="irADeporte('basket')">
+                <i class="fa-solid fa-basketball"></i>
+                <h3>Basketball</h3>
+                <p>NBA, Euroliga y LNB</p>
+            </div>
+            <div class="sport-card coming-soon" onclick="irADeporte('tenis')">
+                <i class="fa-solid fa-table-tennis-paddle-ball"></i>
+                <h3>Tenis</h3>
+                <p>ATP, WTA y Challengers</p>
+            </div>
+            <div class="sport-card coming-soon" onclick="irADeporte('f1')">
+                <i class="fa-solid fa-flag-checkered"></i>
+                <h3>Formula 1</h3>
+                <p>Grand Prix y Clasificación</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-content" class="oculto">
+        <header class="navbar">
+            <div class="logo-seccion" onclick="volverAlLobby()" style="cursor:pointer">
+                <h2><i class="fa-solid fa-chevron-left" style="font-size: 0.9rem; margin-right: 10px;"></i>Green<span>Parley</span></h2>
+            </div>
+            <div class="filtros-estado-header">
+                <button id="btn-proximos" class="btn-filto-main activo" onclick="setFiltroEstado('proximos')">Próximos</button>
+                <button id="btn-envivo" class="btn-filto-main" onclick="setFiltroEstado('envivo')">En Vivo</button>
+                <button id="btn-combinada" class="btn-filto-main" onclick="setFiltroEstado('combinada')">Combinadas</button>
+                <button id="btn-refresh" class="btn-refresh-live oculto" onclick="forzarActualizacionLive()" title="Actualizar Datos">🔄</button>
+            </div>
+        </header>
+
+        <main class="contenedor-app">
+            <div id="vista-principal">
+                <div id="herramientas-top">
+                    <div class="herramientas-busqueda">
+                        <input type="text" id="filtro-ligas-input" placeholder="Buscar equipo o liga..." list="lista-ligas" oninput="aplicarFiltrosMaster()" />
+                        <datalist id="lista-ligas"></datalist>
+                    </div>
+                    <div id="contenedor-accesos-rapidos" class="accesos-rapidos">
+                        </div>
                 </div>
-                <div id="contenedor-accesos-rapidos" class="accesos-rapidos">
-                    <button class="btn-rapido" onclick="toggleLigaRapida(39, this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier</button>
-                    <button class="btn-rapido" onclick="toggleLigaRapida(140, this)">🇪🇸 LaLiga</button>
-                    <button class="btn-rapido" onclick="toggleLigaRapida(135, this)">🇮🇹 Serie A</button>
-                    <button class="btn-rapido" onclick="toggleLigaRapida(78, this)">🇩🇪 Bundesliga</button>
-                    <button class="btn-rapido" onclick="toggleLigaRapida(2, this)">🇪🇺 Champions</button>
+                <section id="seccion-combinada" class="seccion-destacada oculto"></section>
+                <div id="contenedor-partidos" class="grilla-partidos"></div>
+            </div>
+
+            <div id="vista-detalle" class="detalle-partido-panel oculto">
+                <button class="btn-volver" onclick="cerrarDetalle()">⬅️ Volver</button>
+                <div class="tarjeta-detalle-header">
+                    <div id="detalle-status" class="status-box"></div>
+                    <div id="detalle-cabecera" class="marcador-cabecera-completo"></div>
                 </div>
-            </div>
-
-            <section id="seccion-combinada" class="seccion-destacada oculto"></section>
-
-            <div id="contenedor-partidos" class="grilla-partidos"></div>
-        </div>
-
-        <div id="vista-detalle" class="detalle-partido-panel oculto">
-            <button class="btn-volver" onclick="cerrarDetalle()">⬅️ Volver al Dashboard</button>
-            <div class="tarjeta-detalle-header">
-                <div id="detalle-status" class="status-box"></div>
-                <div id="detalle-cabecera" class="marcador-cabecera-completo"></div>
-            </div>
-            <div class="tabs-navegacion">
-                <button class="tab-btn activo" onclick="abrirTab(event, 'tab-stats')">🎯 Análisis y Cuotas</button>
-                <button class="tab-btn" onclick="abrirTab(event, 'tab-info')">📊 Información</button>
-            </div>
-            <div id="tab-stats" class="tab-content activo">
-                <div id="detalle-barras" class="contenedor-metricas-barras"></div>
-            </div>
-            <div id="tab-info" class="tab-content">
-                <div id="detalle-info-base" class="info-bloque-estadio"></div>
-                <div class="bloques-lazy-data">
+                <div class="tabs-navegacion">
+                    <button class="tab-btn activo" onclick="abrirTab(event, 'tab-stats')">🎯 Análisis</button>
+                    <button class="tab-btn" onclick="abrirTab(event, 'tab-info')">📊 Tabla</button>
+                </div>
+                <div id="tab-stats" class="tab-content activo">
+                    <div id="detalle-barras" class="contenedor-metricas-barras"></div>
+                </div>
+                <div id="tab-info" class="tab-content">
                     <div class="caja-lazy">
-                        <button id="btn-load-tabla" class="btn-lazy-cargar" onclick="cargarTablaTorneoAPI()">📊 Cargar Tabla de Posiciones</button>
+                        <button id="btn-load-tabla" class="btn-lazy-cargar">📊 Cargar Posiciones</button>
                         <div id="contenido-lazy-tabla" class="lazy-resultado-render"></div>
                     </div>
-                    <div class="caja-lazy">
-                        <button id="btn-load-h2h" class="btn-lazy-cargar" onclick="cargarHistorialH2HAPI()">⚔️ Cargar Historial H2H</button>
-                        <div id="contenido-lazy-h2h" class="lazy-resultado-render"></div>
-                    </div>
                 </div>
             </div>
-        </div>
-    </main>
+        </main>
 
-    <button id="btn-flotante-picks" class="fab-ticket" onclick="togglePanelPicks()">
-        🎫 <span id="contador-picks-badge" class="badge-contador">0</span>
-    </button>
-    <div id="panel-picks" class="panel-tickets-lateral oculto-panel">
-        <div class="panel-picks-header">
-            <h3>🎫 Mis Picks Guardados</h3>
-            <button class="btn-cerrar-panel" onclick="togglePanelPicks()">×</button>
+        <button id="btn-flotante-picks" class="fab-ticket" onclick="togglePanelPicks()">
+            🎫 <span id="contador-picks-badge" class="badge-contador">0</span>
+        </button>
+        <div id="panel-picks" class="panel-tickets-lateral oculto-panel">
+            <div class="panel-picks-header">
+                <h3>🎫 Mis Picks</h3>
+                <button class="btn-cerrar-panel" onclick="togglePanelPicks()">×</button>
+            </div>
+            <div id="contenedor-lista-picks" class="panel-picks-content"></div>
         </div>
-        <div id="contenedor-lista-picks" class="panel-picks-content"></div>
     </div>
 
     <script src="app.js"></script>
