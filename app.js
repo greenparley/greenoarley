@@ -199,8 +199,17 @@ function aplicarFiltrosMaster(idsGoles = []) {
         filtrados = filtrados.filter(p => (p.competition.name && p.competition.name.toLowerCase().includes(txt)) || (p.homeTeam.name && p.homeTeam.name.toLowerCase().includes(txt)) || (p.awayTeam.name && p.awayTeam.name.toLowerCase().includes(txt)));
     }
 
-    // Orden Cronológico
-    filtrados.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+    // Orden Cronológico Seguro
+    filtrados.sort((a, b) => {
+        let tiempoA = new Date(a.utcDate).getTime();
+        let tiempoB = new Date(b.utcDate).getTime();
+        
+        if (isNaN(tiempoA)) tiempoA = 9999999999999; // Lo manda al final si falla
+        if (isNaN(tiempoB)) tiempoB = 9999999999999;
+        
+        return tiempoA - tiempoB;
+    });
+
     renderizarPartidos(filtrados, idsGoles);
 }
 
@@ -218,7 +227,10 @@ function renderizarPartidos(partidos, idsGoles = []) {
 
     partidos.forEach(p => {
         const isLive = estadosEnVivo.includes(p.status);
-        let hora = p.utcDate ? new Date(p.utcDate).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) : "TBA";
+        // Evitamos que muestre fechas raras o "Invalid Date"
+        const esFechaValida = p.utcDate && !isNaN(new Date(p.utcDate).getTime());
+        let hora = esFechaValida ? new Date(p.utcDate).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) : "TBA";
+        
         const gL = p.score?.fullTime?.home ?? 0; const gV = p.score?.fullTime?.away ?? 0;
         const marcador = isLive ? `<div class="live-badge">LIVE</div><span style="color:var(--alerta)">${gL} - ${gV}</span>` : `<span>${hora}</span>`;
         const m = analizarMercadosPartido(p);
@@ -240,7 +252,7 @@ function renderizarPartidos(partidos, idsGoles = []) {
 }
 
 // ==========================================
-// VISTA DETALLE Y TICKETS (Lógica Acortada)
+// VISTA DETALLE Y TICKETS
 // ==========================================
 function abrirDetalle(id) {
     const p = baseDeDatosHoy.find(item => item.id === id); if (!p) return;
@@ -273,7 +285,6 @@ function generarCombinadaDelDia() {
     let t = []; baseDeDatosHoy.forEach(p => { analizarMercadosPartido(p).forEach(m => t.push({ p: p, m: m })); });
     let s = t.filter(c => c.m.prob >= 75).sort((a,b) => b.m.prob - a.m.prob).slice(0, 3);
     let md = t.filter(c => c.m.prob >= 55 && c.m.prob < 75).sort((a,b) => b.m.prob - a.m.prob).slice(0, 3);
-    let ar = t.filter(c => c.m.prob < 55).sort((a,b) => b.m.prob - a.m.prob).slice(0, 3);
 
     ticketsMultiplesGenerados = { 'seguro': s.map(x=>({m:x.m.mercado, c:x.m.cuota, pId:x.p.id, h:x.p.homeTeam.shortName, a:x.p.awayTeam.shortName})), 'medio': md.map(x=>({m:x.m.mercado, c:x.m.cuota, pId:x.p.id, h:x.p.homeTeam.shortName, a:x.p.awayTeam.shortName})) };
     
@@ -325,5 +336,4 @@ async function forzarActualizacionLive() {
     btn.innerText = "🔄"; btn.disabled = false;
 }
 
-// Al cargar la página, NO arrancamos el fútbol todavía, solo cargamos los picks de la memoria.
 window.onload = () => { actualizarEstructuraPicksLocales(); };
