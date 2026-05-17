@@ -1,1 +1,184 @@
+:root {
+    --bg-color: #0b111e;
+    --tarjeta-bg: #151f32;
+    --tarjeta-borde: #22314d;
+    --celeste-1xbet: #00a3e0;
+    --azul-1xbet: #0056b3;
+    --verde-flash: #00e676;
+    --oro: #ffca28;
+    --alerta: #ff5252;
+    --texto-principal: #ffffff;
+    --texto-gris: #8a99ad;
+    --fuente: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
 
+body {
+    margin: 0;
+    font-family: var(--fuente);
+    background-color: var(--bg-color);
+    color: var(--texto-principal);
+    padding-bottom: 60px;
+}
+
+/* NAVBAR */
+.navbar {
+    display: flex;
+    align-items: center;
+    background: var(--tarjeta-bg);
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--tarjeta-borde);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+.btn-menu-hamburguesa {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    margin-right: 15px;
+}
+.logo-seccion h2 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+.logo-seccion span { color: var(--celeste-1xbet); }
+
+.filtros-estado-header {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+}
+.btn-filto-main, .btn-refresh-live {
+    background: #1e2d4a;
+    border: none;
+    color: var(--texto-gris);
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+.btn-filto-main.activo {
+    background: var(--azul-1xbet);
+    color: white;
+}
+.btn-refresh-live { background: #2e1e4a; color: #d6bbf2; }
+
+/* CONTENEDOR PRINCIPAL */
+.contenedor-app { padding: 15px; max-width: 1200px; margin: 0 auto; }
+
+/* BUSCADOR Y LIGAS */
+.herramientas-busqueda input {
+    width: 100%;
+    padding: 10px;
+    background: var(--tarjeta-bg);
+    border: 1px solid var(--tarjeta-borde);
+    border-radius: 6px;
+    color: white;
+    box-sizing: border-box;
+    font-size: 0.9rem;
+}
+.accesos-rapidos { display: flex; gap: 8px; margin: 12px 0; overflow-x: auto; padding-bottom: 5px; }
+.btn-rapido {
+    background: var(--tarjeta-bg);
+    border: 1px solid var(--tarjeta-borde);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+.btn-rapido.activo { background: var(--celeste-1xbet); border-color: var(--celeste-1xbet); }
+
+/* COMBINADA DEL DIA */
+.seccion-destacada { margin-bottom: 20px; }
+.tarjeta-combinada {
+    background: linear-gradient(135deg, #1b2845 0%, #111a2e 100%);
+    border: 2px solid var(--oro);
+    border-radius: 10px;
+    padding: 15px;
+}
+.ticket-items-lista { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+.ticket-item {
+    background: rgba(255,255,255,0.03);
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+/* GRILLA PARTIDOS */
+.grilla-partidos { display: flex; flex-direction: column; gap: 10px; }
+.tarjeta-partido {
+    background: var(--tarjeta-bg);
+    border: 1px solid var(--tarjeta-borde);
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    position: relative;
+}
+.encabezado-liga { font-size: 0.75rem; color: var(--texto-gris); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px; margin-bottom: 8px; }
+.encabezado-liga img { width: 12px; height: 12px; margin-right: 5px; vertical-align: middle;}
+.cuerpo-partido { display: flex; align-items: center; justify-content: space-between; }
+.equipos { flex-grow: 1; display: flex; flex-direction: column; gap: 6px; }
+.equipo-linea { display: flex; align-items: center; font-size: 0.9rem; font-weight: 500; }
+.equipo-linea img { width: 18px; height: 18px; margin-right: 8px; object-fit: contain; }
+.marcador-live { width: 60px; text-align: center; font-weight: bold; font-size: 1rem; color: var(--celeste-1xbet); }
+.semaforo { display: flex; gap: 4px; }
+.luz { padding: 4px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; min-width: 28px; text-align: center; }
+.luz-v { background: rgba(0, 230, 118, 0.15); color: var(--verde-flash); }
+.luz-a { background: rgba(255, 202, 40, 0.15); color: var(--oro); }
+.luz-r { background: rgba(255, 82, 82, 0.15); color: var(--alerta); }
+
+/* VISTA DETALLE Y TABS */
+.detalle-partido-panel { background: var(--tarjeta-bg); border-radius: 10px; padding: 15px; border: 1px solid var(--tarjeta-borde); }
+.btn-volver { background: none; border: none; color: var(--celeste-1xbet); cursor: pointer; font-size: 0.9rem; padding: 0; margin-bottom: 15px; }
+.marcador-cabecera-completo { display: flex; justify-content: space-around; align-items: center; padding: 15px 0; }
+.tabs-navegacion { display: flex; border-bottom: 1px solid var(--tarjeta-borde); margin-bottom: 15px; }
+.tab-btn { background: none; border: none; color: var(--texto-gris); padding: 10px 15px; cursor: pointer; font-size: 0.9rem; font-weight: bold; }
+.tab-btn.activo { color: var(--celeste-1xbet); border-bottom: 2px solid var(--celeste-1xbet); }
+.tab-content { display: none; }
+.tab-content.activo { display: block; }
+
+/* BARRAS DE PROGRESO */
+.barra-container { background: rgba(255,255,255,0.02); padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid var(--tarjeta-borde); }
+.barra-fondo { background: #0e1726; height: 8px; border-radius: 4px; overflow: hidden; }
+.barra-progreso { height: 100%; width: 0%; transition: width 0.6s ease-out; }
+
+/* LAZY LOADING ACCESOS */
+.bloques-lazy-data { display: flex; flex-direction: column; gap: 15px; margin-top: 15px; }
+.caja-lazy { background: #0e1726; border-radius: 6px; padding: 10px; border: 1px solid var(--tarjeta-borde); }
+.btn-lazy-cargar { width: 100%; background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); color: white; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
+.lazy-resultado-render { margin-top: 10px; font-size: 0.85rem; }
+
+/* TABLA RENDERIZADA */
+.mini-tabla { width: 100%; border-collapse: collapse; text-align: left; }
+.mini-tabla th, .mini-tabla td { padding: 6px; border-bottom: 1px solid var(--tarjeta-borde); }
+.mini-tabla tr.resaltado { background: rgba(0,163,224,0.1); }
+
+/* MENUS LATERALES Y SIDEBARS */
+.sidebar { position: fixed; top: 0; left: 0; width: 280px; height: 100%; background: var(--tarjeta-bg); z-index: 200; transition: transform 0.3s ease; padding: 20px; box-sizing: border-box; border-right: 1px solid var(--tarjeta-borde); }
+.oculto-sidebar { transform: translateX(-100%); }
+#sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 150; }
+
+/* FAB TICKET BUTTON */
+.fab-ticket { position: fixed; bottom: 20px; right: 20px; width: 56px; height: 56px; background: var(--azul-1xbet); border-radius: 50%; border: none; font-size: 1.5rem; color: white; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.4); z-index: 120; display: flex; align-items: center; justify-content: center; }
+.badge-contador { position: absolute; top: -2px; right: -2px; background: var(--alerta); font-size: 0.75rem; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+
+.panel-tickets-lateral { position: fixed; top: 0; right: 0; width: 320px; height: 100%; background: var(--tarjeta-bg); z-index: 200; transition: transform 0.3s ease; box-shadow: -4px 0 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; border-left: 1px solid var(--tarjeta-borde); }
+.oculto-panel { transform: translateX(100%); }
+.panel-picks-header, .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--tarjeta-borde); }
+.panel-picks-content { padding: 15px; overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; gap: 10px; }
+
+/* TARJETAS INTERNAS DE PICKS */
+.item-pick-guardado { background: #0e1726; border-radius: 6px; padding: 10px; border-left: 4px solid var(--texto-gris); }
+.item-pick-guardado.ganada { border-left-color: var(--verde-flash); }
+.item-pick-guardado.perdida { border-left-color: var(--alerta); }
+.badge-estado { float: right; font-size: 0.7rem; padding: 2px 5px; border-radius: 3px; font-weight: bold; background: #22314d; }
+
+.oculto { display: none !important; }
+.live-badge { background: var(--alerta); color: white; font-size: 0.65rem; font-weight: bold; padding: 2px 6px; border-radius: 3px; width: fit-content; margin-bottom: 4px; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
