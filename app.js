@@ -37,29 +37,43 @@ async function fetchAPIPrincipal() {
 // ==========================================
 async function fetchAPISecundaria() {
     try {
-        // Pedimos los partidos de hoy (formato YYYY-MM-DD)
-        const hoy = new Date().toISOString().split('T')[0];
-        const url = `https://v3.football.api-sports.io/fixtures?date=${hoy}`;
+        // 1. Solución de Zona Horaria: Le avisamos a la API dónde estamos para no perder los partidos de la noche
+        const zonaHoraria = Intl.DateTimeFormat().resolvedOptions().timeZone; 
+        
+        // Armamos la fecha exacta local (YYYY-MM-DD)
+        const fecha = new Date();
+        const anio = fecha.getFullYear();
+        const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+        const dia = String(fecha.getDate()).padStart(2, '0');
+        const hoy = `${anio}-${mes}-${dia}`;
+
+        // Agregamos el timezone a la URL
+        const url = `https://v3.football.api-sports.io/fixtures?date=${hoy}&timezone=${zonaHoraria}`;
         const options = { method: 'GET', headers: { 'x-apisports-key': API_KEY_SECUNDARIA } };
         
         const respuesta = await fetch(url, options);
         if (!respuesta.ok) return [];
         const data = await respuesta.json();
         
-        // TRADUCTOR: Convertimos el formato de API-Football al de football-data.org
+        // 2. TRADUCTOR MEJORADO: Agregamos todos los estados posibles de "En vivo"
         const partidosTraducidos = (data.response || []).map(p => {
-            // Mapeo de estados
             let estado = 'SCHEDULED';
-            if (['1H', '2H', 'HT', 'ET', 'P'].includes(p.fixture.status.short)) estado = 'IN_PLAY';
-            else if (['FT', 'AET', 'PEN'].includes(p.fixture.status.short)) estado = 'FINISHED';
+            
+            // Listado exhaustivo de códigos de API-Football
+            const estadosLive = ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'SUSP', 'INT', 'LIVE'];
+            const estadosTerminado = ['FT', 'AET', 'PEN', 'AWD', 'WO'];
+
+            if (estadosLive.includes(p.fixture.status.short)) estado = 'IN_PLAY';
+            else if (estadosTerminado.includes(p.fixture.status.short)) estado = 'FINISHED';
 
             return {
-                id: p.fixture.id, // Usamos el ID de la segunda API
+                id: p.fixture.id, 
                 utcDate: p.fixture.date,
                 status: estado,
-                competition: { id: p.league.id + 10000, name: p.league.name, emblem: p.league.logo }, // Sumamos 10000 para que no choquen IDs de ligas
+                competition: { id: p.league.id + 10000, name: p.league.name, emblem: p.league.logo }, 
                 homeTeam: { id: p.teams.home.id + 10000, name: p.teams.home.name, shortName: p.teams.home.name, crest: p.teams.home.logo },
                 awayTeam: { id: p.teams.away.id + 10000, name: p.teams.away.name, shortName: p.teams.away.name, crest: p.teams.away.logo },
+                // Sumamos los goles para que se actualice el marcador en vivo
                 score: { fullTime: { home: p.goals.home, away: p.goals.away } }
             };
         });
