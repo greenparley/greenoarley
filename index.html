@@ -41,7 +41,7 @@
 
     <div id="app-content" class="oculto">
         <header class="navbar">
-            <div class="logo-seccion" onclick="volverAlLobby()" style="cursor:pointer">
+            <div class="logo-seccion" onclick="volverAlLobby()" style="cursor:pointer" title="Volver al Lobby">
                 <h2><i class="fa-solid fa-chevron-left" style="font-size: 0.9rem; margin-right: 10px;"></i>Green<span>Parley</span></h2>
             </div>
             <div class="filtros-estado-header">
@@ -59,8 +59,6 @@
                         <input type="text" id="filtro-ligas-input" placeholder="Buscar equipo o liga..." list="lista-ligas" oninput="aplicarFiltrosMaster()" />
                         <datalist id="lista-ligas"></datalist>
                     </div>
-                    <div id="contenedor-accesos-rapidos" class="accesos-rapidos">
-                        </div>
                 </div>
                 <section id="seccion-combinada" class="seccion-destacada oculto"></section>
                 <div id="contenedor-partidos" class="grilla-partidos"></div>
@@ -83,6 +81,8 @@
                     <div class="caja-lazy">
                         <button id="btn-load-tabla" class="btn-lazy-cargar">📊 Cargar Posiciones</button>
                         <div id="contenido-lazy-tabla" class="lazy-resultado-render"></div>
+                        <button id="btn-load-h2h" class="oculto">H2H</button>
+                        <div id="contenido-lazy-h2h"></div>
                     </div>
                 </div>
             </div>
