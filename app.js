@@ -2,7 +2,7 @@
 // CONFIGURACIÓN GLOBAL
 // ==========================================
 const API_KEY_PRINCIPAL = "a36999d3627d43a2a6f11c449243634e"; // football-data.org
-const API_KEY_SECUNDARIA = "TU_CLAVE_DE_API_FOOTBALL_AQUI"; // Registrate gratis en api-football.com y poné tu key acá
+const API_KEY_SECUNDARIA = "0464d33c8013d01fb7387b5148f18a9a"; // api-football.com
 
 let baseDeDatosHoy = [];
 let estadoFiltroActual = 'proximos';
@@ -36,8 +36,6 @@ async function fetchAPIPrincipal() {
 // MOTOR API 2 (Sudamérica y Resto del Mundo)
 // ==========================================
 async function fetchAPISecundaria() {
-    if (API_KEY_SECUNDARIA === "TU_CLAVE_DE_API_FOOTBALL_AQUI") return []; // Evita error si aún no pusiste la clave
-    
     try {
         // Pedimos los partidos de hoy (formato YYYY-MM-DD)
         const hoy = new Date().toISOString().split('T')[0];
