@@ -31,7 +31,7 @@
                 </div>
 
                 <div id="contenedor-accesos-rapidos" class="accesos-rapidos">
-                    <button class="btn-rapido" onclick="toggleLigaRapida(39, this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier</button>
+                    <input type="text" id="filtro-ligas-input" placeholder="Buscar equipo o liga..." list="lista-ligas" oninput="aplicarFiltrosMaster()" />
                     <button class="btn-rapido" onclick="toggleLigaRapida(140, this)">🇪🇸 LaLiga</button>
                     <button class="btn-rapido" onclick="toggleLigaRapida(135, this)">🇮🇹 Serie A</button>
                     <button class="btn-rapido" onclick="toggleLigaRapida(78, this)">🇩🇪 Bundesliga</button>
