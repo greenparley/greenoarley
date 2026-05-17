@@ -3,42 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmarterBet Dashboard - Pro Premium</title>
+    <title>GreenParley Dashboard</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <div id="menu-lateral" class="sidebar oculto-sidebar">
-        <div class="sidebar-header">
-            <h3>⚙️ Opciones</h3>
-            <button class="btn-cerrar-sidebar" onclick="toggleMenu()">×</button>
-        </div>
-        <div class="sidebar-content">
-            <div class="opcion-item">
-                <label>Clave API (Token):</label>
-                <input type="text" id="api-key-input" value="a36999d3627d43a2a6f11c449243634e">
-                <button onclick="guardarConfiguracion()" class="btn-guardar-sidebar">Guardar Cambios</button>
-            </div>
-            <hr class="divisor">
-            <button onclick="limpiarHistorialCompleto()" class="btn-accion-sidebar btn-borrar">🧹 Limpiar Historial de Picks</button>
-            <hr class="divisor">
-            <div class="info-app-sidebar">
-                <h4>ℹ️ Acerca de la App</h4>
-                <p>Métricas predictivas de fútbol real basadas en correlaciones matemáticas e IDs de competición. Algoritmo de Cuota Justa optimizado.</p>
-            </div>
-        </div>
-    </div>
-    <div id="sidebar-overlay" class="oculto" onclick="toggleMenu()"></div>
-
     <header class="navbar">
-        <button class="btn-menu-hamburguesa" onclick="toggleMenu()">☰</button>
         <div class="logo-seccion">
-            <h2>Smarter<span>Bet</span></h2>
+            <h2>Green<span>Parley</span></h2>
         </div>
         <div class="filtros-estado-header">
             <button id="btn-proximos" class="btn-filto-main activo" onclick="setFiltroEstado('proximos')">Próximos</button>
             <button id="btn-envivo" class="btn-filto-main" onclick="setFiltroEstado('envivo')">En Vivo</button>
-            <button id="btn-refresh" class="btn-refresh-live oculto" onclick="forzarActualizacionLive()">🔄 Actualizar</button>
+            <button id="btn-combinada" class="btn-filto-main" onclick="setFiltroEstado('combinada')">Combinada</button>
+            <button id="btn-refresh" class="btn-refresh-live oculto" onclick="forzarActualizacionLive()" title="Actualizar Datos">🔄</button>
         </div>
     </header>
 
@@ -46,20 +24,22 @@
         
         <div id="vista-principal">
             
-            <div class="herramientas-busqueda">
-                <input type="text" id="filtro-ligas-input" placeholder="🔍 Buscar equipo o liga..." list="lista-ligas" oninput="aplicarFiltrosMaster()">
-                <datalist id="lista-ligas"></datalist>
+            <div id="herramientas-top">
+                <div class="herramientas-busqueda">
+                    <input type="text" id="filtro-ligas-input" placeholder="🔍 Buscar equipo o liga..." list="lista-ligas" oninput="aplicarFiltrosMaster()">
+                    <datalist id="lista-ligas"></datalist>
+                </div>
+
+                <div id="contenedor-accesos-rapidos" class="accesos-rapidos">
+                    <button class="btn-rapido" onclick="toggleLigaRapida(39, this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier</button>
+                    <button class="btn-rapido" onclick="toggleLigaRapida(140, this)">🇪🇸 LaLiga</button>
+                    <button class="btn-rapido" onclick="toggleLigaRapida(135, this)">🇮🇹 Serie A</button>
+                    <button class="btn-rapido" onclick="toggleLigaRapida(78, this)">🇩🇪 Bundesliga</button>
+                    <button class="btn-rapido" onclick="toggleLigaRapida(2, this)">🇪🇺 Champions</button>
+                </div>
             </div>
 
-            <div id="contenedor-accesos-rapidos" class="accesos-rapidos">
-                <button class="btn-rapido" onclick="toggleLigaRapida(39, this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier</button>
-                <button class="btn-rapido" onclick="toggleLigaRapida(140, this)">🇪🇸 LaLiga</button>
-                <button class="btn-rapido" onclick="toggleLigaRapida(135, this)">🇮🇹 Serie A</button>
-                <button class="btn-rapido" onclick="toggleLigaRapida(78, this)">🇩🇪 Bundesliga</button>
-                <button class="btn-rapido" onclick="toggleLigaRapida(2, this)">🇪🇺 Champions</button>
-            </div>
-
-            <section id="seccion-combinada" class="seccion-destacada"></section>
+            <section id="seccion-combinada" class="seccion-destacada oculto"></section>
 
             <div id="contenedor-partidos" class="grilla-partidos"></div>
         </div>
@@ -74,7 +54,7 @@
 
             <div class="tabs-navegacion">
                 <button class="tab-btn activo" onclick="abrirTab(event, 'tab-stats')">🎯 Análisis y Cuotas</button>
-                <button class="tab-btn" onclick="abrirTab(event, 'tab-info')">📊 Información del Partido</button>
+                <button class="tab-btn" onclick="abrirTab(event, 'tab-info')">📊 Información</button>
             </div>
 
             <div id="tab-stats" class="tab-content activo">
@@ -83,15 +63,13 @@
 
             <div id="tab-info" class="tab-content">
                 <div id="detalle-info-base" class="info-bloque-estadio"></div>
-                
                 <div class="bloques-lazy-data">
                     <div class="caja-lazy">
                         <button id="btn-load-tabla" class="btn-lazy-cargar" onclick="cargarTablaTorneoAPI()">📊 Cargar Tabla de Posiciones</button>
                         <div id="contenido-lazy-tabla" class="lazy-resultado-render"></div>
                     </div>
-                    
                     <div class="caja-lazy">
-                        <button id="btn-load-h2h" class="btn-lazy-cargar" onclick="cargarHistorialH2HAPI()">⚔️ Cargar Historial H2H Directo</button>
+                        <button id="btn-load-h2h" class="btn-lazy-cargar" onclick="cargarHistorialH2HAPI()">⚔️ Cargar Historial H2H</button>
                         <div id="contenido-lazy-h2h" class="lazy-resultado-render"></div>
                     </div>
                 </div>
@@ -108,8 +86,7 @@
             <h3>🎫 Mis Picks Guardados</h3>
             <button class="btn-cerrar-panel" onclick="togglePanelPicks()">×</button>
         </div>
-        <div id="contenedor-lista-picks" class="panel-picks-content">
-            </div>
+        <div id="contenedor-lista-picks" class="panel-picks-content"></div>
     </div>
 
     <script src="app.js"></script>
