@@ -101,7 +101,7 @@ async function fetchAPISecundaria() {
 
 async function iniciarApp() {
     const contenedor = document.getElementById('contenedor-partidos');
-    contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px;">⏳ Conectando servidores...</p>`;
+    contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px;">⏳ Conectando servidores y calculando cuotas...</p>`;
     
     const [d1, d2] = await Promise.all([ fetchAPIPrincipal(), fetchAPISecundaria() ]);
     baseDeDatosHoy = [...d1, ...d2];
@@ -204,7 +204,7 @@ function aplicarFiltrosMaster(idsGoles = []) {
         let tiempoA = new Date(a.utcDate).getTime();
         let tiempoB = new Date(b.utcDate).getTime();
         
-        if (isNaN(tiempoA)) tiempoA = 9999999999999; // Lo manda al final si falla
+        if (isNaN(tiempoA)) tiempoA = 9999999999999; 
         if (isNaN(tiempoB)) tiempoB = 9999999999999;
         
         return tiempoA - tiempoB;
@@ -227,7 +227,6 @@ function renderizarPartidos(partidos, idsGoles = []) {
 
     partidos.forEach(p => {
         const isLive = estadosEnVivo.includes(p.status);
-        // Evitamos que muestre fechas raras o "Invalid Date"
         const esFechaValida = p.utcDate && !isNaN(new Date(p.utcDate).getTime());
         let hora = esFechaValida ? new Date(p.utcDate).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) : "TBA";
         
@@ -245,7 +244,11 @@ function renderizarPartidos(partidos, idsGoles = []) {
                         <div class="equipo-linea"><img src="${p.awayTeam.crest || ESCUDO_RESPALDO}" onerror="this.src='${ESCUDO_RESPALDO}'"> ${p.awayTeam.shortName || p.awayTeam.name}</div>
                     </div>
                     <div class="marcador-live">${marcador}</div>
-                    <div class="semaforo"><div class="luz luz-v">${m[0].prob}%</div><div class="luz luz-a">${m[1].prob}%</div><div class="luz luz-r">${m[2].prob}%</div></div>
+                    <div class="semaforo">
+                        <div class="luz luz-v" title="${m[0].mercado}">Cuota ${m[0].cuota}</div>
+                        <div class="luz luz-a" title="${m[1].mercado}">Cuota ${m[1].cuota}</div>
+                        <div class="luz luz-r" title="${m[2].mercado}">Cuota ${m[2].cuota}</div>
+                    </div>
                 </div>
             </div>`;
     });
@@ -269,7 +272,7 @@ function abrirDetalle(id) {
     let bHtml = "";
     analizarMercadosPartido(p).forEach((m, i) => {
         let col = i === 0 ? 'var(--verde-principal)' : (i === 1 ? 'var(--oro)' : 'var(--alerta)');
-        bHtml += `<div class="barra-container" style="border-left-color:${col}"><div style="display:flex; justify-content:space-between;"><span>${m.mercado}</span><span style="color:${col}">${m.prob}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:${col}" data-w="${m.prob}%"></div></div><button onclick="guardarUnicoPickLocal(${p.id}, '${m.mercado.replace(/'/g,"\\'")}', '${m.cuota}', ${m.prob}, '${p.homeTeam.shortName}', '${p.awayTeam.shortName}')" style="margin-top:5px; background:var(--tarjeta-borde); color:white; border:none; padding:5px; cursor:pointer;">Guardar</button></div>`;
+        bHtml += `<div class="barra-container" style="border-left-color:${col}"><div style="display:flex; justify-content:space-between;"><span>${m.mercado} <strong>(x${m.cuota})</strong></span><span style="color:${col}">${m.prob}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:${col}" data-w="${m.prob}%"></div></div><button onclick="guardarUnicoPickLocal(${p.id}, '${m.mercado.replace(/'/g,"\\'")}', '${m.cuota}', ${m.prob}, '${p.homeTeam.shortName}', '${p.awayTeam.shortName}')" style="margin-top:5px; background:var(--tarjeta-borde); color:white; border:none; padding:5px; cursor:pointer;">Guardar</button></div>`;
     });
     document.getElementById('detalle-barras').innerHTML = bHtml;
     setTimeout(() => { document.querySelectorAll('.barra-progreso').forEach(b => b.style.width = b.getAttribute('data-w')); }, 80);
@@ -293,7 +296,9 @@ function generarCombinadaDelDia() {
 
 function renderHTMLTick(arr, id, tit) {
     let html = `<div class="tarjeta-combinada ticket-${id}"><h4>${tit}</h4>`;
-    arr.forEach(c => html += `<div class="ticket-item">🤝 ${c.p.homeTeam.shortName} vs ${c.p.awayTeam.shortName} <br>🎯 ${c.m.mercado}</div>`);
+    arr.forEach(c => {
+        html += `<div class="ticket-item">🤝 ${c.p.homeTeam.shortName} vs ${c.p.awayTeam.shortName} <br>🎯 ${c.m.mercado} <strong style="color:var(--verde-principal); float:right;">x${c.m.cuota}</strong></div>`;
+    });
     html += `<button onclick="guardarCombinada('${id}')" style="margin-top:10px; width:100%; padding:5px;">Guardar Ticket</button></div>`; return html;
 }
 
@@ -315,7 +320,7 @@ function actualizarEstructuraPicksLocales() {
     let hist = obtenerPicksLocales();
     document.getElementById('contador-picks-badge').innerText = hist.filter(h => h.estado === 'PENDIENTE').length;
     let c = document.getElementById('contenedor-lista-picks'); c.innerHTML = "";
-    hist.reverse().forEach(p => { c.innerHTML += `<div class="item-pick-guardado ${p.estado.toLowerCase()}"><span class="badge-estado">${p.estado}</span><div>${p.home} vs ${p.away}</div><strong>${p.mercado}</strong></div>`; });
+    hist.reverse().forEach(p => { c.innerHTML += `<div class="item-pick-guardado ${p.estado.toLowerCase()}"><span class="badge-estado">${p.estado}</span><div>${p.home} vs ${p.away}</div><strong>${p.mercado} (x${p.cuota})</strong></div>`; });
 }
 
 function togglePanelPicks() { document.getElementById('panel-picks').classList.toggle('oculto-panel'); }
