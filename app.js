@@ -1,8 +1,11 @@
 // ==========================================
-// CONFIGURACIÓN GLOBAL
+// CONFIGURACIÓN GLOBAL Y ROTACIÓN DE KEYS
 // ==========================================
-const API_KEY_PRINCIPAL = "31dc5f2762254847a825e1025257a759"; // Nueva Key football-data.org
-const API_KEY_SECUNDARIA = "0464d33c8013d01fb7387b5148f18a9a"; // api-football.com
+// Agregá todas las keys de API-Sports que quieras acá. El sistema rotará automáticamente.
+const API_KEYS = [
+    "0464d33c8013d01fb7387b5148f18a9a", 
+    "31dc5f2762254847a825e1025257a759"
+];
 
 let baseDeDatosHoy = [];
 let estadoFiltroActual = 'proximos';
@@ -15,7 +18,32 @@ const estadosProximos = ['TIMED', 'SCHEDULED', 'LIVE'];
 const ESCUDO_RESPALDO = "https://cdn-icons-png.flaticon.com/512/53/53283.png";
 
 // ==========================================
-// EFECTOS DE GOL (CSS dinámico y Sonido)
+// FILTRO DE LIGAS (Solo Ligas Top, Arg y Bra)
+// ==========================================
+const LIGAS_TOP = [
+    1,   // Mundial
+    2,   // Champions League
+    3,   // Europa League
+    4,   // Eurocopa
+    9,   // Copa América
+    13,  // Copa Libertadores
+    11,  // Copa Sudamericana
+    12,  // Recopa Sudamericana
+    39,  // Premier League
+    140, // La Liga
+    135, // Serie A
+    78,  // Bundesliga
+    61,  // Ligue 1
+    128, // Argentina - Liga Profesional
+    130, // Argentina - Copa de la Liga
+    129, // Argentina - Copa Argentina
+    131, // Argentina - Supercopa
+    71,  // Brasil - Serie A
+    73   // Brasil - Copa do Brasil
+];
+
+// ==========================================
+// EFECTOS DE GOL
 // ==========================================
 const estiloGol = document.createElement('style');
 estiloGol.innerHTML = `
@@ -37,73 +65,65 @@ function reproducirBeep() {
 }
 
 // ==========================================
-// NAVEGACIÓN Y LOBBY
+// MOTOR DE ROTACIÓN DE KEYS (¡NUEVO!)
 // ==========================================
-function irADeporte(deporte) {
-    if (deporte !== 'futbol') {
-        alert("¡Estamos trabajando en la integración de " + deporte.toUpperCase() + "! Estará disponible muy pronto.");
-        return;
+async function fetchConRotacion(url) {
+    for (let i = 0; i < API_KEYS.length; i++) {
+        try {
+            const res = await fetch(url, { headers: { 'x-apisports-key': API_KEYS[i] } });
+            const data = await res.json();
+            
+            // Si la API dice que no hay error o no es un error de cuota, devolvemos los datos
+            if (!data.errors || data.errors.length === 0 || !data.errors.rateLimit) {
+                return data;
+            }
+            console.warn(`Key ${i + 1} agotada. Saltando a la siguiente...`);
+        } catch (e) {
+            console.warn(`Error de red con Key ${i + 1}.`);
+        }
     }
-    document.getElementById('lobby-selector').classList.add('oculto');
-    document.getElementById('app-content').classList.remove('oculto');
-    iniciarApp();
-}
-
-function volverAlLobby() {
-    document.getElementById('lobby-selector').classList.remove('oculto');
-    document.getElementById('app-content').classList.add('oculto');
-    baseDeDatosHoy = []; 
+    // Si llegamos acá, significa que todas las keys fallaron o están agotadas
+    return null; 
 }
 
 // ==========================================
-// MOTOR APIS (Carga Inicial)
+// CARGA INICIAL DE PARTIDOS
 // ==========================================
-async function fetchAPIPrincipal() {
-    try {
-        const targetUrl = encodeURIComponent(`https://api.football-data.org/v4/matches`);
-        const url = `https://corsproxy.io/?${targetUrl}`;
-        const res = await fetch(url, { headers: { 'X-Auth-Token': API_KEY_PRINCIPAL } });
-        if (!res.ok) return [];
-        const data = await res.json();
-        return data.matches || [];
-    } catch (e) { return []; }
-}
+async function fetchPartidos() {
+    const zona = Intl.DateTimeFormat().resolvedOptions().timeZone; 
+    const fecha = new Date();
+    const hoy = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`;
+    const url = `https://v3.football.api-sports.io/fixtures?date=${hoy}&timezone=${zona}`;
+    
+    const data = await fetchConRotacion(url);
+    if (!data || !data.response) return [];
+    
+    return data.response.map(p => {
+        let estado = 'SCHEDULED';
+        const estadosLive = ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'SUSP', 'INT', 'LIVE'];
+        const estadosTerm = ['FT', 'AET', 'PEN', 'AWD', 'WO'];
 
-async function fetchAPISecundaria() {
-    try {
-        const zona = Intl.DateTimeFormat().resolvedOptions().timeZone; 
-        const fecha = new Date();
-        const hoy = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`;
-        const url = `https://v3.football.api-sports.io/fixtures?date=${hoy}&timezone=${zona}`;
-        const res = await fetch(url, { headers: { 'x-apisports-key': API_KEY_SECUNDARIA } });
-        if (!res.ok) return [];
-        const data = await res.json();
-        
-        return (data.response || []).map(p => {
-            let estado = 'SCHEDULED';
-            const estadosLive = ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'SUSP', 'INT', 'LIVE'];
-            const estadosTerm = ['FT', 'AET', 'PEN', 'AWD', 'WO'];
+        if (estadosLive.includes(p.fixture.status.short)) estado = 'IN_PLAY';
+        else if (estadosTerm.includes(p.fixture.status.short)) estado = 'FINISHED';
 
-            if (estadosLive.includes(p.fixture.status.short)) estado = 'IN_PLAY';
-            else if (estadosTerm.includes(p.fixture.status.short)) estado = 'FINISHED';
-
-            return {
-                id: p.fixture.id, utcDate: p.fixture.date, status: estado,
-                competition: { id: p.league.id + 10000, name: p.league.name, emblem: p.league.logo }, 
-                homeTeam: { id: p.teams.home.id + 10000, name: p.teams.home.name, shortName: p.teams.home.name, crest: p.teams.home.logo },
-                awayTeam: { id: p.teams.away.id + 10000, name: p.teams.away.name, shortName: p.teams.away.name, crest: p.teams.away.logo },
-                score: { fullTime: { home: p.goals.home, away: p.goals.away } }
-            };
-        });
-    } catch (e) { return []; }
+        return {
+            id: p.fixture.id, utcDate: p.fixture.date, status: estado,
+            competition: { id: p.league.id, name: p.league.name, emblem: p.league.logo }, 
+            homeTeam: { id: p.teams.home.id, name: p.teams.home.name, shortName: p.teams.home.name, crest: p.teams.home.logo },
+            awayTeam: { id: p.teams.away.id, name: p.teams.away.name, shortName: p.teams.away.name, crest: p.teams.away.logo },
+            score: { fullTime: { home: p.goals.home, away: p.goals.away } }
+        };
+    });
 }
 
 async function iniciarApp() {
     const contenedor = document.getElementById('contenedor-partidos');
     contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px;">⏳ Conectando servidores y procesando datos...</p>`;
     
-    const [d1, d2] = await Promise.all([ fetchAPIPrincipal(), fetchAPISecundaria() ]);
-    baseDeDatosHoy = [...d1, ...d2];
+    const todosLosPartidos = await fetchPartidos();
+    
+    // Aplicamos el colador de ligas top
+    baseDeDatosHoy = todosLosPartidos.filter(p => LIGAS_TOP.includes(p.competition.id));
 
     baseDeDatosHoy.forEach(p => { scoresAnteriores[p.id] = { h: p.score?.fullTime?.home || 0, a: p.score?.fullTime?.away || 0 }; });
 
@@ -112,18 +132,16 @@ async function iniciarApp() {
         cargarBuscadorLigas(baseDeDatosHoy);
         aplicarFiltrosMaster();
     } else {
-        contenedor.innerHTML = `<div style="padding:20px; border:1px solid var(--alerta); margin:20px;"><p style="color:var(--alerta)">⚠️ Sin Datos. Límite de API alcanzado o error de red.</p></div>`;
+        contenedor.innerHTML = `<div style="padding:20px; border:1px solid var(--alerta); margin:20px;"><p style="color:var(--alerta)">⚠️ Hoy no hay partidos programados de las Ligas Top seleccionadas.</p></div>`;
     }
 }
 
 // ==========================================
-// CACHÉ INTELIGENTE (Tablas y Predicciones)
+// CACHÉ INTELIGENTE Y TABLAS
 // ==========================================
 async function cargarTablaConCache(idPartido) {
     const p = baseDeDatosHoy.find(item => item.id === idPartido); if (!p) return;
-    const esApi2 = p.competition.id >= 10000;
-    const idLigaReal = esApi2 ? p.competition.id - 10000 : p.competition.id;
-    const cacheKey = `gp_tabla_cache_${idLigaReal}`;
+    const cacheKey = `gp_tabla_cache_${p.competition.id}`;
     const dataCache = JSON.parse(localStorage.getItem(cacheKey));
     const ahora = Date.now();
     
@@ -134,20 +152,16 @@ async function cargarTablaConCache(idPartido) {
 
     try {
         let datosTabla = [];
-        if (esApi2) {
-            const res = await fetch(`https://v3.football.api-sports.io/standings?league=${idLigaReal}&season=${new Date().getFullYear()}`, { headers: { 'x-apisports-key': API_KEY_SECUNDARIA } });
-            const data = await res.json();
-            if (data.response && data.response.length > 0) datosTabla = data.response[0].league.standings[0].map(t => ({ pos: t.rank, equipo: t.team.name, pts: t.points, pj: t.all.played }));
-        } else {
-            const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://api.football-data.org/v4/competitions/${idLigaReal}/standings`)}`, { headers: { 'X-Auth-Token': API_KEY_PRINCIPAL } });
-            const data = await res.json();
-            if (data.standings && data.standings.length > 0) datosTabla = data.standings[0].table.map(t => ({ pos: t.position, equipo: t.team.shortName || t.team.name, pts: t.points, pj: t.playedGames }));
+        const data = await fetchConRotacion(`https://v3.football.api-sports.io/standings?league=${p.competition.id}&season=${new Date().getFullYear()}`);
+        
+        if (data && data.response && data.response.length > 0) {
+            datosTabla = data.response[0].league.standings[0].map(t => ({ pos: t.rank, equipo: t.team.name, pts: t.points, pj: t.all.played }));
         }
 
         if (datosTabla.length > 0) {
             localStorage.setItem(cacheKey, JSON.stringify({ timestamp: ahora, datos: datosTabla }));
             renderizarTablaHTML(datosTabla);
-        } else { cont.innerHTML = '<p style="color:var(--texto-gris)">Torneo sin tabla.</p>'; }
+        } else { cont.innerHTML = '<p style="color:var(--texto-gris)">Torneo sin tabla disponible en la API.</p>'; }
     } catch (e) { cont.innerHTML = '<p style="color:var(--alerta)">Error al cargar posiciones.</p>'; }
 }
 
@@ -167,31 +181,26 @@ async function obtenerDatosReales(idFixture) {
     if (cacheData) { return JSON.parse(cacheData); }
 
     const urlPredicciones = `https://v3.football.api-sports.io/predictions?fixture=${idFixture}`;
-    try {
-        const res = await fetch(urlPredicciones, { headers: { 'x-apisports-key': API_KEY_SECUNDARIA } });
-        const data = await res.json();
+    const data = await fetchConRotacion(urlPredicciones);
         
-        if (data.response && data.response.length > 0) {
-            const analisis = data.response[0];
-            const resultado = {
-                exito: true,
-                local: analisis.predictions.percent.home,
-                empate: analisis.predictions.percent.draw,
-                visita: analisis.predictions.percent.away,
-                consejo: analisis.predictions.advice
-            };
-            localStorage.setItem(cacheKey, JSON.stringify(resultado));
-            return resultado;
-        } else {
-            return { exito: false };
-        }
-    } catch (e) {
+    if (data && data.response && data.response.length > 0) {
+        const analisis = data.response[0];
+        const resultado = {
+            exito: true,
+            local: analisis.predictions.percent.home,
+            empate: analisis.predictions.percent.draw,
+            visita: analisis.predictions.percent.away,
+            consejo: analisis.predictions.advice
+        };
+        localStorage.setItem(cacheKey, JSON.stringify(resultado));
+        return resultado;
+    } else {
         return { exito: false };
     }
 }
 
 // ==========================================
-// ESTIMACIÓN BASE (Reservada para Fallback y Combinadas)
+// ESTIMACIÓN BASE (Para Fallback y Combinadas)
 // ==========================================
 function analizarMercadosPartido(p) {
     const loc = p.homeTeam.shortName || p.homeTeam.name;
@@ -257,7 +266,6 @@ function aplicarFiltrosMaster(idsGoles = []) {
     renderizarPartidos(filtrados, idsGoles);
 }
 
-// Renderización rápida con semáforos de divulgación progresiva (ahorra peticiones API)
 function renderizarPartidos(partidos, idsGoles = []) {
     const cont = document.getElementById('contenedor-partidos'); cont.innerHTML = '';
     if (partidos.length === 0) { cont.innerHTML = `<p style="padding:20px;">No hay eventos para mostrar.</p>`; return; }
@@ -296,8 +304,17 @@ function renderizarPartidos(partidos, idsGoles = []) {
 }
 
 // ==========================================
-// VISTA DETALLE ASÍNCRONA (Con Datos Reales)
+// VISTA DETALLE Y LOBBY
 // ==========================================
+function irADeporte(deporte) {
+    if (deporte !== 'futbol') { alert("¡Integración en proceso!"); return; }
+    document.getElementById('lobby-selector').classList.add('oculto');
+    document.getElementById('app-content').classList.remove('oculto');
+    iniciarApp();
+}
+
+function volverAlLobby() { document.getElementById('lobby-selector').classList.remove('oculto'); document.getElementById('app-content').classList.add('oculto'); baseDeDatosHoy = []; }
+
 async function abrirDetalle(id) {
     const p = baseDeDatosHoy.find(item => item.id === id); if (!p) return;
     
@@ -351,7 +368,7 @@ function cerrarDetalle() { document.getElementById('vista-detalle').classList.ad
 function abrirTab(evt, nom) { document.querySelectorAll('.tab-content, .tab-btn').forEach(el => el.classList.remove('activo')); document.getElementById(nom).classList.add('activo'); evt.currentTarget.classList.add('activo'); }
 
 // ==========================================
-// COMBINADAS Y PICKS LOCALES
+// COMBINADAS Y PICKS
 // ==========================================
 function generarCombinadaDelDia() {
     let t = []; baseDeDatosHoy.forEach(p => { analizarMercadosPartido(p).forEach(m => t.push({ p: p, m: m })); });
@@ -405,7 +422,9 @@ function cargarBuscadorLigas(pts) { let dl = document.getElementById('lista-liga
 async function forzarActualizacionLive() {
     const btn = document.getElementById('btn-refresh'); btn.innerText = "⏳"; btn.disabled = true;
     try {
-        const [d1, d2] = await Promise.all([ fetchAPIPrincipal(), fetchAPISecundaria() ]); baseDeDatosHoy = [...d1, ...d2];
+        const actualizados = await fetchPartidos(); 
+        baseDeDatosHoy = actualizados.filter(p => LIGAS_TOP.includes(p.competition.id));
+        
         let goles = []; let hubo = false;
         baseDeDatosHoy.forEach(p => {
             let nH = p.score?.fullTime?.home || 0; let nA = p.score?.fullTime?.away || 0;
