@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GreenPicks Pro</title>
+    <title>GreenPicks Pro - Diagnóstico</title>
     <style>
         :root {
             --bg-principal: #0b0f19;
@@ -69,6 +69,9 @@
 
         @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
 
+        /* Alertas de error de servidor */
+        .banner-error-api { background: rgba(231, 76, 60, 0.15); border: 1px solid var(--alerta); color: #ff7675; padding: 15px; border-radius: 10px; margin-bottom: 15px; font-size: 0.9rem; line-height: 1.4; text-align: center;}
+
         .cabecera-detalle-grid { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; background: var(--tarjeta-bg); padding: 20px 10px; border-radius: 14px; border: 1px solid var(--tarjeta-borde); }
         .barra-container { margin-bottom: 15px; }
         .barra-container span { display: block; font-size: 0.85rem; margin-bottom: 5px; color: var(--texto-blanco); }
@@ -78,9 +81,6 @@
 
         .tarjeta-combinada { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); border-radius: 12px; padding: 15px; margin-bottom: 15px; border-top: 4px solid var(--verde-principal); }
         .ticket-seguro { border-top-color: var(--verde-principal); }
-        .ticket-medio { border-top-color: var(--oro); }
-        .ticket-arriesgado { border-top-color: var(--alerta); }
-        .tarjeta-combinada h4 { margin-bottom: 12px; font-size: 1rem; }
         .ticket-item { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 0.85rem; line-height: 1.4; }
 
         .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 500px; background: #0e1726; border-top: 1px solid var(--tarjeta-borde); display: flex; height: 55px; z-index: 999; }
@@ -93,12 +93,6 @@
         .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--tarjeta-borde); padding-bottom: 10px; }
         .contenedor-lista-picks { height: calc(100% - 60px); overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         .item-pick-guardado { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); border-radius: 8px; padding: 12px; font-size: 0.85rem; position: relative; }
-        
-        .tab-detalle-btn { flex: 1; padding: 10px 5px; background: transparent; color: var(--texto-gris); border: none; border-bottom: 2px solid transparent; cursor: pointer; font-size: 0.85rem; font-weight: bold; transition: all 0.3s; }
-        .tab-detalle-btn.activo { color: var(--verde-principal); border-bottom: 2px solid var(--verde-principal); }
-        .tab-detalle-content { display: none; padding-top: 15px; }
-        .tab-detalle-content.activo { display: block; animation: fadeIn 0.3s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -122,6 +116,9 @@
                 <button class="btn-volver-lobby" onclick="volverAlLobby()">⬅️ Volver</button>
                 <h2 id="titulo-deporte-activo" style="font-size: 1.1rem; font-weight: 800; color: var(--verde-principal);">FÚTBOL</h2>
             </div>
+            
+            <div id="logs-servidor-error" class="oculto"></div>
+
             <div id="herramientas-top" class="herramientas-grid">
                 <input type="text" id="filtro-ligas-input" oninput="aplicarFiltrosMaster()" placeholder="Buscar liga, equipo..." class="buscador-input">
                 <button id="btn-refresh" class="btn-refresh-live" onclick="forzarActualizacionLive()">🔄</button>
@@ -161,20 +158,40 @@
     </div>
 
     <script>
-        const API_KEYS = ["0464d33c8013d01fb7387b5148f18a9a", "31dc5f2762254847a825e1025257a759"];
+        // ==========================================
+        // CONFIGURACIÓN DE CENTRAL DE LLAVES API
+        // Si tenés tu propia Key gratuita, pegala adentro de las comillas de MI_API_KEY
+        // ==========================================
+        const MI_API_KEY = ""; 
+        
+        const LLAVES_RESPALDO = ["0464d33c8013d01fb7387b5148f18a9a", "31dc5f2762254847a825e1025257a759"];
+        let apiKeysPool = MI_API_KEY ? [MI_API_KEY, ...LLAVES_RESPALDO] : LLAVES_RESPALDO;
+
         let baseDeDatosHoy = [];
         let estadoFiltroActual = 'proximos';
         let ticketsMultiplesGenerados = {}; 
         let deporteActivo = 'futbol'; 
+        let errorDeAutenticacionDetectado = false;
         const ESCUDO_RESPALDO = "https://cdn-icons-png.flaticon.com/512/53/53283.png";
 
         async function fetchConRotacion(url) {
-            for (let i = 0; i < API_KEYS.length; i++) {
+            for (let i = 0; i < apiKeysPool.length; i++) {
                 try {
-                    const res = await fetch(url, { headers: { 'x-apisports-key': API_KEYS[i] } });
+                    const res = await fetch(url, { headers: { 'x-apisports-key': apiKeysPool[i] } });
                     const data = await res.json();
-                    if (!data.errors || data.errors.length === 0 || !data.errors.rateLimit) return data;
-                } catch (e) {}
+                    
+                    // Validar si la API devolvió errores estructurales (Token inválido o Suspendido)
+                    if (data && data.errors && Object.keys(data.errors).length > 0) {
+                        console.warn("Problema con Key índice " + i + ":", data.errors);
+                        errorDeAutenticacionDetectado = true;
+                        continue; 
+                    }
+                    
+                    if (data && data.response) {
+                        errorDeAutenticacionDetectado = false; // Al menos una respondió limpio
+                        return data;
+                    }
+                } catch (e) { console.error("Fallo de red en fetch de API"); }
             }
             return null; 
         }
@@ -195,7 +212,6 @@
             } else {
                 urls.push(`https://v1.basketball.api-sports.io/games?date=${formatoDia(ahora)}&timezone=${zona}`);
                 urls.push(`https://v1.basketball.api-sports.io/games?date=${formatoDia(manana)}&timezone=${zona}`);
-                // SOLUCIÓN 3: Forzar carga exclusiva de la NBA (League 12) para evitar que la API la oculte
                 urls.push(`https://v1.basketball.api-sports.io/games?date=${formatoDia(ahora)}&league=12&timezone=${zona}`);
                 urls.push(`https://v1.basketball.api-sports.io/games?date=${formatoDia(manana)}&league=12&timezone=${zona}`);
             }
@@ -204,15 +220,12 @@
             let todosLosEventos = [];
             respuestas.forEach(r => { if(r && r.response) todosLosEventos = todosLosEventos.concat(r.response); });
             
-            // Eliminar duplicados (útil porque llamamos a la NBA por separado)
             const mapaUnicos = new Map();
-
             todosLosEventos.forEach(p => {
                 const idUnico = deporteActivo === 'futbol' ? p.fixture.id : p.id;
                 if(!mapaUnicos.has(idUnico)) {
                     const tiempoPartido = new Date(deporteActivo === 'futbol' ? p.fixture.date : p.date).getTime();
                     if(tiempoPartido >= (timestampAhora - 6*60*60*1000) && tiempoPartido <= timestampLimite) {
-                        
                         if (deporteActivo === 'futbol') {
                             mapaUnicos.set(idUnico, {
                                 id: p.fixture.id, utcDate: p.fixture.date, status: ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'LIVE'].includes(p.fixture.status.short) ? 'IN_PLAY' : (['FT', 'AET', 'PEN'].includes(p.fixture.status.short) ? 'FINISHED' : 'SCHEDULED'), tipo: 'futbol',
@@ -238,22 +251,43 @@
 
         async function iniciarApp() {
             const contenedor = document.getElementById('contenedor-partidos');
-            contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px; text-align:center;">⏳ Sincronizando eventos y cuotas...</p>`;
+            const logBox = document.getElementById('logs-servidor-error');
+            
+            contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px; text-align:center;">⏳ Conectando con los servidores de API-Sports...</p>`;
+            logBox.classList.add('oculto');
+            logBox.innerHTML = "";
+
             try {
                 const todosLosPartidos = await fetchPartidos();
-                if (deporteActivo === 'futbol') baseDeDatosHoy = todosLosPartidos.filter(p => [1,2,3,4,9,13,11,12,39,140,135,78,61,128,130,129,131,71,73].includes(p.competition.id));
-                else baseDeDatosHoy = todosLosPartidos;
+                
+                if (deporteActivo === 'futbol') {
+                    baseDeDatosHoy = todosLosPartidos.filter(p => [1,2,3,4,9,13,11,12,39,140,135,78,61,128,130,129,131,71,73].includes(p.competition.id));
+                } else {
+                    baseDeDatosHoy = todosLosPartidos;
+                }
 
                 if (baseDeDatosHoy.length > 0) {
                     generarCombinadaDelDia(); 
                     aplicarFiltrosMaster();
                 } else {
-                    contenedor.innerHTML = `<p style="padding:20px; text-align:center; color:var(--texto-gris)">⚠️ No hay eventos programados para hoy.</p>`;
+                    // DETECCIÓN INTELIGENTE: Si no hay partidos y saltó la flag de auth error, avisamos qué pasa
+                    if (errorDeAutenticacionDetectado) {
+                        logBox.innerHTML = `
+                            <div class="banner-error-api">
+                                <b>⚠️ Servidor Bloqueado o Sin Cuota</b><br>
+                                Las API Keys cargadas por defecto llegaron al límite diario o fueron suspendidas por exceso de uso público. Para solucionarlo, poné una clave gratuita propia en la variable <code>MI_API_KEY</code> al principio del código.
+                            </div>`;
+                        logBox.classList.remove('oculto');
+                        contenedor.innerHTML = `<p style="padding:20px; text-align:center; color:var(--alerta)">No se pudieron cargar datos por restricción de servidor.</p>`;
+                    } else {
+                        contenedor.innerHTML = `<p style="padding:20px; text-align:center; color:var(--texto-gris)">⚠️ No hay eventos deportivos registrados en este momento para las próximas horas.</p>`;
+                    }
                 }
-            } catch(e) { contenedor.innerHTML = `<p style="color:var(--alerta)">❌ Error crítico al inicializar.</p>`; }
+            } catch(e) { 
+                contenedor.innerHTML = `<p style="color:var(--alerta); text-align:center; padding:20px;">❌ Error de ejecución en la sincronización.</p>`; 
+            }
         }
 
-        // SOLUCIÓN 1: Extraer cuotas 1X2 reales de la API para mostrar en el detalle
         async function obtenerCuotasReales(idFixture, tipo) {
             try {
                 let url = tipo === 'futbol' ? `https://v3.football.api-sports.io/odds?fixture=${idFixture}` : `https://v1.basketball.api-sports.io/odds?game=${idFixture}`;
@@ -315,7 +349,6 @@
 
             document.getElementById('detalle-barras').innerHTML = `<p style='color: var(--verde-principal); text-align:center; margin-top:20px;'>⏳ Cargando analíticas y cuotas reales...</p>`;
 
-            // Buscar predicción + Cuota Real
             let [d, cuotasAPI] = await Promise.all([
                 p.tipo === 'futbol' ? obtenerDatosReales(p.id) : Promise.resolve({ exito: false }),
                 obtenerCuotasReales(p.id, p.tipo)
@@ -335,7 +368,6 @@
                     </div>`;
             }
 
-            // Renderizar barras usando los porcentajes (o fakes si es basquet) y sumarle el Badge de la Cuota Real
             let probL = d.exito ? d.local : "50%";
             let probE = d.exito ? d.empate : (p.tipo==='futbol'?"25%":"0%");
             let probV = d.exito ? d.visita : "50%";
@@ -392,7 +424,7 @@
             
             const cont = document.getElementById('contenedor-partidos'); 
             cont.innerHTML = '';
-            if (filtrados.length === 0) { cont.innerHTML = `<p style="padding:30px; text-align:center; color:var(--texto-gris);">No hay eventos.</p>`; return; }
+            if (filtrados.length === 0) { cont.innerHTML = `<p style="padding:30px; text-align:center; color:var(--texto-gris);">No hay eventos disponibles en esta solapa.</p>`; return; }
 
             filtrados.forEach(p => {
                 const isLive = p.status === 'IN_PLAY';
@@ -413,7 +445,6 @@
             });
         }
 
-        // SOLUCIÓN 2: Restricción matemática de la Cuota Combinada Segura (Max 1.35)
         function generarCombinadaDelDia() {
             let pool = []; 
             baseDeDatosHoy.forEach(p => { 
@@ -422,7 +453,6 @@
                 pool.push({ p: p, mercado: `Gana ${loc}`, prob: pLoc, cuota: (100 / pLoc).toFixed(2) }); 
             });
             
-            // Armado Ticket Seguro <= 1.35
             let seguro = [];
             let acumuladorSeguro = 1.0;
             let candidatosSeguros = pool.filter(c => c.prob >= 75).sort((a,b) => b.prob - a.prob);
@@ -482,6 +512,7 @@
         }
 
         function togglePanelPicks() { document.getElementById('panel-picks').classList.toggle('oculto-panel'); }
+        
         function irADeporte(deporte) {
             deporteActivo = deporte;
             document.getElementById('titulo-deporte-activo').innerText = deporte.toUpperCase();
@@ -490,11 +521,14 @@
             setFiltroEstado('proximos');
             iniciarApp();
         }
+        
         function volverAlLobby() { 
             document.getElementById('lobby-selector').classList.remove('oculto'); 
             document.getElementById('app-content').classList.add('oculto'); 
             document.getElementById('vista-detalle').classList.add('oculto');
+            document.getElementById('logs-servidor-error').classList.add('oculto');
         }
+        
         function forzarActualizacionLive() { iniciarApp(); }
         window.onload = () => { actualizarEstructuraPicksLocales(); };
     </script>
