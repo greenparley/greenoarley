@@ -11,17 +11,18 @@ let estadoFiltroActual = 'proximos';
 let partidoSeleccionadoId = null;
 let ticketsMultiplesGenerados = {}; 
 let scoresAnteriores = {}; 
+let deporteActivo = 'futbol'; // NUEVO: Controla si estamos en fútbol o básquet
 
-const estadosEnVivo = ['IN_PLAY', 'PAUSED', 'LIVE'];
-const estadosProximos = ['TIMED', 'SCHEDULED', 'LIVE'];
+const estadosEnVivoFutbol = ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'SUSP', 'INT', 'LIVE'];
+const estadosEnVivoBasket = ['Q1', 'Q2', 'Q3', 'Q4', 'OT', 'BT', 'HT', 'LIVE', 'IN_PLAY'];
+const estadosProximos = ['TIMED', 'SCHEDULED', 'LIVE', 'IN_PLAY'];
 const ESCUDO_RESPALDO = "https://cdn-icons-png.flaticon.com/512/53/53283.png";
 
 // ==========================================
-// FILTRO DE LIGAS (Solo Ligas Top, Arg y Bra)
+// FILTRO DE LIGAS
 // ==========================================
-const LIGAS_TOP = [
-    1, 2, 3, 4, 9, 13, 11, 12, 39, 140, 135, 78, 61, 128, 130, 129, 131, 71, 73
-];
+const LIGAS_TOP_FUTBOL = [1, 2, 3, 4, 9, 13, 11, 12, 39, 140, 135, 78, 61, 128, 130, 129, 131, 71, 73];
+const LIGAS_TOP_BASKET = [12, 116, 117, 120, 134]; // NBA, Euroliga, etc.
 
 // ==========================================
 // ESTILOS DINÁMICOS Y AUDIOS
@@ -54,7 +55,7 @@ function reproducirBeep() {
 function traducirConsejo(texto) {
     if (!texto) return 'No disponible';
     let t = texto.toLowerCase();
-    const dicc = { "winner": "Ganador", "home": "Local", "away": "Visitante", "draw": "Empate", "combo": "Combinada", "double chance": "Doble Oportunidad", "and": "y", "or": "o", "over": "Más de", "under": "Menos de", "goals": "goles", "yes": "Sí", "no": "No", "to score": "anota", "both teams": "Ambos equipos" };
+    const dicc = { "winner": "Ganador", "home": "Local", "away": "Visitante", "draw": "Empate", "combo": "Combinada", "double chance": "Doble Oportunidad", "and": "y", "or": "o", "over": "Más de", "under": "Menos de", "goals": "goles", "points": "puntos", "yes": "Sí", "no": "No", "to score": "anota", "both teams": "Ambos equipos" };
     for (let eng in dicc) { let re = new RegExp("\\b" + eng + "\\b", "gi"); t = t.replace(re, dicc[eng]); }
     return t.charAt(0).toUpperCase() + t.slice(1);
 }
@@ -72,7 +73,7 @@ async function fetchConRotacion(url) {
 }
 
 // ==========================================
-// CARGA INICIAL
+// CARGA INICIAL (AHORA SOPORTA AMBOS DEPORTES)
 // ==========================================
 async function fetchPartidos() {
     const zona = Intl.DateTimeFormat().resolvedOptions().timeZone; 
@@ -80,8 +81,17 @@ async function fetchPartidos() {
     const manana = new Date(ahora.getTime() + 24 * 60 * 60 * 1000);
     const formatoDia = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     
-    const dataHoy = await fetchConRotacion(`https://v3.football.api-sports.io/fixtures?date=${formatoDia(ahora)}&timezone=${zona}`);
-    const dataManana = await fetchConRotacion(`https://v3.football.api-sports.io/fixtures?date=${formatoDia(manana)}&timezone=${zona}`);
+    let urlHoy, urlManana;
+    if (deporteActivo === 'futbol') {
+        urlHoy = `https://v3.football.api-sports.io/fixtures?date=${formatoDia(ahora)}&timezone=${zona}`;
+        urlManana = `https://v3.football.api-sports.io/fixtures?date=${formatoDia(manana)}&timezone=${zona}`;
+    } else {
+        urlHoy = `https://v1.basketball.api-sports.io/games?date=${formatoDia(ahora)}&timezone=${zona}`;
+        urlManana = `https://v1.basketball.api-sports.io/games?date=${formatoDia(manana)}&timezone=${zona}`;
+    }
+
+    const dataHoy = await fetchConRotacion(urlHoy);
+    const dataManana = await fetchConRotacion(urlManana);
     
     let todosLosEventos = [];
     if (dataHoy && dataHoy.response) todosLosEventos = todosLosEventos.concat(dataHoy.response);
@@ -90,34 +100,46 @@ async function fetchPartidos() {
     const limiteInferior = ahora.getTime() - (4 * 60 * 60 * 1000);
     const limiteSuperior = ahora.getTime() + (24 * 60 * 60 * 1000);
 
-    const eventos24h = todosLosEventos.filter(p => {
-        const tiempoPartido = new Date(p.fixture.date).getTime();
+    return todosLosEventos.filter(p => {
+        const tiempoPartido = new Date(deporteActivo === 'futbol' ? p.fixture.date : p.date).getTime();
         return tiempoPartido >= limiteInferior && tiempoPartido <= limiteSuperior;
-    });
-
-    return eventos24h.map(p => {
+    }).map(p => {
         let estado = 'SCHEDULED';
-        const estadosLive = ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'SUSP', 'INT', 'LIVE'];
-        const estadosTerm = ['FT', 'AET', 'PEN', 'AWD', 'WO'];
-        if (estadosLive.includes(p.fixture.status.short)) estado = 'IN_PLAY';
-        else if (estadosTerm.includes(p.fixture.status.short)) estado = 'FINISHED';
-
-        return {
-            id: p.fixture.id, utcDate: p.fixture.date, status: estado,
-            competition: { id: p.league.id, name: p.league.name, emblem: p.league.logo, season: p.league.season }, 
-            homeTeam: { id: p.teams.home.id, name: p.teams.home.name, shortName: p.teams.home.name, crest: p.teams.home.logo },
-            awayTeam: { id: p.teams.away.id, name: p.teams.away.name, shortName: p.teams.away.name, crest: p.teams.away.logo },
-            score: { fullTime: { home: p.goals.home, away: p.goals.away } }
-        };
+        
+        if (deporteActivo === 'futbol') {
+            if (estadosEnVivoFutbol.includes(p.fixture.status.short)) estado = 'IN_PLAY';
+            else if (['FT', 'AET', 'PEN', 'AWD', 'WO'].includes(p.fixture.status.short)) estado = 'FINISHED';
+            
+            return {
+                id: p.fixture.id, utcDate: p.fixture.date, status: estado,
+                competition: { id: p.league.id, name: p.league.name, emblem: p.league.logo, season: p.league.season }, 
+                homeTeam: { id: p.teams.home.id, name: p.teams.home.name, shortName: p.teams.home.name, crest: p.teams.home.logo },
+                awayTeam: { id: p.teams.away.id, name: p.teams.away.name, shortName: p.teams.away.name, crest: p.teams.away.logo },
+                score: { fullTime: { home: p.goals.home, away: p.goals.away } }
+            };
+        } else {
+            if (estadosEnVivoBasket.includes(p.status.short)) estado = 'IN_PLAY';
+            else if (['FT', 'AOT'].includes(p.status.short)) estado = 'FINISHED';
+            
+            return {
+                id: p.id, utcDate: p.date, status: estado,
+                competition: { id: p.league.id, name: p.league.name, emblem: p.league.logo, season: p.league.season }, 
+                homeTeam: { id: p.teams.home.id, name: p.teams.home.name, shortName: p.teams.home.name, crest: p.teams.home.logo },
+                awayTeam: { id: p.teams.away.id, name: p.teams.away.name, shortName: p.teams.away.name, crest: p.teams.away.logo },
+                score: { fullTime: { home: p.scores.home.total, away: p.scores.away.total } }
+            };
+        }
     });
 }
 
 async function iniciarApp() {
     const contenedor = document.getElementById('contenedor-partidos');
-    contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px;">⏳ Conectando servidores y procesando datos...</p>`;
+    contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px;">⏳ Conectando servidores de ${deporteActivo.toUpperCase()} y procesando datos...</p>`;
     
     const todosLosPartidos = await fetchPartidos();
-    baseDeDatosHoy = todosLosPartidos.filter(p => LIGAS_TOP.includes(p.competition.id));
+    const ligasTop = deporteActivo === 'futbol' ? LIGAS_TOP_FUTBOL : LIGAS_TOP_BASKET;
+    
+    baseDeDatosHoy = todosLosPartidos.filter(p => ligasTop.includes(p.competition.id));
     baseDeDatosHoy.forEach(p => { scoresAnteriores[p.id] = { h: p.score?.fullTime?.home || 0, a: p.score?.fullTime?.away || 0 }; });
 
     if (baseDeDatosHoy.length > 0) {
@@ -133,11 +155,14 @@ async function iniciarApp() {
 // PREVISIÓN Y ALGORITMOS DE APUESTAS
 // ==========================================
 async function obtenerDatosReales(idFixture) {
-    const cacheKey = `gp_prediccion_v4_${idFixture}`; 
+    const cacheKey = `gp_prediccion_${deporteActivo}_v4_${idFixture}`; 
     const cacheData = localStorage.getItem(cacheKey);
     if (cacheData) { return JSON.parse(cacheData); }
 
-    const urlPredicciones = `https://v3.football.api-sports.io/predictions?fixture=${idFixture}`;
+    const urlPredicciones = deporteActivo === 'futbol' 
+        ? `https://v3.football.api-sports.io/predictions?fixture=${idFixture}`
+        : `https://v1.basketball.api-sports.io/predictions?game=${idFixture}`;
+
     const data = await fetchConRotacion(urlPredicciones);
         
     if (data && data.response && data.response.length > 0) {
@@ -145,7 +170,7 @@ async function obtenerDatosReales(idFixture) {
         const resultado = {
             exito: true,
             local: analisis.predictions.percent.home,
-            empate: analisis.predictions.percent.draw,
+            empate: deporteActivo === 'futbol' ? analisis.predictions.percent.draw : "0%",
             visita: analisis.predictions.percent.away,
             consejo: traducirConsejo(analisis.predictions.advice),
             formaLocal: analisis.teams?.home?.league?.form || analisis.teams?.home?.last_5?.form || "?????",
@@ -172,16 +197,17 @@ function renderFormaHTML(formaStr) {
     return html + '</div>';
 }
 
-// Algoritmo: Calcula resultados exactos probables
 function predecirMarcadoresExactos(pL, pE, pV) {
-    let l = parseInt(pL) || 33; let e = parseInt(pE) || 33; let v = parseInt(pV) || 33;
-    let marcadores = [];
-    
-    if (l >= v && l >= e) { marcadores = [{m:"1-0", p:l*0.4}, {m:"2-0", p:l*0.3}, {m:"2-1", p:l*0.2}]; }
-    else if (v >= l && v >= e) { marcadores = [{m:"0-1", p:v*0.4}, {m:"0-2", p:v*0.3}, {m:"1-2", p:v*0.2}]; }
-    else { marcadores = [{m:"1-1", p:e*0.5}, {m:"0-0", p:e*0.3}, {m:"2-2", p:e*0.15}]; }
-    
-    return marcadores;
+    if (deporteActivo === 'futbol') {
+        let l = parseInt(pL) || 33; let e = parseInt(pE) || 33; let v = parseInt(pV) || 33;
+        if (l >= v && l >= e) return [{m:"1-0", p:l*0.4}, {m:"2-0", p:l*0.3}, {m:"2-1", p:l*0.2}];
+        else if (v >= l && v >= e) return [{m:"0-1", p:v*0.4}, {m:"0-2", p:v*0.3}, {m:"1-2", p:v*0.2}];
+        else return [{m:"1-1", p:e*0.5}, {m:"0-0", p:e*0.3}, {m:"2-2", p:e*0.15}];
+    } else {
+        let l = parseInt(pL) || 50; let v = parseInt(pV) || 50;
+        let overProb = 45 + (l > v ? (l - 50) / 2 : (v - 50) / 2);
+        return [{m: "Más de 218.5 Pts", p: overProb}, {m: "Menos de 218.5 Pts", p: 100 - overProb}];
+    }
 }
 
 // ==========================================
@@ -200,26 +226,26 @@ async function abrirDetalle(id) {
     document.getElementById('vista-principal').classList.add('oculto'); 
     document.getElementById('vista-detalle').classList.remove('oculto');
     
-    const isLive = estadosEnVivo.includes(p.status);
+    const estadosEV = deporteActivo === 'futbol' ? estadosEnVivoFutbol : estadosEnVivoBasket;
+    const isLive = estadosEV.includes(p.status) || p.status === 'IN_PLAY';
     const gL = p.score?.fullTime?.home ?? 0; const gV = p.score?.fullTime?.away ?? 0;
 
     document.getElementById('detalle-status').innerHTML = isLive ? `<div class="live-badge">EN CURSO</div>` : `<span>Pre-Partido</span>`;
     document.getElementById('detalle-cabecera').innerHTML = `<div style="text-align:center; width:40%;"><img src="${p.homeTeam.crest || ESCUDO_RESPALDO}" style="max-height:40px;"><p>${p.homeTeam.name}</p></div><h2 style="width:20%; text-align:center; color:var(--verde-principal);">${isLive ? gL + ' - ' + gV : 'VS'}</h2><div style="text-align:center; width:40%;"><img src="${p.awayTeam.crest || ESCUDO_RESPALDO}" style="max-height:40px;"><p>${p.awayTeam.name}</p></div>`;
 
-    document.getElementById('detalle-barras').innerHTML = "<p style='color: var(--verde-principal); text-align:center; margin-top:20px;'>⏳ Analizando algoritmos de apuestas...</p>";
+    document.getElementById('detalle-barras').innerHTML = `<p style='color: var(--verde-principal); text-align:center; margin-top:20px;'>⏳ Analizando algoritmos de apuestas (${deporteActivo.toUpperCase()})...</p>`;
 
     const d = await obtenerDatosReales(p.id);
 
     let htmlTabs = `
         <div style="display:flex; border-bottom:1px solid rgba(255,255,255,0.1); margin-top:15px; margin-bottom:15px;">
             <button class="tab-detalle-btn activo" onclick="cambiarTabDetalle('tab-pred', this)">🔮 Predicción</button>
-            <button class="tab-detalle-btn" onclick="cambiarTabDetalle('tab-scores', this)">🎯 Marcadores</button>
+            <button class="tab-detalle-btn" onclick="cambiarTabDetalle('tab-scores', this)">🎯 ${deporteActivo === 'futbol' ? 'Marcadores' : 'Totales'}</button>
         </div>
         
         <div id="tab-pred" class="tab-detalle-content activo">`;
 
     if (d.exito) {
-        // Pestaña 1: Predicción General
         htmlTabs += `
             <div style="background: rgba(46, 204, 113, 0.1); padding: 15px; border-left: 4px solid var(--verde-principal); margin-bottom: 15px;">
                 <strong>💡 Consejo Experto:</strong> ${d.consejo || 'No disponible'}
@@ -239,13 +265,16 @@ async function abrirDetalle(id) {
             </div>
 
             <h4 style="margin-bottom: 10px;">Probabilidades (H2H)</h4>
-            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local</span><span>${d.local}</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${d.local}"></div></div></div>
-            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Empate</span><span>${d.empate}</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${d.empate}"></div></div></div>
-            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visita</span><span>${d.visita}</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${d.visita}"></div></div></div>
+            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local</span><span>${d.local}</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${d.local}"></div></div></div>`;
+            
+        if(deporteActivo === 'futbol') {
+            htmlTabs += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Empate</span><span>${d.empate}</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${d.empate}"></div></div></div>`;
+        }
+
+        htmlTabs += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visita</span><span>${d.visita}</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${d.visita}"></div></div></div>
             <button onclick="guardarUnicoPickLocal(${p.id}, 'Predicción: ${d.consejo?.replace(/'/g,"\\'")}', 'N/A', 0, '${p.homeTeam.shortName || p.homeTeam.name}', '${p.awayTeam.shortName || p.awayTeam.name}')" style="margin-top:10px; width:100%; background:var(--tarjeta-borde); color:white; border:none; padding:10px; cursor:pointer; font-weight:bold;">Guardar Predicción</button>
         </div>`;
         
-        // Pestaña 2: Marcadores Exactos (Algoritmo)
         let scores = predecirMarcadoresExactos(d.local, d.empate, d.visita);
         htmlTabs += `<div id="tab-scores" class="tab-detalle-content">
             <p style="font-size:0.8rem; color:var(--texto-gris); margin-bottom:15px; text-align:center;">Simulación basada en algoritmos de probabilidad pura.</p>
@@ -260,7 +289,6 @@ async function abrirDetalle(id) {
         htmlTabs += `</div></div>`;
 
     } else {
-        // Fallback si no hay datos de predicción
         htmlTabs += "<p style='color: var(--oro); font-size: 0.85rem; text-align:center; margin-bottom:15px;'>⚠️ API limitada. Mostrando estimación base.</p>";
         analizarMercadosPartido(p).forEach((m, i) => {
             let col = i === 0 ? 'var(--verde-principal)' : (i === 1 ? 'var(--oro)' : 'var(--alerta)');
@@ -299,9 +327,10 @@ function setFiltroEstado(estado) {
 function aplicarFiltrosMaster(idsGoles = []) {
     if (estadoFiltroActual === 'combinada') return; 
     let filtrados = baseDeDatosHoy;
+    const estadosEV = deporteActivo === 'futbol' ? estadosEnVivoFutbol : estadosEnVivoBasket;
 
-    if (estadoFiltroActual === 'proximos') filtrados = filtrados.filter(p => estadosProximos.includes(p.status));
-    else if (estadoFiltroActual === 'envivo') filtrados = filtrados.filter(p => estadosEnVivo.includes(p.status));
+    if (estadoFiltroActual === 'proximos') filtrados = filtrados.filter(p => estadosProximos.includes(p.status) || estadosEV.includes(p.status));
+    else if (estadoFiltroActual === 'envivo') filtrados = filtrados.filter(p => estadosEV.includes(p.status) || p.status === 'IN_PLAY');
 
     const input = document.getElementById('filtro-ligas-input');
     if (input && input.value.trim() !== '') {
@@ -323,7 +352,8 @@ function renderizarPartidos(partidos, idsGoles = []) {
     if (partidos.length === 0) { cont.innerHTML = `<p style="padding:20px;">No hay eventos para mostrar.</p>`; return; }
 
     partidos.forEach(p => {
-        const isLive = estadosEnVivo.includes(p.status);
+        const estadosEV = deporteActivo === 'futbol' ? estadosEnVivoFutbol : estadosEnVivoBasket;
+        const isLive = estadosEV.includes(p.status) || p.status === 'IN_PLAY';
         const esFechaValida = p.utcDate && !isNaN(new Date(p.utcDate).getTime());
         let hora = esFechaValida ? new Date(p.utcDate).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) : "TBA";
         
@@ -351,13 +381,21 @@ function renderizarPartidos(partidos, idsGoles = []) {
 function analizarMercadosPartido(p) {
     const loc = p.homeTeam.shortName || p.homeTeam.name;
     let probGanaLocal = Math.min(Math.max(45 + (p.homeTeam.id % 15) - (p.awayTeam.id % 10), 12), 88);
-    let probMas2_5 = Math.min(Math.max(40 + ((p.competition.id % 4) * 8) + ((p.score?.fullTime?.home || 0) * 10), 15), 92);
+    
+    let probMas2_5 = deporteActivo === 'futbol' 
+        ? Math.min(Math.max(40 + ((p.competition.id % 4) * 8) + ((p.score?.fullTime?.home || 0) * 10), 15), 92)
+        : 50 + (p.homeTeam.id % 10);
+
     let probCorners = 52 + ((p.homeTeam.id + p.awayTeam.id) % 22);
     
-    let mercados = [
+    let mercados = deporteActivo === 'futbol' ? [
         { m: `🏆 Gana ${loc}`, pr: probGanaLocal },
         { m: "🔥 +2.5 Goles", pr: probMas2_5 },
         { m: "🚩 +8.5 Córners", pr: probCorners }
+    ] : [
+        { m: `🏆 Gana ${loc}`, pr: probGanaLocal },
+        { m: "🔥 +215.5 Puntos", pr: probMas2_5 },
+        { m: `🏀 Hándicap ${loc} -4.5`, pr: probCorners }
     ];
 
     return mercados.map(item => {
@@ -420,19 +458,26 @@ function togglePanelPicks() { document.getElementById('panel-picks').classList.t
 function cargarBuscadorLigas(pts) { let dl = document.getElementById('lista-ligas'); dl.innerHTML = ''; let lu = []; pts.forEach(p => { if (!lu.find(l => l.id === p.competition.id)) lu.push({ id: p.competition.id, name: p.competition.name }); }); lu.forEach(l => { dl.innerHTML += `<option value="${l.name}">`; }); }
 
 function irADeporte(deporte) {
-    if (deporte !== 'futbol') { alert("¡Integración en proceso!"); return; }
+    // LA SOLUCIÓN ESTÁ ACÁ: Respetamos tu HTML. Oculta el lobby y muestra la app.
+    if (deporte !== 'futbol' && deporte !== 'basquet') { alert("¡Integración en proceso!"); return; }
+    deporteActivo = deporte;
     document.getElementById('lobby-selector').classList.add('oculto');
     document.getElementById('app-content').classList.remove('oculto');
     iniciarApp();
 }
 
-function volverAlLobby() { document.getElementById('lobby-selector').classList.remove('oculto'); document.getElementById('app-content').classList.add('oculto'); baseDeDatosHoy = []; }
+function volverAlLobby() { 
+    document.getElementById('lobby-selector').classList.remove('oculto'); 
+    document.getElementById('app-content').classList.add('oculto'); 
+    baseDeDatosHoy = []; 
+}
 
 async function forzarActualizacionLive() {
     const btn = document.getElementById('btn-refresh'); btn.innerText = "⏳"; btn.disabled = true;
     try {
         const actualizados = await fetchPartidos(); 
-        baseDeDatosHoy = actualizados.filter(p => LIGAS_TOP.includes(p.competition.id));
+        const ligasTop = deporteActivo === 'futbol' ? LIGAS_TOP_FUTBOL : LIGAS_TOP_BASKET;
+        baseDeDatosHoy = actualizados.filter(p => ligasTop.includes(p.competition.id));
         
         let goles = []; let hubo = false;
         baseDeDatosHoy.forEach(p => {
