@@ -233,6 +233,7 @@
         const estadosEnVivoBasket = ['Q1', 'Q2', 'Q3', 'Q4', 'OT', 'BT', 'HT', 'LIVE', 'IN_PLAY'];
         const ESCUDO_RESPALDO = "https://cdn-icons-png.flaticon.com/512/53/53283.png";
 
+        // Mantenemos filtros de Ligas Top para visualización limpia
         const LIGAS_TOP_FUTBOL = [1, 2, 3, 4, 9, 13, 11, 12, 39, 140, 135, 78, 61, 128, 130, 129, 131, 71, 73];
         const LIGAS_TOP_BASKET = [12, 116, 117, 120, 134, 2, 4, 5, 6, 8]; 
 
@@ -273,7 +274,8 @@
             const formatoDia = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             
             const timestampAhora = ahora.getTime();
-            const timestampLimite = timestampAhora + (24 * 60 * 60 * 1000);
+            // Ampliamos el rango de búsqueda a 36 horas para capturar ligas nocturnas o de otra zona horaria correctamente
+            const timestampLimite = timestampAhora + (36 * 60 * 60 * 1000);
 
             const manana = new Date(timestampAhora + (24 * 60 * 60 * 1000));
             let urlHoy = `https://v3.football.api-sports.io/fixtures?date=${formatoDia(ahora)}&timezone=${zona}`;
@@ -289,7 +291,7 @@
             
             return todosLosEventos.filter(p => {
                 const tiempoPartido = new Date(deporteActivo === 'futbol' ? p.fixture.date : p.date).getTime();
-                return tiempoPartido >= (timestampAhora - 4*60*60*1000) && tiempoPartido <= timestampLimite;
+                return tiempoPartido >= (timestampAhora - 6*60*60*1000) && tiempoPartido <= timestampLimite;
             }).map(p => {
                 if (deporteActivo === 'futbol') {
                     let estado = 'SCHEDULED';
@@ -306,12 +308,17 @@
                     let estado = 'SCHEDULED';
                     if (estadosEnVivoBasket.includes(p.status.short)) estado = 'IN_PLAY';
                     else if (['FT', 'AOT'].includes(p.status.short)) estado = 'FINISHED';
+                    
+                    // SOLUCIÓN AL FALLO: Validar de manera segura la existencia de scores pre-partido
+                    let scoreHome = p.scores && p.scores.home ? (p.scores.home.total ?? 0) : 0;
+                    let scoreAway = p.scores && p.scores.away ? (p.scores.away.total ?? 0) : 0;
+
                     return {
                         id: p.id, utcDate: p.date, status: estado, tipo: 'basquet',
                         competition: { id: p.league.id, name: p.league.name, emblem: p.league.logo }, 
                         homeTeam: { id: p.teams.home.id, name: p.teams.home.name, shortName: p.teams.home.name, crest: p.teams.home.logo },
                         awayTeam: { id: p.teams.away.id, name: p.teams.away.name, shortName: p.teams.away.name, crest: p.teams.away.logo },
-                        score: { fullTime: { home: p.scores?.home?.total ?? 0, away: p.scores?.away?.total ?? 0 } }
+                        score: { fullTime: { home: scoreHome, away: scoreAway } }
                     };
                 }
             });
@@ -333,7 +340,7 @@
                     cargarBuscadorLigas(baseDeDatosHoy);
                     aplicarFiltrosMaster();
                 } else {
-                    contenedor.innerHTML = `<p style="padding:20px; text-align:center; color:var(--texto-gris)">⚠️ No hay eventos programados para esta sección.</p>`;
+                    contenedor.innerHTML = `<p style="padding:20px; text-align:center; color:var(--texto-gris)">⚠️ No hay eventos programados en las ligas analizadas para hoy.</p>`;
                 }
             } catch(e) {
                 contenedor.innerHTML = `<p style="padding:20px; text-align:center; color:var(--alerta)">❌ Error crítico al inicializar datos.</p>`;
