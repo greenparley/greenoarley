@@ -3,60 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GreenPicks Pro - Diagnóstico</title>
+    <title>GreenPicks Pro - Optimizada</title>
     <style>
-        :root {
-            --bg-principal: #0b0f19;
-            --tarjeta-bg: #151f32;
-            --tarjeta-borde: #223452;
-            --verde-principal: #2ecc71;
-            --oro: #f1c40f;
-            --alerta: #e74c3c;
-            --texto-blanco: #ffffff;
-            --texto-gris: #8a99ad;
-        }
-
+        :root { --bg-principal: #0b0f19; --tarjeta-bg: #151f32; --tarjeta-borde: #223452; --verde-principal: #2ecc71; --oro: #f1c40f; --alerta: #e74c3c; --texto-blanco: #ffffff; --texto-gris: #8a99ad; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: var(--bg-principal); color: var(--texto-blanco); padding-bottom: 60px; }
-
         .contenedor-app { max-width: 500px; margin: 0 auto; padding: 15px; position: relative; }
         .oculto { display: none !important; }
-
         .lobby-container { text-align: center; padding: 50px 20px; }
-        .lobby-titulo { font-size: 2.4rem; color: var(--verde-principal); margin-bottom: 8px; font-weight: 800; letter-spacing: -0.5px; text-shadow: 0 4px 10px rgba(46, 204, 113, 0.2); }
-        .lobby-sub { color: var(--texto-gris); margin-bottom: 45px; font-size: 1rem; font-weight: 500; }
-        
-        .btn-deporte-card { 
-            background: linear-gradient(145deg, #151f32, #111827); 
-            border: 1px solid var(--tarjeta-borde); 
-            border-radius: 16px; 
-            padding: 22px 25px; 
-            margin-bottom: 20px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between; 
-            cursor: pointer; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            width: 100%; 
-            text-align: left; 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05);
-        }
-        .btn-deporte-card:hover { border-color: var(--verde-principal); transform: translateY(-3px) scale(1.01); }
-        .deporte-info h3 { color: var(--texto-blanco); font-size: 1.25rem; margin-bottom: 6px; font-weight: 700; }
-        .deporte-info p { color: var(--texto-gris); font-size: 0.88rem; line-height: 1.3; }
+        .lobby-titulo { font-size: 2.4rem; color: var(--verde-principal); margin-bottom: 8px; font-weight: 800; }
+        .lobby-sub { color: var(--texto-gris); margin-bottom: 45px; font-size: 1rem; }
+        .btn-deporte-card { background: linear-gradient(145deg, #151f32, #111827); border: 1px solid var(--tarjeta-borde); border-radius: 16px; padding: 22px 25px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; width: 100%; text-align: left; }
+        .deporte-info h3 { color: var(--texto-blanco); font-size: 1.25rem; margin-bottom: 6px; }
+        .deporte-info p { color: var(--texto-gris); font-size: 0.88rem; }
         .deporte-icono { font-size: 2.2rem; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
-
         .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--tarjeta-borde); }
         .btn-volver-lobby { background: transparent; border: 1px solid var(--tarjeta-borde); color: var(--texto-gris); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
-
         .herramientas-grid { display: flex; gap: 10px; margin-bottom: 15px; }
         .buscador-input { flex: 1; background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); padding: 10px; border-radius: 8px; color: white; font-size: 0.9rem; }
-        .btn-refresh-live { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); color: white; width: 42px; border-radius: 8px; cursor: pointer; font-size: 1.1rem; }
-
-        .nav-filtros { display: flex; background: var(--tarjeta-bg); padding: 4px; border-radius: 10px; margin-bottom: 20px; border: 1px solid var(--tarjeta-borde); }
-        .btn-filto-main { flex: 1; background: transparent; border: none; color: var(--texto-gris); padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s; }
+        .btn-refresh-live { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); color: white; width: 42px; border-radius: 8px; cursor: pointer; }
+        .nav-filtros { display: flex; background: var(--tarjeta-bg); padding: 4px; border-radius: 10px; margin-bottom: 20px; }
+        .btn-filto-main { flex: 1; background: transparent; border: none; color: var(--texto-gris); padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
         .btn-filto-main.activo { background: var(--bg-principal); color: var(--verde-principal); }
-
         .tarjeta-partido { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); border-radius: 12px; padding: 15px; margin-bottom: 12px; cursor: pointer; }
         .encabezado-liga { font-size: 0.75rem; color: var(--texto-gris); display: flex; align-items: center; gap: 6px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 5px; }
         .encabezado-liga img { width: 14px; height: 14px; object-fit: contain; }
@@ -64,35 +32,26 @@
         .equipos { flex: 1; display: flex; flex-direction: column; gap: 8px; }
         .equipo-linea { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; font-weight: 500; }
         .equipo-linea img { width: 22px; height: 22px; object-fit: contain; }
-        .marcador-live { text-align: right; min-width: 65px; font-weight: bold; font-size: 1.1rem; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-        .live-badge { background: var(--alerta); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; animation: pulse 1.5s infinite; }
-
-        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
-
-        /* Alertas de error de servidor */
-        .banner-error-api { background: rgba(231, 76, 60, 0.15); border: 1px solid var(--alerta); color: #ff7675; padding: 15px; border-radius: 10px; margin-bottom: 15px; font-size: 0.9rem; line-height: 1.4; text-align: center;}
-
+        .marcador-live { text-align: right; min-width: 65px; font-weight: bold; font-size: 1.1rem; }
+        .live-badge { background: var(--alerta); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; }
+        .banner-error-api { background: rgba(231, 76, 60, 0.15); border: 1px solid var(--alerta); color: #ff7675; padding: 15px; border-radius: 10px; margin-bottom: 15px; font-size: 0.9rem; text-align: center;}
         .cabecera-detalle-grid { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; background: var(--tarjeta-bg); padding: 20px 10px; border-radius: 14px; border: 1px solid var(--tarjeta-borde); }
         .barra-container { margin-bottom: 15px; }
         .barra-container span { display: block; font-size: 0.85rem; margin-bottom: 5px; color: var(--texto-blanco); }
         .barra-fondo { background: rgba(255,255,255,0.06); height: 10px; border-radius: 5px; overflow: hidden; width: 100%; }
-        .barra-progreso { height: 100%; width: 0%; border-radius: 5px; transition: width 0.6s ease-out; }
-        .cuota-real-badge { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: var(--oro); font-weight: bold; font-size: 0.8rem; margin-left: 8px;}
-
+        .barra-progreso { height: 100%; width: 0%; border-radius: 5px; transition: width 0.6s; }
+        .cuota-real-badge { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: var(--oro); font-size: 0.8rem; margin-left: 8px;}
         .tarjeta-combinada { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); border-radius: 12px; padding: 15px; margin-bottom: 15px; border-top: 4px solid var(--verde-principal); }
         .ticket-seguro { border-top-color: var(--verde-principal); }
-        .ticket-item { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 0.85rem; line-height: 1.4; }
-
+        .ticket-item { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 0.85rem; }
         .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 500px; background: #0e1726; border-top: 1px solid var(--tarjeta-borde); display: flex; height: 55px; z-index: 999; }
-        .nav-item-btn { flex: 1; background: transparent; border: none; color: var(--texto-gris); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer; gap: 4px; }
+        .nav-item-btn { flex: 1; background: transparent; border: none; color: var(--texto-gris); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer; }
         .nav-item-btn.activo { color: var(--verde-principal); }
         .badge-contador { background: var(--verde-principal); color: #111; font-size: 0.7rem; font-weight: bold; padding: 1px 5px; border-radius: 10px; position: absolute; top: 4px; right: 22%; }
-
-        .panel-picks-lateral { position: fixed; top: 0; right: 0; width: 100%; max-width: 320px; height: 100%; background: #0c1322; border-left: 1px solid var(--tarjeta-borde); z-index: 10000; padding: 20px; transition: transform 0.3s cubic-bezier(0.1, 0.9, 0.2, 1); box-shadow: -5px 0 15px rgba(0,0,0,0.5); }
+        .panel-picks-lateral { position: fixed; top: 0; right: 0; width: 100%; max-width: 320px; height: 100%; background: #0c1322; border-left: 1px solid var(--tarjeta-borde); z-index: 10000; padding: 20px; transition: transform 0.3s; }
         .oculto-panel { transform: translateX(100%); }
         .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--tarjeta-borde); padding-bottom: 10px; }
-        .contenedor-lista-picks { height: calc(100% - 60px); overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .item-pick-guardado { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); border-radius: 8px; padding: 12px; font-size: 0.85rem; position: relative; }
+        .item-pick-guardado { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); border-radius: 8px; padding: 12px; font-size: 0.85rem; margin-bottom:10px; }
     </style>
 </head>
 <body>
@@ -102,23 +61,16 @@
             <h1 class="lobby-titulo">GreenPicks Pro</h1>
             <p class="lobby-sub">Seleccioná una disciplina analítica</p>
             <button class="btn-deporte-card" onclick="irADeporte('futbol')">
-                <div class="deporte-info"><h3>Fútbol Profesional</h3><p>Ligas Top, Predicciones H2H y Consejos</p></div>
-                <div class="deporte-icono">⚽</div>
+                <div class="deporte-info"><h3>Fútbol Profesional</h3><p>Ligas Top, Predicciones H2H y Consejos</p></div><div class="deporte-icono">⚽</div>
             </button>
             <button class="btn-deporte-card" onclick="irADeporte('basquet')">
-                <div class="deporte-info"><h3>Básquetbol</h3><p>NBA, Euroleague y Mercados Totales</p></div>
-                <div class="deporte-icono">🏀</div>
+                <div class="deporte-info"><h3>Básquetbol</h3><p>NBA, Euroleague y Mercados Totales</p></div><div class="deporte-icono">🏀</div>
             </button>
         </div>
 
         <div id="app-content" class="oculto">
-            <div class="app-header">
-                <button class="btn-volver-lobby" onclick="volverAlLobby()">⬅️ Volver</button>
-                <h2 id="titulo-deporte-activo" style="font-size: 1.1rem; font-weight: 800; color: var(--verde-principal);">FÚTBOL</h2>
-            </div>
-            
+            <div class="app-header"><button class="btn-volver-lobby" onclick="volverAlLobby()">⬅️ Volver</button><h2 id="titulo-deporte-activo" style="color: var(--verde-principal);">FÚTBOL</h2></div>
             <div id="logs-servidor-error" class="oculto"></div>
-
             <div id="herramientas-top" class="herramientas-grid">
                 <input type="text" id="filtro-ligas-input" oninput="aplicarFiltrosMaster()" placeholder="Buscar liga, equipo..." class="buscador-input">
                 <button id="btn-refresh" class="btn-refresh-live" onclick="forzarActualizacionLive()">🔄</button>
@@ -128,42 +80,20 @@
                 <button id="btn-envivo" class="btn-filto-main" onclick="setFiltroEstado('envivo')">En Vivo</button>
                 <button id="btn-combinada" class="btn-filto-main" onclick="setFiltroEstado('combinada')">Combinada IA</button>
             </div>
-            <div id="contenedor-partidos"></div>
-            <div id="seccion-combinada" class="oculto"></div>
+            <div id="contenedor-partidos"></div><div id="seccion-combinada" class="oculto"></div>
         </div>
 
         <div id="vista-detalle" class="oculto">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <button class="btn-volver-lobby" onclick="cerrarDetalle()">⬅️ Volver atrás</button>
-                <div id="detalle-status"></div>
-            </div>
-            <div class="cabecera-detalle-grid" id="detalle-cabecera"></div>
-            <div id="detalle-barras"></div>
+            <div style="display: flex; justify-content: space-between; align-items: center;"><button class="btn-volver-lobby" onclick="cerrarDetalle()">⬅️ Volver atrás</button><div id="detalle-status"></div></div>
+            <div class="cabecera-detalle-grid" id="detalle-cabecera"></div><div id="detalle-barras"></div>
         </div>
     </div>
 
-    <div class="bottom-nav">
-        <button class="nav-item-btn activo" id="nav-btn-home" onclick="cerrarDetalle(); setFiltroEstado('proximos');">
-            <span>🏟️</span><span>Partidos</span>
-        </button>
-        <button class="nav-item-btn" style="position:relative;" onclick="togglePanelPicks()">
-            <span id="contador-picks-badge" class="badge-contador">0</span>
-            <span>📋</span><span>Mis Picks</span>
-        </button>
-    </div>
-
-    <div id="panel-picks" class="panel-picks-lateral oculto-panel">
-        <div class="panel-header"><h3>Mis Picks</h3><button class="btn-volver-lobby" onclick="togglePanelPicks()">❌</button></div>
-        <div id="contenedor-lista-picks" class="contenedor-lista-picks"></div>
-    </div>
+    <div class="bottom-nav"><button class="nav-item-btn activo" onclick="cerrarDetalle(); setFiltroEstado('proximos');"><span>🏟️</span><span>Partidos</span></button><button class="nav-item-btn" style="position:relative;" onclick="togglePanelPicks()"><span id="contador-picks-badge" class="badge-contador">0</span><span>📋</span><span>Mis Picks</span></button></div>
+    <div id="panel-picks" class="panel-picks-lateral oculto-panel"><div class="panel-header"><h3>Mis Picks</h3><button class="btn-volver-lobby" onclick="togglePanelPicks()">❌</button></div><div id="contenedor-lista-picks"></div></div>
 
     <script>
-        // ==========================================
-        // CONFIGURACIÓN DE CENTRAL DE LLAVES API
-        // Si tenés tu propia Key gratuita, pegala adentro de las comillas de MI_API_KEY
-        // ==========================================
         const MI_API_KEY = ""; 
-        
         const LLAVES_RESPALDO = ["0464d33c8013d01fb7387b5148f18a9a", "31dc5f2762254847a825e1025257a759"];
         let apiKeysPool = MI_API_KEY ? [MI_API_KEY, ...LLAVES_RESPALDO] : LLAVES_RESPALDO;
 
@@ -179,28 +109,38 @@
                 try {
                     const res = await fetch(url, { headers: { 'x-apisports-key': apiKeysPool[i] } });
                     const data = await res.json();
-                    
-                    // Validar si la API devolvió errores estructurales (Token inválido o Suspendido)
                     if (data && data.errors && Object.keys(data.errors).length > 0) {
-                        console.warn("Problema con Key índice " + i + ":", data.errors);
                         errorDeAutenticacionDetectado = true;
                         continue; 
                     }
-                    
                     if (data && data.response) {
-                        errorDeAutenticacionDetectado = false; // Al menos una respondió limpio
+                        errorDeAutenticacionDetectado = false; 
                         return data;
                     }
-                } catch (e) { console.error("Fallo de red en fetch de API"); }
+                } catch (e) { }
             }
             return null; 
         }
 
         async function fetchPartidos() {
+            // ----- SISTEMA DE CACHÉ PARA AHORRAR SALDO API -----
+            const cacheKey = `greenpicks_cache_${deporteActivo}`;
+            const cachedData = localStorage.getItem(cacheKey);
+            
+            if (cachedData) {
+                const parsed = JSON.parse(cachedData);
+                const tiempoPasado = Date.now() - parsed.timestamp;
+                // Si pasaron MENOS de 10 minutos (600,000 ms), usamos la memoria
+                if (tiempoPasado < 600000) {
+                    console.log("Cargando desde memoria (Caché). No se gastó saldo de la API.");
+                    return parsed.data;
+                }
+            }
+            // ----------------------------------------------------
+
             const zona = Intl.DateTimeFormat().resolvedOptions().timeZone; 
             const ahora = new Date();
             const formatoDia = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            
             const timestampAhora = ahora.getTime();
             const timestampLimite = timestampAhora + (36 * 60 * 60 * 1000);
             const manana = new Date(timestampAhora + (24 * 60 * 60 * 1000));
@@ -246,49 +186,51 @@
                     }
                 }
             });
-            return Array.from(mapaUnicos.values());
+
+            const resultadoFinal = Array.from(mapaUnicos.values());
+            
+            // Si la API nos devolvió datos reales, los guardamos en el Caché
+            if (resultadoFinal.length > 0) {
+                localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: resultadoFinal }));
+            }
+            
+            return resultadoFinal;
         }
 
         async function iniciarApp() {
             const contenedor = document.getElementById('contenedor-partidos');
             const logBox = document.getElementById('logs-servidor-error');
-            
-            contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px; text-align:center;">⏳ Conectando con los servidores de API-Sports...</p>`;
+            contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px; text-align:center;">⏳ Conectando...</p>`;
             logBox.classList.add('oculto');
-            logBox.innerHTML = "";
-
+            
             try {
                 const todosLosPartidos = await fetchPartidos();
-                
-                if (deporteActivo === 'futbol') {
-                    baseDeDatosHoy = todosLosPartidos.filter(p => [1,2,3,4,9,13,11,12,39,140,135,78,61,128,130,129,131,71,73].includes(p.competition.id));
-                } else {
-                    baseDeDatosHoy = todosLosPartidos;
-                }
+                if (deporteActivo === 'futbol') baseDeDatosHoy = todosLosPartidos.filter(p => [1,2,3,4,9,13,11,12,39,140,135,78,61,128,130,129,131,71,73].includes(p.competition.id));
+                else baseDeDatosHoy = todosLosPartidos;
 
                 if (baseDeDatosHoy.length > 0) {
-                    generarCombinadaDelDia(); 
-                    aplicarFiltrosMaster();
+                    generarCombinadaDelDia(); aplicarFiltrosMaster();
                 } else {
-                    // DETECCIÓN INTELIGENTE: Si no hay partidos y saltó la flag de auth error, avisamos qué pasa
                     if (errorDeAutenticacionDetectado) {
-                        logBox.innerHTML = `
-                            <div class="banner-error-api">
-                                <b>⚠️ Servidor Bloqueado o Sin Cuota</b><br>
-                                Las API Keys cargadas por defecto llegaron al límite diario o fueron suspendidas por exceso de uso público. Para solucionarlo, poné una clave gratuita propia en la variable <code>MI_API_KEY</code> al principio del código.
-                            </div>`;
+                        logBox.innerHTML = `<div class="banner-error-api"><b>⚠️ Límite de API Alcanzado</b><br>Tus llaves se quedaron sin las 100 peticiones diarias. Regístrate en api-sports.io, saca una nueva y ponela en <code>MI_API_KEY</code>.</div>`;
                         logBox.classList.remove('oculto');
-                        contenedor.innerHTML = `<p style="padding:20px; text-align:center; color:var(--alerta)">No se pudieron cargar datos por restricción de servidor.</p>`;
+                        contenedor.innerHTML = "";
                     } else {
-                        contenedor.innerHTML = `<p style="padding:20px; text-align:center; color:var(--texto-gris)">⚠️ No hay eventos deportivos registrados en este momento para las próximas horas.</p>`;
+                        contenedor.innerHTML = `<p style="padding:20px; text-align:center; color:var(--texto-gris)">⚠️ No hay eventos.</p>`;
                     }
                 }
-            } catch(e) { 
-                contenedor.innerHTML = `<p style="color:var(--alerta); text-align:center; padding:20px;">❌ Error de ejecución en la sincronización.</p>`; 
-            }
+            } catch(e) { contenedor.innerHTML = `<p style="color:var(--alerta); text-align:center;">❌ Error.</p>`; }
         }
 
         async function obtenerCuotasReales(idFixture, tipo) {
+            // También cacheamos las cuotas para que abrir partidos no gaste saldo
+            const cacheKeyOdds = `gp_odds_${idFixture}`;
+            const cachedOdds = localStorage.getItem(cacheKeyOdds);
+            if (cachedOdds) {
+                const parsed = JSON.parse(cachedOdds);
+                if (Date.now() - parsed.timestamp < 3600000) return parsed.data; // 1 hora de memoria para cuotas
+            }
+
             try {
                 let url = tipo === 'futbol' ? `https://v3.football.api-sports.io/odds?fixture=${idFixture}` : `https://v1.basketball.api-sports.io/odds?game=${idFixture}`;
                 let res = await fetchConRotacion(url);
@@ -302,6 +244,7 @@
                             else if(v.value === "Draw" || v.value === "X") cuotas.empate = v.odd;
                             else if(v.value === "Away" || v.value === "2") cuotas.visita = v.odd;
                         });
+                        localStorage.setItem(cacheKeyOdds, JSON.stringify({ timestamp: Date.now(), data: cuotas }));
                         return cuotas;
                     }
                 }
@@ -311,19 +254,21 @@
 
         async function obtenerDatosReales(idFixture) {
             if (deporteActivo !== 'futbol') return { exito: false }; 
+            
+            const cacheKeyPred = `gp_pred_${idFixture}`;
+            const cachedPred = localStorage.getItem(cacheKeyPred);
+            if (cachedPred) return JSON.parse(cachedPred).data;
+
             try {
                 const data = await fetchConRotacion(`https://v3.football.api-sports.io/predictions?fixture=${idFixture}`);
                 if (data && data.response && data.response.length > 0) {
                     const a = data.response[0];
                     let consejo = a.predictions.advice || 'No disponible';
                     let trans = consejo.toLowerCase().replace(/winner/g, "Ganador").replace(/home/g, "Local").replace(/away/g, "Visitante").replace(/draw/g, "Empate").replace(/and/g, "y").replace(/over/g, "Más de").replace(/under/g, "Menos de").replace(/goals/g, "goles");
-                    return {
-                        exito: true,
-                        local: a.predictions.percent.home || "50%",
-                        empate: a.predictions.percent.draw || "0%",
-                        visita: a.predictions.percent.away || "50%",
-                        consejo: trans.charAt(0).toUpperCase() + trans.slice(1)
-                    };
+                    let result = { exito: true, local: a.predictions.percent.home || "50%", empate: a.predictions.percent.draw || "0%", visita: a.predictions.percent.away || "50%", consejo: trans.charAt(0).toUpperCase() + trans.slice(1) };
+                    
+                    localStorage.setItem(cacheKeyPred, JSON.stringify({ timestamp: Date.now(), data: result }));
+                    return result;
                 }
             } catch(e) {}
             return { exito: false };
@@ -332,204 +277,57 @@
         async function abrirDetalle(id) {
             const p = baseDeDatosHoy.find(item => item.id === id); 
             if (!p) return;
-            
-            document.getElementById('herramientas-top').classList.add('oculto');
-            document.getElementById('contenedor-partidos').classList.add('oculto');
-            document.getElementById('seccion-combinada').classList.add('oculto');
-            document.getElementById('vista-detalle').classList.remove('oculto');
-            
-            const isLive = p.status === 'IN_PLAY';
-            document.getElementById('detalle-status').innerHTML = isLive ? `<div class="live-badge">EN CURSO</div>` : `<span>Pre-Partido</span>`;
-            
-            document.getElementById('detalle-cabecera').innerHTML = `
-                <div style="text-align:center; width:40%;"><img src="${p.homeTeam.crest || ESCUDO_RESPALDO}" style="max-height:40px;"><p style="font-size:0.85rem;margin-top:5px;">${p.homeTeam.name}</p></div>
-                <h2 style="width:20%; text-align:center; color:var(--verde-principal);">${isLive ? (p.score?.fullTime?.home??0) + ' - ' + (p.score?.fullTime?.away??0) : 'VS'}</h2>
-                <div style="text-align:center; width:40%;"><img src="${p.awayTeam.crest || ESCUDO_RESPALDO}" style="max-height:40px;"><p style="font-size:0.85rem;margin-top:5px;">${p.awayTeam.name}</p></div>
-            `;
-
-            document.getElementById('detalle-barras').innerHTML = `<p style='color: var(--verde-principal); text-align:center; margin-top:20px;'>⏳ Cargando analíticas y cuotas reales...</p>`;
-
-            let [d, cuotasAPI] = await Promise.all([
-                p.tipo === 'futbol' ? obtenerDatosReales(p.id) : Promise.resolve({ exito: false }),
-                obtenerCuotasReales(p.id, p.tipo)
-            ]);
-
-            let htmlTabs = `
-                <div style="display:flex; border-bottom:1px solid rgba(255,255,255,0.1); margin-top:15px; margin-bottom:15px;">
-                    <button class="tab-detalle-btn activo">🔮 Predicción y Cuotas</button>
-                </div>
-                <div id="tab-pred" class="tab-detalle-content activo">
-            `;
-
-            if (d && d.exito) {
-                htmlTabs += `
-                    <div style="background: rgba(46, 204, 113, 0.1); padding: 15px; border-left: 4px solid var(--verde-principal); margin-bottom: 15px;">
-                        <strong>💡 Consejo Experto:</strong> ${d.consejo}
-                    </div>`;
-            }
-
-            let probL = d.exito ? d.local : "50%";
-            let probE = d.exito ? d.empate : (p.tipo==='futbol'?"25%":"0%");
-            let probV = d.exito ? d.visita : "50%";
-            
-            let cL = cuotasAPI && cuotasAPI.local !== "N/A" ? cuotasAPI.local : (100/parseInt(probL)).toFixed(2);
-            let cE = cuotasAPI && cuotasAPI.empate !== "N/A" ? cuotasAPI.empate : (100/parseInt(probE)).toFixed(2);
-            let cV = cuotasAPI && cuotasAPI.visita !== "N/A" ? cuotasAPI.visita : (100/parseInt(probV)).toFixed(2);
-
-            htmlTabs += `
-                <h4 style="margin-bottom: 10px;">Probabilidades 1X2</h4>
-                <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local <span class="cuota-real-badge">x${cL}</span></span><span>${probL}</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}"></div></div></div>
-                ${p.tipo === 'futbol' ? `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Empate <span class="cuota-real-badge">x${cE}</span></span><span>${probE}</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probE}"></div></div></div>` : ''}
-                <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visita <span class="cuota-real-badge">x${cV}</span></span><span>${probV}</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}"></div></div></div>
-            </div>`;
-
+            document.getElementById('herramientas-top').classList.add('oculto'); document.getElementById('contenedor-partidos').classList.add('oculto'); document.getElementById('seccion-combinada').classList.add('oculto'); document.getElementById('vista-detalle').classList.remove('oculto');
+            const isLive = p.status === 'IN_PLAY'; document.getElementById('detalle-status').innerHTML = isLive ? `<div class="live-badge">EN CURSO</div>` : `<span>Pre-Partido</span>`;
+            document.getElementById('detalle-cabecera').innerHTML = `<div style="text-align:center; width:40%;"><img src="${p.homeTeam.crest || ESCUDO_RESPALDO}" style="max-height:40px;"><p style="font-size:0.85rem;margin-top:5px;">${p.homeTeam.name}</p></div><h2 style="width:20%; text-align:center; color:var(--verde-principal);">${isLive ? (p.score?.fullTime?.home??0) + ' - ' + (p.score?.fullTime?.away??0) : 'VS'}</h2><div style="text-align:center; width:40%;"><img src="${p.awayTeam.crest || ESCUDO_RESPALDO}" style="max-height:40px;"><p style="font-size:0.85rem;margin-top:5px;">${p.awayTeam.name}</p></div>`;
+            document.getElementById('detalle-barras').innerHTML = `<p style='color: var(--verde-principal); text-align:center; margin-top:20px;'>⏳ Cargando...</p>`;
+            let [d, cuotasAPI] = await Promise.all([ p.tipo === 'futbol' ? obtenerDatosReales(p.id) : Promise.resolve({ exito: false }), obtenerCuotasReales(p.id, p.tipo) ]);
+            let htmlTabs = `<div style="display:flex; border-bottom:1px solid rgba(255,255,255,0.1); margin-top:15px; margin-bottom:15px;"><button class="btn-filto-main activo">🔮 Predicción y Cuotas</button></div>`;
+            if (d && d.exito) htmlTabs += `<div style="background: rgba(46, 204, 113, 0.1); padding: 15px; border-left: 4px solid var(--verde-principal); margin-bottom: 15px;"><strong>💡 Consejo:</strong> ${d.consejo}</div>`;
+            let probL = d.exito ? d.local : "50%"; let probE = d.exito ? d.empate : (p.tipo==='futbol'?"25%":"0%"); let probV = d.exito ? d.visita : "50%";
+            let cL = cuotasAPI && cuotasAPI.local !== "N/A" ? cuotasAPI.local : (100/parseInt(probL)).toFixed(2); let cE = cuotasAPI && cuotasAPI.empate !== "N/A" ? cuotasAPI.empate : (100/parseInt(probE)).toFixed(2); let cV = cuotasAPI && cuotasAPI.visita !== "N/A" ? cuotasAPI.visita : (100/parseInt(probV)).toFixed(2);
+            htmlTabs += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Local <span class="cuota-real-badge">x${cL}</span></span><span>${probL}</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}"></div></div></div>`;
+            if(p.tipo === 'futbol') htmlTabs += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Empate <span class="cuota-real-badge">x${cE}</span></span><span>${probE}</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probE}"></div></div></div>`;
+            htmlTabs += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Visita <span class="cuota-real-badge">x${cV}</span></span><span>${probV}</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}"></div></div></div>`;
             document.getElementById('detalle-barras').innerHTML = htmlTabs;
         }
 
-        function cerrarDetalle() { 
-            document.getElementById('vista-detalle').classList.add('oculto'); 
-            setFiltroEstado(estadoFiltroActual);
-        }
-
+        function cerrarDetalle() { document.getElementById('vista-detalle').classList.add('oculto'); setFiltroEstado(estadoFiltroActual); }
         function setFiltroEstado(estado) {
-            estadoFiltroActual = estado;
-            document.querySelectorAll('.btn-filto-main').forEach(b => b.classList.remove('activo'));
-            document.getElementById('btn-' + estado).classList.add('activo');
-            
-            if (estado === 'combinada') {
-                document.getElementById('herramientas-top').classList.add('oculto');
-                document.getElementById('contenedor-partidos').classList.add('oculto');
-                document.getElementById('seccion-combinada').classList.remove('oculto');
-            } else {
-                document.getElementById('herramientas-top').classList.remove('oculto');
-                document.getElementById('contenedor-partidos').classList.remove('oculto');
-                document.getElementById('seccion-combinada').classList.add('oculto');
-                aplicarFiltrosMaster();
-            }
+            estadoFiltroActual = estado; document.querySelectorAll('.btn-filto-main').forEach(b => b.classList.remove('activo')); document.getElementById('btn-' + estado).classList.add('activo');
+            if (estado === 'combinada') { document.getElementById('herramientas-top').classList.add('oculto'); document.getElementById('contenedor-partidos').classList.add('oculto'); document.getElementById('seccion-combinada').classList.remove('oculto'); } 
+            else { document.getElementById('herramientas-top').classList.remove('oculto'); document.getElementById('contenedor-partidos').classList.remove('oculto'); document.getElementById('seccion-combinada').classList.add('oculto'); aplicarFiltrosMaster(); }
         }
-
         function aplicarFiltrosMaster() {
             if (estadoFiltroActual === 'combinada') return; 
-            let filtrados = baseDeDatosHoy;
-            if (estadoFiltroActual === 'envivo') filtrados = filtrados.filter(p => p.status === 'IN_PLAY');
-            else filtrados = filtrados.filter(p => p.status !== 'FINISHED');
-
-            const input = document.getElementById('filtro-ligas-input');
-            if (input && input.value.trim() !== '') {
-                const txt = input.value.toLowerCase().trim();
-                filtrados = filtrados.filter(p => p.competition.name.toLowerCase().includes(txt) || p.homeTeam.name.toLowerCase().includes(txt) || p.awayTeam.name.toLowerCase().includes(txt));
-            }
-
-            filtrados.sort((a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime());
-            
-            const cont = document.getElementById('contenedor-partidos'); 
-            cont.innerHTML = '';
-            if (filtrados.length === 0) { cont.innerHTML = `<p style="padding:30px; text-align:center; color:var(--texto-gris);">No hay eventos disponibles en esta solapa.</p>`; return; }
-
-            filtrados.forEach(p => {
-                const isLive = p.status === 'IN_PLAY';
-                let hora = p.utcDate ? new Date(p.utcDate).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) : "TBA";
-                let marcador = isLive ? `<div class="live-badge">LIVE</div><span style="color:var(--alerta)">${p.score?.fullTime?.home??0} - ${p.score?.fullTime?.away??0}</span>` : `<span>${hora}</span>`;
-
-                cont.innerHTML += `
-                    <div class="tarjeta-partido" onclick="abrirDetalle(${p.id})">
-                        <div class="encabezado-liga"><img src="${p.competition.emblem || ESCUDO_RESPALDO}" onerror="this.style.display='none'"> ${p.competition.name}</div>
-                        <div class="cuerpo-partido">
-                            <div class="equipos">
-                                <div class="equipo-linea"><img src="${p.homeTeam.crest || ESCUDO_RESPALDO}" onerror="this.src='${ESCUDO_RESPALDO}'"> ${p.homeTeam.shortName || p.homeTeam.name}</div>
-                                <div class="equipo-linea"><img src="${p.awayTeam.crest || ESCUDO_RESPALDO}" onerror="this.src='${ESCUDO_RESPALDO}'"> ${p.awayTeam.shortName || p.awayTeam.name}</div>
-                            </div>
-                            <div class="marcador-live">${marcador}</div>
-                        </div>
-                    </div>`;
+            let f = baseDeDatosHoy; if (estadoFiltroActual === 'envivo') f = f.filter(p => p.status === 'IN_PLAY'); else f = f.filter(p => p.status !== 'FINISHED');
+            const i = document.getElementById('filtro-ligas-input'); if (i && i.value.trim() !== '') { const txt = i.value.toLowerCase().trim(); f = f.filter(p => p.competition.name.toLowerCase().includes(txt) || p.homeTeam.name.toLowerCase().includes(txt) || p.awayTeam.name.toLowerCase().includes(txt)); }
+            f.sort((a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime());
+            const c = document.getElementById('contenedor-partidos'); c.innerHTML = '';
+            if (f.length === 0) { c.innerHTML = `<p style="padding:30px; text-align:center; color:var(--texto-gris);">No hay eventos.</p>`; return; }
+            f.forEach(p => { const isLive = p.status === 'IN_PLAY'; let h = p.utcDate ? new Date(p.utcDate).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) : "TBA"; let m = isLive ? `<div class="live-badge">LIVE</div><span style="color:var(--alerta)">${p.score?.fullTime?.home??0} - ${p.score?.fullTime?.away??0}</span>` : `<span>${h}</span>`;
+                c.innerHTML += `<div class="tarjeta-partido" onclick="abrirDetalle(${p.id})"><div class="encabezado-liga"><img src="${p.competition.emblem || ESCUDO_RESPALDO}" onerror="this.style.display='none'"> ${p.competition.name}</div><div class="cuerpo-partido"><div class="equipos"><div class="equipo-linea"><img src="${p.homeTeam.crest || ESCUDO_RESPALDO}" onerror="this.src='${ESCUDO_RESPALDO}'"> ${p.homeTeam.shortName || p.homeTeam.name}</div><div class="equipo-linea"><img src="${p.awayTeam.crest || ESCUDO_RESPALDO}" onerror="this.src='${ESCUDO_RESPALDO}'"> ${p.awayTeam.shortName || p.awayTeam.name}</div></div><div class="marcador-live">${m}</div></div></div>`;
             });
         }
-
         function generarCombinadaDelDia() {
-            let pool = []; 
-            baseDeDatosHoy.forEach(p => { 
-                let loc = p.homeTeam.shortName || p.homeTeam.name;
-                let pLoc = Math.min(Math.max(45 + (p.homeTeam.id % 15) - (p.awayTeam.id % 10), 15), 90);
-                pool.push({ p: p, mercado: `Gana ${loc}`, prob: pLoc, cuota: (100 / pLoc).toFixed(2) }); 
-            });
-            
-            let seguro = [];
-            let acumuladorSeguro = 1.0;
-            let candidatosSeguros = pool.filter(c => c.prob >= 75).sort((a,b) => b.prob - a.prob);
-            
-            for(let c of candidatosSeguros) {
-                let nuevaCuota = acumuladorSeguro * parseFloat(c.cuota);
-                if(nuevaCuota <= 1.35 && seguro.length < 3) {
-                    seguro.push(c);
-                    acumuladorSeguro = nuevaCuota;
-                }
-            }
-
-            let medio = pool.filter(c => c.prob >= 50 && c.prob < 75).slice(0, 3);
-            let arriesgado = pool.filter(c => c.prob < 50).slice(0, 3);
-
-            ticketsMultiplesGenerados = { 'seguro': seguro, 'medio': medio, 'arriesgado': arriesgado };
-            const secc = document.getElementById('seccion-combinada');
-            secc.innerHTML = '';
-            
-            if (seguro.length) secc.innerHTML += renderHTMLTick(seguro, "seguro", `🛡️ Combinada Segura (Cuota Max 1.35)`);
-            if (medio.length) secc.innerHTML += renderHTMLTick(medio, "medio", `⚖️ Combinada Equilibrada`);
-            if (arriesgado.length) secc.innerHTML += renderHTMLTick(arriesgado, "arriesgado", `🔥 Combinada Arriesgada`);
+            let pool = []; baseDeDatosHoy.forEach(p => { let loc = p.homeTeam.shortName || p.homeTeam.name; let pLoc = Math.min(Math.max(45 + (p.homeTeam.id % 15) - (p.awayTeam.id % 10), 15), 90); pool.push({ p: p, mercado: `Gana ${loc}`, prob: pLoc, cuota: (100 / pLoc).toFixed(2) }); });
+            let seguro = []; let ac = 1.0; let cand = pool.filter(c => c.prob >= 75).sort((a,b) => b.prob - a.prob);
+            for(let c of cand) { let n = ac * parseFloat(c.cuota); if(n <= 1.35 && seguro.length < 3) { seguro.push(c); ac = n; } }
+            let medio = pool.filter(c => c.prob >= 50 && c.prob < 75).slice(0, 3); let arriesgado = pool.filter(c => c.prob < 50).slice(0, 3);
+            ticketsMultiplesGenerados = { 'seguro': seguro, 'medio': medio, 'arriesgado': arriesgado }; const s = document.getElementById('seccion-combinada'); s.innerHTML = '';
+            if (seguro.length) s.innerHTML += renderHTMLTick(seguro, "seguro", `🛡️ Segura (Max 1.35)`); if (medio.length) s.innerHTML += renderHTMLTick(medio, "medio", `⚖️ Equilibrada`); if (arriesgado.length) s.innerHTML += renderHTMLTick(arriesgado, "arriesgado", `🔥 Arriesgada`);
         }
-
-        function renderHTMLTick(arr, id, tit) {
-            let total = 1.0;
-            let html = `<div class="tarjeta-combinada ticket-${id}"><h4>${tit}</h4>`;
-            arr.forEach(c => { 
-                total *= parseFloat(c.cuota);
-                html += `<div class="ticket-item">📍 ${c.p.homeTeam.name} vs ${c.p.awayTeam.name}<br>🎯 <b>${c.mercado}</b> <strong style="color:var(--verde-principal); float:right;">x${c.cuota}</strong></div>`; 
-            });
-            html += `<div style="text-align:right; margin:10px 0; font-size:1.1rem; font-weight:bold; color:var(--oro)">Cuota Total: x${total.toFixed(2)}</div>
-                    <button onclick="guardarCombinada('${id}')" style="width:100%; background:rgba(255,255,255,0.08); color:white; border:1px solid var(--tarjeta-borde); padding:8px; border-radius:6px; cursor:pointer; font-weight:bold;">Guardar Ticket</button></div>`; 
-            return html;
-        }
-
+        function renderHTMLTick(arr, id, tit) { let t = 1.0; let h = `<div class="tarjeta-combinada ticket-${id}"><h4>${tit}</h4>`; arr.forEach(c => { t *= parseFloat(c.cuota); h += `<div class="ticket-item">📍 ${c.p.homeTeam.name} vs ${c.p.awayTeam.name}<br>🎯 <b>${c.mercado}</b> <strong style="color:var(--verde-principal); float:right;">x${c.cuota}</strong></div>`; }); h += `<div style="text-align:right; margin:10px 0; color:var(--oro)">Cuota Total: x${t.toFixed(2)}</div><button onclick="guardarCombinada('${id}')" style="width:100%; background:rgba(255,255,255,0.08); color:white; border:1px solid var(--tarjeta-borde); padding:8px; border-radius:6px;">Guardar Ticket</button></div>`; return h; }
         function obtenerPicksLocales() { return JSON.parse(localStorage.getItem('gp_picks')) || []; }
-        function guardarCombinada(idT) {
-            let h = obtenerPicksLocales(); 
-            let tk = ticketsMultiplesGenerados[idT];
-            if (!tk) return;
-            tk.forEach(i => { h.push({ id: Date.now() + Math.random(), matchId: i.p.id, home: i.p.homeTeam.name, away: i.p.awayTeam.name, mercado: i.mercado, cuota: i.cuota, estado: 'PENDIENTE' }); });
-            localStorage.setItem('gp_picks', JSON.stringify(h));
-            actualizarEstructuraPicksLocales();
-            alert("¡Ticket combinado guardado!");
-        }
-
-        function actualizarEstructuraPicksLocales() {
-            let hist = obtenerPicksLocales();
-            document.getElementById('contador-picks-badge').innerText = hist.filter(h => h.estado === 'PENDIENTE').length;
-            let c = document.getElementById('contenedor-lista-picks'); 
-            c.innerHTML = "";
-            hist.reverse().forEach(p => { 
-                c.innerHTML += `<div class="item-pick-guardado"><span style="color:var(--oro); font-size:0.65rem; float:right;">${p.estado}</span>
-                <div style="color:var(--texto-gris); font-size:0.75rem;">${p.home} vs ${p.away}</div><strong style="color:white; font-size:0.85rem;">${p.mercado} (x${p.cuota})</strong></div>`; 
-            });
-        }
-
+        function guardarCombinada(idT) { let h = obtenerPicksLocales(); let tk = ticketsMultiplesGenerados[idT]; if (!tk) return; tk.forEach(i => { h.push({ id: Date.now(), home: i.p.homeTeam.name, away: i.p.awayTeam.name, mercado: i.mercado, cuota: i.cuota, estado: 'PENDIENTE' }); }); localStorage.setItem('gp_picks', JSON.stringify(h)); actualizarEstructuraPicksLocales(); alert("¡Guardado!"); }
+        function actualizarEstructuraPicksLocales() { let h = obtenerPicksLocales(); document.getElementById('contador-picks-badge').innerText = h.filter(x => x.estado === 'PENDIENTE').length; let c = document.getElementById('contenedor-lista-picks'); c.innerHTML = ""; h.reverse().forEach(p => { c.innerHTML += `<div class="item-pick-guardado"><span style="color:var(--oro); float:right;">${p.estado}</span><div style="color:var(--texto-gris); font-size:0.75rem;">${p.home} vs ${p.away}</div><strong style="color:white;">${p.mercado} (x${p.cuota})</strong></div>`; }); }
         function togglePanelPicks() { document.getElementById('panel-picks').classList.toggle('oculto-panel'); }
-        
-        function irADeporte(deporte) {
-            deporteActivo = deporte;
-            document.getElementById('titulo-deporte-activo').innerText = deporte.toUpperCase();
-            document.getElementById('lobby-selector').classList.add('oculto');
-            document.getElementById('app-content').classList.remove('oculto');
-            setFiltroEstado('proximos');
-            iniciarApp();
+        function irADeporte(dep) { deporteActivo = dep; document.getElementById('titulo-deporte-activo').innerText = dep.toUpperCase(); document.getElementById('lobby-selector').classList.add('oculto'); document.getElementById('app-content').classList.remove('oculto'); setFiltroEstado('proximos'); iniciarApp(); }
+        function volverAlLobby() { document.getElementById('lobby-selector').classList.remove('oculto'); document.getElementById('app-content').classList.add('oculto'); document.getElementById('vista-detalle').classList.add('oculto'); document.getElementById('logs-servidor-error').classList.add('oculto'); }
+        function forzarActualizacionLive() { 
+            localStorage.removeItem(`greenpicks_cache_${deporteActivo}`); // Al apretar refresh, borramos el caché para forzar la bajada
+            iniciarApp(); 
         }
-        
-        function volverAlLobby() { 
-            document.getElementById('lobby-selector').classList.remove('oculto'); 
-            document.getElementById('app-content').classList.add('oculto'); 
-            document.getElementById('vista-detalle').classList.add('oculto');
-            document.getElementById('logs-servidor-error').classList.add('oculto');
-        }
-        
-        function forzarActualizacionLive() { iniciarApp(); }
         window.onload = () => { actualizarEstructuraPicksLocales(); };
     </script>
 </body>
