@@ -62,12 +62,12 @@
     <div class="contenedor-app">
         <div id="lobby-selector" class="lobby-container">
             <h1 class="lobby-titulo">GreenPicks Pro</h1>
-            <p class="lobby-sub">Motor Dual-Key (Edición Copas Internacionales)</p>
+            <p class="lobby-sub">Motor Dual (Bases de datos independientes)</p>
             <button class="btn-deporte-card" onclick="irADeporte('futbol')">
-                <div class="deporte-info"><h3>Fútbol Profesional</h3><p>Copas, Ligas Mundiales y Eurocopas</p></div><div class="deporte-icono">⚽</div>
+                <div class="deporte-info"><h3>Fútbol Profesional</h3><p>Vía The Odds API</p></div><div class="deporte-icono">⚽</div>
             </button>
             <button class="btn-deporte-card" onclick="irADeporte('basquet')">
-                <div class="deporte-info"><h3>Básquetbol</h3><p>NBA y Ligas Internacionales</p></div><div class="deporte-icono">🏀</div>
+                <div class="deporte-info"><h3>Básquetbol</h3><p>Vía Base Pública (Sin API Key 🔑)</p></div><div class="deporte-icono">🏀</div>
             </button>
         </div>
 
@@ -98,15 +98,13 @@
     <div id="panel-picks" class="panel-picks-lateral oculto-panel"><div class="panel-header"><h3>Mis Picks</h3><button class="btn-volver-lobby" onclick="togglePanelPicks()">❌</button></div><div id="contenedor-lista-picks"></div></div>
 
     <script>
-        const API_KEY_FUTBOL = "b1068f561f80975166b5c1ab67a2888a"; 
-        const API_KEY_BASQUET = "TU_API_KEY_BASQUET_AQUI"; 
+        // ---------------- CONFIGURACIÓN DE PROVEEDORES ----------------
+        const API_KEY_FUTBOL = "b1068f561f80975166b5c1ab67a2888a"; // Tu clave de fútbol activa
         
         const LIGAS_FUTBOL = [
             'soccer_epl', 'soccer_spain_la_liga', 'soccer_argentina_primera_division', 'soccer_italy_serie_a',
-            'soccer_uefa_champs_league', 'soccer_uefa_europa_league', 'soccer_uefa_europa_conference_league',
-            'soccer_conmebol_copa_libertadores', 'soccer_conmebol_copa_sudamericana', 'soccer_fifa_world_cup'
+            'soccer_uefa_champs_league', 'soccer_uefa_europa_league', 'soccer_conmebol_copa_libertadores'
         ];
-        const LIGAS_BASQUET = ['basketball_nba', 'basketball_euroleague'];
 
         let baseDeDatosHoy = [];
         let estadoFiltroActual = 'proximos';
@@ -125,40 +123,51 @@
             return (ahora >= inicio && ahora <= (inicio + duracion));
         }
 
-        async function fetchLigasTheOddsAPI() {
-            const KEY_ACTUAL = deporteActivo === 'futbol' ? API_KEY_FUTBOL : API_KEY_BASQUET;
-            if (!KEY_ACTUAL || KEY_ACTUAL === "TU_API_KEY_BASQUET_AQUI") {
-                mostrarError(`No configuraste tu API Key para ${deporteActivo.toUpperCase()}.`);
-                return [];
-            }
+        function mostrarError(mensaje) {
+            const logBox = document.getElementById('logs-servidor-error');
+            logBox.innerHTML = `<div class="banner-error-api"><b>⚠️ Alerta de Conexión</b><br>${mensaje}</div>`;
+            logBox.classList.remove('oculto');
+        }
 
-            const ligas = deporteActivo === 'futbol' ? LIGAS_FUTBOL : LIGAS_BASQUET;
-            let resultadosTotales = [];
-
+        // --- ENRUTADOR DE BASES DE DATOS ---
+        async function cargarDatosDeportivos() {
+            document.getElementById('logs-servidor-error').classList.add('oculto');
             const cacheKey = `odds_cache_${deporteActivo}`;
             const cachedData = localStorage.getItem(cacheKey);
             if (cachedData) {
                 const parsed = JSON.parse(cachedData);
-                if (Date.now() - parsed.timestamp < 1800000) return parsed.data; 
+                if (Date.now() - parsed.timestamp < 900000) return parsed.data; // Cache de 15 min
             }
 
-            for (let liga of ligas) {
+            let datosProcesados = [];
+            if (deporteActivo === 'futbol') {
+                datosProcesados = await fetchFutbolTheOdds();
+            } else {
+                datosProcesados = await fetchBasketBovadaPublico();
+            }
+
+            if (datosProcesados.length > 0) {
+                localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: datosProcesados }));
+            }
+            return datosProcesados;
+        }
+
+        // --- BASE DE DATOS 1: FÚTBOL (THE ODDS API) ---
+        async function fetchFutbolTheOdds() {
+            if (!API_KEY_FUTBOL) { mostrarError("Falta configurar la clave de fútbol."); return []; }
+            let resultadosTotales = [];
+
+            for (let liga of LIGAS_FUTBOL) {
                 try {
-                    let mercados = deporteActivo === 'futbol' ? 'h2h,totals' : 'h2h';
-                    const url = `https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${KEY_ACTUAL}&regions=us&markets=${mercados}`;
+                    const url = `https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${API_KEY_FUTBOL}&regions=us&markets=h2h,totals`;
                     const res = await fetch(url);
-                    
-                    if (res.status === 401) { mostrarError("API Key inválida."); return []; }
-                    if (res.status === 429) { mostrarError("Límite de consultas mensual alcanzado. ¡Cuidado!"); return []; }
-                    
+                    if (res.status === 401) { mostrarError("API Key de Fútbol inválida."); return []; }
                     const data = await res.json();
                     if (Array.isArray(data)) resultadosTotales = resultadosTotales.concat(data);
-                } catch (error) {
-                    console.error("Error consultando la liga: ", liga);
-                }
+                } catch (error) { console.error("Error en liga: ", liga); }
             }
 
-            const dataProcesada = resultadosTotales.map(partido => {
+            return resultadosTotales.map(partido => {
                 let cuotas = { local: "N/A", empate: "N/A", visita: "N/A" };
                 let doble = { localEmpate: "N/A", visitaEmpate: "N/A", localVisita: "N/A" };
                 let goles = { over: "N/A", under: "N/A", linea: "2.5" };
@@ -171,51 +180,103 @@
                             else if (out.name === partido.away_team) cuotas.visita = out.price;
                             else cuotas.empate = out.price;
                         });
-
                         if (cuotas.local !== "N/A" && cuotas.empate !== "N/A" && cuotas.visita !== "N/A") {
                             let p1 = 1 / cuotas.local; let pX = 1 / cuotas.empate; let p2 = 1 / cuotas.visita;
-                            doble.localEmpate = (1 / (p1 + pX)).toFixed(2);
-                            doble.visitaEmpate = (1 / (p2 + pX)).toFixed(2);
-                            doble.localVisita = (1 / (p1 + p2)).toFixed(2);
+                            doble.localEmpate = (1 / (p1 + pX)).toFixed(2); doble.visitaEmpate = (1 / (p2 + pX)).toFixed(2); doble.localVisita = (1 / (p1 + p2)).toFixed(2);
                         }
                     }
-
                     const totalsMarket = partido.bookmakers[0].markets.find(m => m.key === 'totals');
                     if (totalsMarket && totalsMarket.outcomes) {
                         let over = totalsMarket.outcomes.find(o => o.name === 'Over');
                         let under = totalsMarket.outcomes.find(o => o.name === 'Under');
-                        if (over && under) {
-                            goles.over = over.price;
-                            goles.under = under.price;
-                            goles.linea = over.point || "2.5";
-                        }
+                        if (over && under) { goles.over = over.price; goles.under = under.price; goles.linea = over.point || "2.5"; }
                     }
                 }
-                return {
-                    id: partido.id, utcDate: partido.commence_time,
-                    competition: { name: partido.sport_title },
-                    homeTeam: { name: partido.home_team }, awayTeam: { name: partido.away_team }, 
-                    cuotasReales: cuotas, doble: doble, goles: goles
-                };
+                return { id: partido.id, utcDate: partido.commence_time, competition: { name: partido.sport_title }, homeTeam: { name: partido.home_team }, awayTeam: { name: partido.away_team }, cuotasReales: cuotas, doble: doble, goles: goles };
             });
-
-            if (dataProcesada.length > 0) localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: dataProcesada }));
-            return dataProcesada;
         }
 
-        function mostrarError(mensaje) {
-            const logBox = document.getElementById('logs-servidor-error');
-            logBox.innerHTML = `<div class="banner-error-api"><b>⚠️ Error de Conexión</b><br>${mensaje}</div>`;
-            logBox.classList.remove('oculto');
+        // --- BASE DE DATOS 2: BÁSQUETBOL (BOVADA PÚBLICA - SIN KEY) ---
+        async function fetchBasketBovadaPublico() {
+            // Usamos un proxy público transparente para saltear restricciones de red directo en el navegador
+            const objetivoUrl = "https://www.bovada.lv/services/sports/event/v2/events/A/description/basketball";
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(objetivoUrl)}`;
+            let resultados = [];
+
+            try {
+                const res = await fetch(proxyUrl);
+                const data = await res.json();
+                
+                if (!data || !data[0] || !data[0].events) return [];
+                
+                const eventosRaw = data[0].events;
+
+                eventosRaw.forEach(evento => {
+                    // Descartamos partidos sin mercados activos o sin fecha estructurada
+                    if (!evento.displayGroups || evento.displayGroups.length === 0 || !evento.competitors) return;
+
+                    let cuotas = { local: "N/A", empate: "N/A", visita: "N/A" };
+                    let doble = { localEmpate: "N/A", visitaEmpate: "N/A", localVisita: "N/A" };
+                    let goles = { over: "N/A", under: "N/A", linea: "215.5" };
+
+                    const localTeam = evento.competitors.find(c => c.home);
+                    const awayTeam = evento.competitors.find(c => !c.home);
+                    if (!localTeam || !awayTeam) return;
+
+                    const mercados = evento.displayGroups[0].markets;
+
+                    // Parsear Ganador Partido (Moneyline)
+                    const moneyline = mercados.find(m => m.description === "Moneyline");
+                    if (moneyline && moneyline.outcomes) {
+                        const outLocal = moneyline.outcomes.find(o => o.description === localTeam.name);
+                        const outVisita = moneyline.outcomes.find(o => o.description === awayTeam.name);
+                        if (outLocal && outLocal.price) cuotas.local = outLocal.price.decimal;
+                        if (outVisita && outVisita.price) cuotas.visita = outVisita.price.decimal;
+                    }
+
+                    // Parsear Totales de Puntos (Over/Under)
+                    const totals = mercados.find(m => m.description === "Total");
+                    if (totals && totals.outcomes && totals.outcomes.length >= 2) {
+                        const outOver = totals.outcomes.find(o => o.description === "Over");
+                        const outUnder = totals.outcomes.find(o => o.description === "Under");
+                        if (outOver && outOver.price) {
+                            goles.over = outOver.price.decimal;
+                            goles.linea = outOver.price.handicap;
+                        }
+                        if (outUnder && outUnder.price) goles.under = outUnder.price.decimal;
+                    }
+
+                    // Guardamos la estructura limpia adaptada a nuestra interfaz
+                    resultados.push({
+                        id: evento.id,
+                        utcDate: new Date(evento.startTime).toISOString(),
+                        competition: { name: evento.league || "Básquetbol Internacional" },
+                        homeTeam: { name: localTeam.name },
+                        awayTeam: { name: awayTeam.name },
+                        cuotasReales: cuotas,
+                        doble: doble,
+                        goles: goles
+                    });
+                });
+
+            } catch (error) {
+                console.error("Error consultando base de datos abierta: ", error);
+                mostrarError("No se pudo conectar a la base de datos de básquetbol. Reintentá en unos minutos.");
+            }
+
+            return resultados;
         }
 
         async function iniciarApp() {
             const contenedor = document.getElementById('contenedor-partidos');
-            contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px; text-align:center;">⏳ Analizando mercados globales...</p>`;
-            baseDeDatosHoy = await fetchLigasTheOddsAPI();
-            if (baseDeDatosHoy.length > 0) { generarCombinadaDelDia(); aplicarFiltrosMaster(); } 
-            else if (document.getElementById('logs-servidor-error').classList.contains('oculto')) {
-                contenedor.innerHTML = `<p style="text-align:center; color:var(--texto-gris)">⚠️ No hay eventos próximos para estos torneos.</p>`;
+            contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px; text-align:center;">⏳ Conectando con el servidor de ${deporteActivo.toUpperCase()}...</p>`;
+            baseDeDatosHoy = await cargarDatosDeportivos();
+            
+            if (baseDeDatosHoy.length > 0) { 
+                generarCombinadaDelDia(); 
+                aplicarFiltrosMaster(); 
+            } else if (document.getElementById('logs-servidor-error').classList.contains('oculto')) {
+                contenedor.innerHTML = `<p style="text-align:center; color:var(--texto-gris)">⚠️ No hay eventos cargados para este deporte en este momento.</p>`;
             }
         }
 
@@ -229,63 +290,61 @@
                 <h2 style="width:10%; text-align:center; color:var(--verde-principal);">VS</h2>
                 <div style="text-align:center; width:45%;">${generarMonograma(p.awayTeam.name, 'detalle')}<p style="font-size:0.90rem; font-weight:bold;">${p.awayTeam.name}</p></div>`;
             
-            let probL = p.cuotasReales.local !== "N/A" ? Math.round((1 / p.cuotasReales.local) * 100) : 33;
-            let probE = p.cuotasReales.empate !== "N/A" ? Math.round((1 / p.cuotasReales.empate) * 100) : 33;
-            let probV = p.cuotasReales.visita !== "N/A" ? Math.round((1 / p.cuotasReales.visita) * 100) : 33;
+            let probL = p.cuotasReales.local !== "N/A" ? Math.round((1 / p.cuotasReales.local) * 100) : 50;
+            let probV = p.cuotasReales.visita !== "N/A" ? Math.round((1 / p.cuotasReales.visita) * 100) : 50;
+            let probE = deporteActivo === 'futbol' && p.cuotasReales.empate !== "N/A" ? Math.round((1 / p.cuotasReales.empate) * 100) : 0;
 
             let totalProb = probL + probE + probV;
-            probL = Math.round((probL / totalProb) * 100); probE = Math.round((probE / totalProb) * 100); probV = Math.round((probV / totalProb) * 100);
+            probL = Math.round((probL / totalProb) * 100); probV = Math.round((probV / totalProb) * 100); if(probE > 0) probE = Math.round((probE / totalProb) * 100);
 
-            let consejo = "Partido complejo. Analizá bien las tendencias.";
-            if (probL >= 60) consejo = `🔥 <strong>Fuerte tendencia Local:</strong> El mercado le da un ${probL}% de chances a ${p.homeTeam.name}.`;
-            else if (probV >= 60) consejo = `🔥 <strong>Fuerte tendencia Visitante:</strong> Claro favoritismo para ${p.awayTeam.name} (${probV}%).`;
-            else if (Math.abs(probL - probV) <= 10 && probE > 25) consejo = `⚖️ <strong>Duelo muy parejo:</strong> Fuerzas equilibradas. Ideal para Doble Oportunidad.`;
+            let consejo = "Partido parejo. Las cuotas están muy equilibradas.";
+            if (probL >= 63) consejo = `🔥 <strong>Favorito Claro:</strong> ${p.homeTeam.name} tiene una probabilidad implícita del ${probL}%.`;
+            else if (probV >= 63) consejo = `🔥 <strong>Favorito Claro:</strong> Ventaja seria para la visita: ${p.awayTeam.name} (${probV}%).`;
 
             document.getElementById('detalle-consejo').innerHTML = `<div class="caja-consejo">💡 <strong>Consejo IA:</strong><br>${consejo}</div>`;
 
-            let htmlTabs = `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Local <span class="cuota-real-badge">x${p.cuotasReales.local}</span></span><span>${probL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}%"></div></div></div>`;
-            if(deporteActivo === 'futbol' && p.cuotasReales.empate !== "N/A") {
+            let htmlTabs = `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Ganador: Local <span class="cuota-real-badge">x${p.cuotasReales.local}</span></span><span>${probL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}%"></div></div></div>`;
+            if(deporteActivo === 'futbol' && probE > 0) {
                 htmlTabs += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Empate <span class="cuota-real-badge">x${p.cuotasReales.empate}</span></span><span>${probE}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probE}%"></div></div></div>`;
             }
-            htmlTabs += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Visita <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div>`;
+            htmlTabs += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Ganador: Visita <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div>`;
             
             let htmlDoble = '';
             let htmlGoles = '';
 
-            if (deporteActivo === 'futbol') {
-                if (p.doble && p.doble.localEmpate !== "N/A") {
-                    htmlDoble = `
-                    <h4 style="margin-top:25px; color:var(--texto-gris); font-size:0.85rem; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:8px; text-transform:uppercase;">⚖️ Doble Oportunidad</h4>
-                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:12px;">
-                        <div style="background:rgba(0,0,0,0.25); border:1px solid var(--tarjeta-borde); padding:10px; border-radius:8px; text-align:center;">
-                            <div style="font-size:0.7rem; color:var(--texto-gris); margin-bottom:5px;">1X (Local/Emp)</div>
-                            <strong style="color:var(--verde-principal);">x${p.doble.localEmpate}</strong>
-                        </div>
-                        <div style="background:rgba(0,0,0,0.25); border:1px solid var(--tarjeta-borde); padding:10px; border-radius:8px; text-align:center;">
-                            <div style="font-size:0.7rem; color:var(--texto-gris); margin-bottom:5px;">12 (Local/Vis)</div>
-                            <strong style="color:var(--verde-principal);">x${p.doble.localVisita}</strong>
-                        </div>
-                        <div style="background:rgba(0,0,0,0.25); border:1px solid var(--tarjeta-borde); padding:10px; border-radius:8px; text-align:center;">
-                            <div style="font-size:0.7rem; color:var(--texto-gris); margin-bottom:5px;">X2 (Vis/Emp)</div>
-                            <strong style="color:var(--verde-principal);">x${p.doble.visitaEmpate}</strong>
-                        </div>
-                    </div>`;
-                }
+            if (deporteActivo === 'futbol' && p.doble && p.doble.localEmpate !== "N/A") {
+                htmlDoble = `
+                <h4 style="margin-top:25px; color:var(--texto-gris); font-size:0.85rem; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:8px; text-transform:uppercase;">⚖️ Doble Oportunidad</h4>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:12px;">
+                    <div style="background:rgba(0,0,0,0.25); border:1px solid var(--tarjeta-borde); padding:10px; border-radius:8px; text-align:center;">
+                        <div style="font-size:0.7rem; color:var(--texto-gris); margin-bottom:5px;">1X (Local/Emp)</div>
+                        <strong style="color:var(--verde-principal);">x${p.doble.localEmpate}</strong>
+                    </div>
+                    <div style="background:rgba(0,0,0,0.25); border:1px solid var(--tarjeta-borde); padding:10px; border-radius:8px; text-align:center;">
+                        <div style="font-size:0.7rem; color:var(--texto-gris); margin-bottom:5px;">12 (Local/Vis)</div>
+                        <strong style="color:var(--verde-principal);">x${p.doble.localVisita}</strong>
+                    </div>
+                    <div style="background:rgba(0,0,0,0.25); border:1px solid var(--tarjeta-borde); padding:10px; border-radius:8px; text-align:center;">
+                        <div style="font-size:0.7rem; color:var(--texto-gris); margin-bottom:5px;">X2 (Vis/Emp)</div>
+                        <strong style="color:var(--verde-principal);">x${p.doble.visitaEmpate}</strong>
+                    </div>
+                </div>`;
+            }
 
-                if (p.goles && p.goles.over !== "N/A") {
-                    htmlGoles = `
-                    <h4 style="margin-top:20px; color:var(--texto-gris); font-size:0.85rem; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:8px; text-transform:uppercase;">⚽ Goles Totales</h4>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;">
-                        <div style="background:rgba(0,0,0,0.25); border:1px solid var(--tarjeta-borde); padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
-                            <strong style="font-size:0.85rem; color:var(--texto-blanco);">Más de ${p.goles.linea}</strong> 
-                            <span style="color:var(--oro); font-weight:800;">x${p.goles.over}</span>
-                        </div>
-                        <div style="background:rgba(0,0,0,0.25); border:1px solid var(--tarjeta-borde); padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
-                            <strong style="font-size:0.85rem; color:var(--texto-blanco);">Menos de ${p.goles.linea}</strong> 
-                            <span style="color:var(--alerta); font-weight:800;">x${p.goles.under}</span>
-                        </div>
-                    </div>`;
-                }
+            if (p.goles && p.goles.over !== "N/A") {
+                let tituloMercado = deporteActivo === 'futbol' ? '⚽ Goles Totales' : '🏀 Puntos Totales (Inc. Prórroga)';
+                htmlGoles = `
+                <h4 style="margin-top:20px; color:var(--texto-gris); font-size:0.85rem; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:8px; text-transform:uppercase;">${tituloMercado}</h4>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;">
+                    <div style="background:rgba(0,0,0,0.25); border:1px solid var(--tarjeta-borde); padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                        <strong style="font-size:0.85rem; color:var(--texto-blanco);">Más de ${p.goles.linea}</strong> 
+                        <span style="color:var(--oro); font-weight:800;">x${p.goles.over}</span>
+                    </div>
+                    <div style="background:rgba(0,0,0,0.25); border:1px solid var(--tarjeta-borde); padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                        <strong style="font-size:0.85rem; color:var(--texto-blanco);">Menos de ${p.goles.linea}</strong> 
+                        <span style="color:var(--alerta); font-weight:800;">x${p.goles.under}</span>
+                    </div>
+                </div>`;
             }
 
             document.getElementById('detalle-barras').innerHTML = htmlTabs + htmlDoble + htmlGoles;
@@ -311,7 +370,7 @@
             
             f.sort((a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime());
             const c = document.getElementById('contenedor-partidos'); c.innerHTML = '';
-            if (f.length === 0) { c.innerHTML = `<p style="padding:30px; text-align:center; color:var(--texto-gris);">No hay eventos de este tipo programados ahora.</p>`; return; }
+            if (f.length === 0) { c.innerHTML = `<p style="padding:30px; text-align:center; color:var(--texto-gris);">No hay eventos programados en este segmento.</p>`; return; }
             
             f.forEach(p => { 
                 let fechaObj = new Date(p.utcDate);
@@ -355,7 +414,7 @@
             });
 
             if (dias.length === 0) {
-                s.innerHTML = `<p style="padding:20px; text-align:center; color:var(--texto-gris);">No hay partidos con cuotas disponibles para combinadas en este momento.</p>`;
+                s.innerHTML = `<p style="padding:20px; text-align:center; color:var(--texto-gris);">No hay partidos con cuotas suficientes para armar combinadas hoy.</p>`;
                 return;
             }
 
@@ -364,47 +423,30 @@
                 s.innerHTML += `<h3 class="fecha-combinada">📅 Partidos del ${dia}</h3>`;
                 
                 if (pool.length < 3) {
-                    s.innerHTML += `<div class="tarjeta-aviso">⚠️ <b>Partidos insuficientes.</b><br><span style="font-size:0.85rem;">Se necesitan al menos 3 encuentros en el día para generar un ticket seguro.</span></div>`;
+                    s.innerHTML += `<div class="tarjeta-aviso">⚠️ <b>Partidos insuficientes.</b><br><span style="font-size:0.85rem;">Se necesitan al menos 3 encuentros de ${deporteActivo} este día para armar los bloques.</span></div>`;
                 } else {
                     pool.sort((a,b) => a.cuota - b.cuota);
                     let seguro = pool.slice(0, 3); 
                     let medio = pool.length >= 6 ? pool.slice(3, 6) : []; 
-                    let arriesgado = pool.filter(x => x.cuota > 2.0).slice(0, 3); 
+                    let arriesgado = pool.filter(x => x.cuota > 1.75).slice(0, 3); 
                     
-                    let idSeguro = `seguro_${indexDia}`;
-                    let idMedio = `medio_${indexDia}`;
-                    let idArriesgado = `arriesgado_${indexDia}`;
+                    let idSeguro = `seguro_${indexDia}`; let idMedio = `medio_${indexDia}`; let idArriesgado = `arriesgado_${indexDia}`;
 
-                    if (seguro.length >= 2) { 
-                        ticketsMultiplesGenerados[idSeguro] = seguro;
-                        s.innerHTML += renderHTMLTick(seguro, idSeguro, `🛡️ Segura (Favoritos Claros)`); 
-                    }
-                    if (medio.length >= 2) {
-                        ticketsMultiplesGenerados[idMedio] = medio;
-                        s.innerHTML += renderHTMLTick(medio, idMedio, `⚖️ Equilibrada`); 
-                    }
-                    if (arriesgado.length >= 2) { 
-                        ticketsMultiplesGenerados[idArriesgado] = arriesgado;
-                        s.innerHTML += renderHTMLTick(arriesgado, idArriesgado, `🔥 Arriesgada`);
-                    }
+                    if (seguro.length >= 2) { ticketsMultiplesGenerados[idSeguro] = seguro; s.innerHTML += renderHTMLTick(seguro, idSeguro, `🛡️ Segura (Favoritos Claros)`); }
+                    if (medio.length >= 2) { ticketsMultiplesGenerados[idMedio] = medio; s.innerHTML += renderHTMLTick(medio, idMedio, `⚖️ Equilibrada`); }
+                    if (arriesgado.length >= 2) { ticketsMultiplesGenerados[idArriesgado] = arriesgado; s.innerHTML += renderHTMLTick(arriesgado, idArriesgado, `🔥 Arriesgada`); }
                 }
             });
         }
 
         function renderHTMLTick(arr, id, tit) { let t = 1.0; let h = `<div class="tarjeta-combinada ticket-${id}"><h4>${tit}</h4>`; arr.forEach(c => { t *= parseFloat(c.cuota); h += `<div class="ticket-item">📍 ${c.p.homeTeam.name} vs ${c.p.awayTeam.name}<br>🎯 <b>${c.mercado}</b> <strong style="color:var(--verde-principal); float:right;">x${c.cuota}</strong></div>`; }); h += `<div style="text-align:right; margin:10px 0; color:var(--oro)">Cuota Total: x${t.toFixed(2)}</div><button onclick="guardarCombinada('${id}')" style="width:100%; background:rgba(255,255,255,0.08); color:white; border:1px solid var(--tarjeta-borde); padding:8px; border-radius:6px;">Guardar Ticket</button></div>`; return h; }
-        
         function obtenerPicksLocales() { return JSON.parse(localStorage.getItem('gp_picks')) || []; }
-        
         function guardarCombinada(idT) { let h = obtenerPicksLocales(); let tk = ticketsMultiplesGenerados[idT]; if (!tk) return; tk.forEach(i => { h.push({ id: Date.now(), home: i.p.homeTeam.name, away: i.p.awayTeam.name, mercado: i.mercado, cuota: i.cuota, estado: 'PENDIENTE' }); }); localStorage.setItem('gp_picks', JSON.stringify(h)); actualizarEstructuraPicksLocales(); alert("¡Ticket Guardado con éxito!"); }
-        
         function actualizarEstructuraPicksLocales() { let h = obtenerPicksLocales(); document.getElementById('contador-picks-badge').innerText = h.filter(x => x.estado === 'PENDIENTE').length; let c = document.getElementById('contenedor-lista-picks'); c.innerHTML = ""; h.reverse().forEach(p => { c.innerHTML += `<div class="item-pick-guardado"><span style="color:var(--oro); float:right;">${p.estado}</span><div style="color:var(--texto-gris); font-size:0.75rem;">${p.home} vs ${p.away}</div><strong style="color:white;">${p.mercado} (x${p.cuota})</strong></div>`; }); }
         
         function togglePanelPicks() { document.getElementById('panel-picks').classList.toggle('oculto-panel'); }
-        
         function irADeporte(dep) { deporteActivo = dep; document.getElementById('titulo-deporte-activo').innerText = dep.toUpperCase(); document.getElementById('lobby-selector').classList.add('oculto'); document.getElementById('app-content').classList.remove('oculto'); setFiltroEstado('proximos'); iniciarApp(); }
-        
         function volverAlLobby() { document.getElementById('lobby-selector').classList.remove('oculto'); document.getElementById('app-content').classList.add('oculto'); document.getElementById('vista-detalle').classList.add('oculto'); document.getElementById('logs-servidor-error').classList.add('oculto'); }
-        
         function forzarActualizacion() { localStorage.removeItem(`odds_cache_${deporteActivo}`); iniciarApp(); }
         
         window.onload = () => { actualizarEstructuraPicksLocales(); };
