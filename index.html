@@ -96,6 +96,7 @@
     <div id="panel-picks" class="panel-picks-lateral oculto-panel"><div class="panel-header"><h3>Mis Picks</h3><button class="btn-volver-lobby" onclick="togglePanelPicks()">❌</button></div><div id="contenedor-lista-picks"></div></div>
 
     <script>
+        // ¡IMPORTANTE! Si se te acabaron las consultas, tenés que poner otra API Key acá:
         const API_KEY_FUTBOL = "b1068f561f80975166b5c1ab67a2888a"; 
         const API_KEY_BASQUET = "TU_API_KEY_BASQUET_AQUI"; 
         
@@ -142,16 +143,15 @@
 
             for (let liga of ligas) {
                 try {
-                    let mercados = deporteActivo === 'futbol' ? 'h2h,correct_score' : 'h2h';
-                    const url = `https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${KEY_ACTUAL}&regions=us,uk,eu&markets=${mercados}`;
+                    // Ahora pedimos H2H y TOTALS (Goles). Y solo en 'us' para no gastar tantos créditos.
+                    let mercados = deporteActivo === 'futbol' ? 'h2h,totals' : 'h2h';
+                    const url = `https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${KEY_ACTUAL}&regions=us&markets=${mercados}`;
                     const res = await fetch(url);
                     
                     if (res.status === 401) { mostrarError("API Key inválida."); return []; }
-                    if (res.status === 429) { mostrarError("Límite de consultas mensual alcanzado."); return []; }
+                    if (res.status === 429) { mostrarError("Límite de consultas mensual alcanzado. ¡Cuidado!"); return []; }
                     
                     const data = await res.json();
-                    
-                    console.log(`Liga: ${liga} - Partidos encontrados: ${Array.isArray(data) ? data.length : 0}`);
                     
                     if (Array.isArray(data)) resultadosTotales = resultadosTotales.concat(data);
                 } catch (error) {
@@ -161,9 +161,11 @@
 
             const dataProcesada = resultadosTotales.map(partido => {
                 let cuotas = { local: "N/A", empate: "N/A", visita: "N/A" };
-                let marcadores = []; 
+                let doble = { localEmpate: "N/A", visitaEmpate: "N/A", localVisita: "N/A" };
+                let goles = { over: "N/A", under: "N/A", linea: "2.5" };
 
                 if (partido.bookmakers && partido.bookmakers.length > 0) {
+                    // 1. Ganador del Partido (H2H)
                     const h2hMarket = partido.bookmakers[0].markets.find(m => m.key === 'h2h');
                     if (h2hMarket && h2hMarket.outcomes) {
                         h2hMarket.outcomes.forEach(out => {
@@ -171,20 +173,33 @@
                             else if (out.name === partido.away_team) cuotas.visita = out.price;
                             else cuotas.empate = out.price;
                         });
+
+                        // Truco Matemático: Calcular Doble Oportunidad sin gastar saldo de la API
+                        if (cuotas.local !== "N/A" && cuotas.empate !== "N/A" && cuotas.visita !== "N/A") {
+                            let p1 = 1 / cuotas.local; let pX = 1 / cuotas.empate; let p2 = 1 / cuotas.visita;
+                            doble.localEmpate = (1 / (p1 + pX)).toFixed(2);
+                            doble.visitaEmpate = (1 / (p2 + pX)).toFixed(2);
+                            doble.localVisita = (1 / (p1 + p2)).toFixed(2);
+                        }
                     }
-                    
-                    const scoreMarket = partido.bookmakers[0].markets.find(m => m.key === 'correct_score');
-                    if (scoreMarket && scoreMarket.outcomes) {
-                        marcadores = scoreMarket.outcomes.sort((a, b) => a.price - b.price).slice(0, 4);
+
+                    // 2. Goles Totales (Over/Under)
+                    const totalsMarket = partido.bookmakers[0].markets.find(m => m.key === 'totals');
+                    if (totalsMarket && totalsMarket.outcomes) {
+                        let over = totalsMarket.outcomes.find(o => o.name === 'Over');
+                        let under = totalsMarket.outcomes.find(o => o.name === 'Under');
+                        if (over && under) {
+                            goles.over = over.price;
+                            goles.under = under.price;
+                            goles.linea = over.point || "2.5";
+                        }
                     }
                 }
                 return {
                     id: partido.id, utcDate: partido.commence_time,
                     competition: { name: partido.sport_title },
-                    homeTeam: { name: partido.home_team },
-                    awayTeam: { name: partido.away_team }, 
-                    cuotasReales: cuotas, 
-                    marcadoresExactos: marcadores 
+                    homeTeam: { name: partido.home_team }, awayTeam: { name: partido.away_team }, 
+                    cuotasReales: cuotas, doble: doble, goles: goles
                 };
             });
 
@@ -225,14 +240,12 @@
             let totalProb = probL + probE + probV;
             probL = Math.round((probL / totalProb) * 100); probE = Math.round((probE / totalProb) * 100); probV = Math.round((probV / totalProb) * 100);
 
-            let consejo = "Partido complejo. Ideal para buscar mercados de goles o hándicap.";
-            if (probL >= 60) consejo = `🔥 <strong>Fuerte tendencia Local:</strong> El mercado le da un ${probL}% de chances a ${p.homeTeam.name}. Apuesta directa recomendada.`;
-            else if (probV >= 60) consejo = `🔥 <strong>Fuerte tendencia Visitante:</strong> Claro favoritismo para ${p.awayTeam.name} (${probV}%). Gran opción para sumarlo a un ticket.`;
-            else if (Math.abs(probL - probV) <= 10 && probE > 25) consejo = `⚖️ <strong>Duelo copero muy parejo:</strong> Fuerzas muy equilibradas en las cuotas. Se sugiere una 'Doble Oportunidad'.`;
-            else if (probL > probV) consejo = `📊 <strong>Leve ventaja Local:</strong> ${p.homeTeam.name} corre con favoritismo de localía, pero con margen de cuidado.`;
-            else if (probV > probL) consejo = `📊 <strong>Leve ventaja Visitante:</strong> ${p.awayTeam.name} se planta mejor en los papeles preliminares.`;
+            let consejo = "Partido complejo. Analizá bien las tendencias.";
+            if (probL >= 60) consejo = `🔥 <strong>Fuerte tendencia Local:</strong> El mercado le da un ${probL}% de chances a ${p.homeTeam.name}.`;
+            else if (probV >= 60) consejo = `🔥 <strong>Fuerte tendencia Visitante:</strong> Claro favoritismo para ${p.awayTeam.name} (${probV}%).`;
+            else if (Math.abs(probL - probV) <= 10 && probE > 25) consejo = `⚖️ <strong>Duelo muy parejo:</strong> Fuerzas equilibradas. Ideal para Doble Oportunidad.`;
 
-            document.getElementById('detalle-consejo').innerHTML = `<div class="caja-consejo">💡 <strong>Consejo del Algoritmo:</strong><br>${consejo}</div>`;
+            document.getElementById('detalle-consejo').innerHTML = `<div class="caja-consejo">💡 <strong>Consejo IA:</strong><br>${consejo}</div>`;
 
             let htmlTabs = `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Local <span class="cuota-real-badge">x${p.cuotasReales.local}</span></span><span>${probL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}%"></div></div></div>`;
             if(deporteActivo === 'futbol' && p.cuotasReales.empate !== "N/A") {
@@ -240,22 +253,47 @@
             }
             htmlTabs += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Visita <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div>`;
             
-            let htmlMarcadores = '';
-            if (p.marcadoresExactos && p.marcadoresExactos.length > 0) {
-                htmlMarcadores = `<h4 style="margin-top:25px; color:var(--texto-gris); font-size:0.85rem; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:8px; text-transform:uppercase; letter-spacing:1px;">🎯 Top 4 Resultados Probables</h4>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;">`;
-                
-                p.marcadoresExactos.forEach(m => {
-                    htmlMarcadores += `
-                    <div style="background:rgba(0,0,0,0.25); border:1px solid var(--tarjeta-borde); padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
-                        <strong style="font-size:1.1rem; color:var(--texto-blanco);">${m.name}</strong> 
-                        <span style="color:var(--verde-principal); font-weight:800;">x${m.price}</span>
+            // RENDERS DE NUEVOS MERCADOS (Doble Oportunidad y Goles)
+            let htmlDoble = '';
+            let htmlGoles = '';
+
+            if (deporteActivo === 'futbol') {
+                if (p.doble && p.doble.localEmpate !== "N/A") {
+                    htmlDoble = `
+                    <h4 style="margin-top:25px; color:var(--texto-gris); font-size:0.85rem; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:8px; text-transform:uppercase;">⚖️ Doble Oportunidad</h4>
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:12px;">
+                        <div style="background:rgba(0,0,0,0.25); border:1px solid var(--tarjeta-borde); padding:10px; border-radius:8px; text-align:center;">
+                            <div style="font-size:0.7rem; color:var(--texto-gris); margin-bottom:5px;">1X (Local/Emp)</div>
+                            <strong style="color:var(--verde-principal);">x${p.doble.localEmpate}</strong>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.25); border:1px solid var(--tarjeta-borde); padding:10px; border-radius:8px; text-align:center;">
+                            <div style="font-size:0.7rem; color:var(--texto-gris); margin-bottom:5px;">12 (Local/Vis)</div>
+                            <strong style="color:var(--verde-principal);">x${p.doble.localVisita}</strong>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.25); border:1px solid var(--tarjeta-borde); padding:10px; border-radius:8px; text-align:center;">
+                            <div style="font-size:0.7rem; color:var(--texto-gris); margin-bottom:5px;">X2 (Vis/Emp)</div>
+                            <strong style="color:var(--verde-principal);">x${p.doble.visitaEmpate}</strong>
+                        </div>
                     </div>`;
-                });
-                htmlMarcadores += `</div>`;
+                }
+
+                if (p.goles && p.goles.over !== "N/A") {
+                    htmlGoles = `
+                    <h4 style="margin-top:20px; color:var(--texto-gris); font-size:0.85rem; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:8px; text-transform:uppercase;">⚽ Goles Totales</h4>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;">
+                        <div style="background:rgba(0,0,0,0.25); border:1px solid var(--tarjeta-borde); padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                            <strong style="font-size:0.85rem; color:var(--texto-blanco);">Más de ${p.goles.linea}</strong> 
+                            <span style="color:var(--oro); font-weight:800;">x${p.goles.over}</span>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.25); border:1px solid var(--tarjeta-borde); padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                            <strong style="font-size:0.85rem; color:var(--texto-blanco);">Menos de ${p.goles.linea}</strong> 
+                            <span style="color:var(--alerta); font-weight:800;">x${p.goles.under}</span>
+                        </div>
+                    </div>`;
+                }
             }
 
-            document.getElementById('detalle-barras').innerHTML = htmlTabs + htmlMarcadores;
+            document.getElementById('detalle-barras').innerHTML = htmlTabs + htmlDoble + htmlGoles;
         }
 
         function cerrarDetalle() { document.getElementById('vista-detalle').classList.add('oculto'); setFiltroEstado(estadoFiltroActual); }
