@@ -44,6 +44,7 @@
         .barra-progreso { height: 100%; width: 0%; border-radius: 5px; transition: width 0.6s; }
         .cuota-real-badge { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: var(--oro); font-size: 0.8rem; margin-left: 8px;}
         .tarjeta-combinada { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); border-radius: 12px; padding: 15px; margin-bottom: 15px; border-top: 4px solid var(--verde-principal); }
+        .tarjeta-aviso { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); border-radius: 12px; padding: 15px; margin-bottom: 15px; border-top: 4px solid var(--alerta); text-align: center; color: var(--texto-gris); }
         .ticket-item { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 0.85rem; }
         .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 500px; background: #0e1726; border-top: 1px solid var(--tarjeta-borde); display: flex; height: 55px; z-index: 999; }
         .nav-item-btn { flex: 1; background: transparent; border: none; color: var(--texto-gris); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer; }
@@ -53,6 +54,7 @@
         .oculto-panel { transform: translateX(100%); }
         .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--tarjeta-borde); padding-bottom: 10px; }
         .item-pick-guardado { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); border-radius: 8px; padding: 12px; font-size: 0.85rem; margin-bottom:10px; }
+        .fecha-combinada { color: var(--verde-principal); margin: 25px 0 10px 0; font-size: 1.05rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
     </style>
 </head>
 <body>
@@ -96,7 +98,6 @@
     <div id="panel-picks" class="panel-picks-lateral oculto-panel"><div class="panel-header"><h3>Mis Picks</h3><button class="btn-volver-lobby" onclick="togglePanelPicks()">❌</button></div><div id="contenedor-lista-picks"></div></div>
 
     <script>
-        // ¡IMPORTANTE! Si se te acabaron las consultas, tenés que poner otra API Key acá:
         const API_KEY_FUTBOL = "b1068f561f80975166b5c1ab67a2888a"; 
         const API_KEY_BASQUET = "TU_API_KEY_BASQUET_AQUI"; 
         
@@ -143,7 +144,6 @@
 
             for (let liga of ligas) {
                 try {
-                    // Ahora pedimos H2H y TOTALS (Goles). Y solo en 'us' para no gastar tantos créditos.
                     let mercados = deporteActivo === 'futbol' ? 'h2h,totals' : 'h2h';
                     const url = `https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${KEY_ACTUAL}&regions=us&markets=${mercados}`;
                     const res = await fetch(url);
@@ -152,7 +152,6 @@
                     if (res.status === 429) { mostrarError("Límite de consultas mensual alcanzado. ¡Cuidado!"); return []; }
                     
                     const data = await res.json();
-                    
                     if (Array.isArray(data)) resultadosTotales = resultadosTotales.concat(data);
                 } catch (error) {
                     console.error("Error consultando la liga: ", liga);
@@ -165,7 +164,6 @@
                 let goles = { over: "N/A", under: "N/A", linea: "2.5" };
 
                 if (partido.bookmakers && partido.bookmakers.length > 0) {
-                    // 1. Ganador del Partido (H2H)
                     const h2hMarket = partido.bookmakers[0].markets.find(m => m.key === 'h2h');
                     if (h2hMarket && h2hMarket.outcomes) {
                         h2hMarket.outcomes.forEach(out => {
@@ -174,7 +172,6 @@
                             else cuotas.empate = out.price;
                         });
 
-                        // Truco Matemático: Calcular Doble Oportunidad sin gastar saldo de la API
                         if (cuotas.local !== "N/A" && cuotas.empate !== "N/A" && cuotas.visita !== "N/A") {
                             let p1 = 1 / cuotas.local; let pX = 1 / cuotas.empate; let p2 = 1 / cuotas.visita;
                             doble.localEmpate = (1 / (p1 + pX)).toFixed(2);
@@ -183,7 +180,6 @@
                         }
                     }
 
-                    // 2. Goles Totales (Over/Under)
                     const totalsMarket = partido.bookmakers[0].markets.find(m => m.key === 'totals');
                     if (totalsMarket && totalsMarket.outcomes) {
                         let over = totalsMarket.outcomes.find(o => o.name === 'Over');
@@ -253,7 +249,6 @@
             }
             htmlTabs += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Visita <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div>`;
             
-            // RENDERS DE NUEVOS MERCADOS (Doble Oportunidad y Goles)
             let htmlDoble = '';
             let htmlGoles = '';
 
@@ -338,27 +333,69 @@
         }
 
         function generarCombinadaDelDia() {
-            let pool = []; 
-            baseDeDatosHoy.forEach(p => { 
-                if(p.cuotasReales.local !== "N/A" && p.cuotasReales.visita !== "N/A") {
-                    if(p.cuotasReales.local <= p.cuotasReales.visita) pool.push({ p: p, mercado: `Gana ${p.homeTeam.name}`, cuota: p.cuotasReales.local });
-                    else pool.push({ p: p, mercado: `Gana ${p.awayTeam.name}`, cuota: p.cuotasReales.visita });
+            const s = document.getElementById('seccion-combinada'); 
+            s.innerHTML = '';
+            ticketsMultiplesGenerados = {}; 
+
+            let agrupadoPorDia = {};
+            baseDeDatosHoy.forEach(p => {
+                if (p.cuotasReales.local !== "N/A" && p.cuotasReales.visita !== "N/A") {
+                    let fechaStr = new Date(p.utcDate).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    if (!agrupadoPorDia[fechaStr]) agrupadoPorDia[fechaStr] = [];
+                    
+                    let cuotaL = parseFloat(p.cuotasReales.local);
+                    let cuotaV = parseFloat(p.cuotasReales.visita);
+                    if (cuotaL <= cuotaV) agrupadoPorDia[fechaStr].push({ p: p, mercado: `Gana ${p.homeTeam.name}`, cuota: cuotaL });
+                    else agrupadoPorDia[fechaStr].push({ p: p, mercado: `Gana ${p.awayTeam.name}`, cuota: cuotaV });
                 }
             });
-            pool.sort((a,b) => parseFloat(a.cuota) - parseFloat(b.cuota));
-            let seguro = pool.slice(0, 3); let medio = pool.slice(3, 6); let arriesgado = pool.filter(x => parseFloat(x.cuota) > 2.0).slice(0,3); 
-            ticketsMultiplesGenerados = { 'seguro': seguro, 'medio': medio, 'arriesgado': arriesgado }; 
-            const s = document.getElementById('seccion-combinada'); s.innerHTML = '';
-            if (seguro.length) s.innerHTML += renderHTMLTick(seguro, "seguro", `🛡️ Segura (Favoritos Claros)`); 
-            if (medio.length) s.innerHTML += renderHTMLTick(medio, "medio", `⚖️ Equilibrada`); 
-            if (arriesgado.length) s.innerHTML += renderHTMLTick(arriesgado, "arriesgado", `🔥 Arriesgada`);
+
+            let dias = Object.keys(agrupadoPorDia).sort((a, b) => {
+                return agrupadoPorDia[a][0].p.utcDate.localeCompare(agrupadoPorDia[b][0].p.utcDate);
+            });
+
+            if (dias.length === 0) {
+                s.innerHTML = `<p style="padding:20px; text-align:center; color:var(--texto-gris);">No hay partidos con cuotas disponibles para combinadas en este momento.</p>`;
+                return;
+            }
+
+            dias.forEach((dia, indexDia) => {
+                let pool = agrupadoPorDia[dia];
+                s.innerHTML += `<h3 class="fecha-combinada">📅 Partidos del ${dia}</h3>`;
+                
+                if (pool.length < 3) {
+                    s.innerHTML += `<div class="tarjeta-aviso">⚠️ <b>Partidos insuficientes.</b><br><span style="font-size:0.85rem;">Se necesitan al menos 3 encuentros en el día para generar un ticket seguro.</span></div>`;
+                } else {
+                    pool.sort((a,b) => a.cuota - b.cuota);
+                    let seguro = pool.slice(0, 3); 
+                    let medio = pool.length >= 6 ? pool.slice(3, 6) : []; 
+                    let arriesgado = pool.filter(x => x.cuota > 2.0).slice(0, 3); 
+                    
+                    let idSeguro = `seguro_${indexDia}`;
+                    let idMedio = `medio_${indexDia}`;
+                    let idArriesgado = `arriesgado_${indexDia}`;
+
+                    if (seguro.length >= 2) { 
+                        ticketsMultiplesGenerados[idSeguro] = seguro;
+                        s.innerHTML += renderHTMLTick(seguro, idSeguro, `🛡️ Segura (Favoritos Claros)`); 
+                    }
+                    if (medio.length >= 2) {
+                        ticketsMultiplesGenerados[idMedio] = medio;
+                        s.innerHTML += renderHTMLTick(medio, idMedio, `⚖️ Equilibrada`); 
+                    }
+                    if (arriesgado.length >= 2) { 
+                        ticketsMultiplesGenerados[idArriesgado] = arriesgado;
+                        s.innerHTML += renderHTMLTick(arriesgado, idArriesgado, `🔥 Arriesgada`);
+                    }
+                }
+            });
         }
 
         function renderHTMLTick(arr, id, tit) { let t = 1.0; let h = `<div class="tarjeta-combinada ticket-${id}"><h4>${tit}</h4>`; arr.forEach(c => { t *= parseFloat(c.cuota); h += `<div class="ticket-item">📍 ${c.p.homeTeam.name} vs ${c.p.awayTeam.name}<br>🎯 <b>${c.mercado}</b> <strong style="color:var(--verde-principal); float:right;">x${c.cuota}</strong></div>`; }); h += `<div style="text-align:right; margin:10px 0; color:var(--oro)">Cuota Total: x${t.toFixed(2)}</div><button onclick="guardarCombinada('${id}')" style="width:100%; background:rgba(255,255,255,0.08); color:white; border:1px solid var(--tarjeta-borde); padding:8px; border-radius:6px;">Guardar Ticket</button></div>`; return h; }
         
         function obtenerPicksLocales() { return JSON.parse(localStorage.getItem('gp_picks')) || []; }
         
-        function guardarCombinada(idT) { let h = obtenerPicksLocales(); let tk = ticketsMultiplesGenerados[idT]; if (!tk) return; tk.forEach(i => { h.push({ id: Date.now(), home: i.p.homeTeam.name, away: i.p.awayTeam.name, mercado: i.mercado, cuota: i.cuota, estado: 'PENDIENTE' }); }); localStorage.setItem('gp_picks', JSON.stringify(h)); actualizarEstructuraPicksLocales(); alert("¡Guardado!"); }
+        function guardarCombinada(idT) { let h = obtenerPicksLocales(); let tk = ticketsMultiplesGenerados[idT]; if (!tk) return; tk.forEach(i => { h.push({ id: Date.now(), home: i.p.homeTeam.name, away: i.p.awayTeam.name, mercado: i.mercado, cuota: i.cuota, estado: 'PENDIENTE' }); }); localStorage.setItem('gp_picks', JSON.stringify(h)); actualizarEstructuraPicksLocales(); alert("¡Ticket Guardado con éxito!"); }
         
         function actualizarEstructuraPicksLocales() { let h = obtenerPicksLocales(); document.getElementById('contador-picks-badge').innerText = h.filter(x => x.estado === 'PENDIENTE').length; let c = document.getElementById('contenedor-lista-picks'); c.innerHTML = ""; h.reverse().forEach(p => { c.innerHTML += `<div class="item-pick-guardado"><span style="color:var(--oro); float:right;">${p.estado}</span><div style="color:var(--texto-gris); font-size:0.75rem;">${p.home} vs ${p.away}</div><strong style="color:white;">${p.mercado} (x${p.cuota})</strong></div>`; }); }
         
