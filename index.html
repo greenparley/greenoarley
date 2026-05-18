@@ -233,9 +233,8 @@
         const estadosEnVivoBasket = ['Q1', 'Q2', 'Q3', 'Q4', 'OT', 'BT', 'HT', 'LIVE', 'IN_PLAY'];
         const ESCUDO_RESPALDO = "https://cdn-icons-png.flaticon.com/512/53/53283.png";
 
-        // Mantenemos filtros de Ligas Top para visualización limpia
+        // Filtro estricto exclusivo para fútbol (Ligas Top)
         const LIGAS_TOP_FUTBOL = [1, 2, 3, 4, 9, 13, 11, 12, 39, 140, 135, 78, 61, 128, 130, 129, 131, 71, 73];
-        const LIGAS_TOP_BASKET = [12, 116, 117, 120, 134, 2, 4, 5, 6, 8]; 
 
         function reproducirBeep() {
             try {
@@ -274,7 +273,7 @@
             const formatoDia = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             
             const timestampAhora = ahora.getTime();
-            // Ampliamos el rango de búsqueda a 36 horas para capturar ligas nocturnas o de otra zona horaria correctamente
+            // Ventana amplia de 36 horas para capturar juegos nocturnos y de otras regiones sin baches
             const timestampLimite = timestampAhora + (36 * 60 * 60 * 1000);
 
             const manana = new Date(timestampAhora + (24 * 60 * 60 * 1000));
@@ -291,6 +290,7 @@
             
             return todosLosEventos.filter(p => {
                 const tiempoPartido = new Date(deporteActivo === 'futbol' ? p.fixture.date : p.date).getTime();
+                // Permitir partidos que empezaron hace hasta 6 horas y los que van a jugar hasta dentro de 36 horas
                 return tiempoPartido >= (timestampAhora - 6*60*60*1000) && tiempoPartido <= timestampLimite;
             }).map(p => {
                 if (deporteActivo === 'futbol') {
@@ -309,7 +309,6 @@
                     if (estadosEnVivoBasket.includes(p.status.short)) estado = 'IN_PLAY';
                     else if (['FT', 'AOT'].includes(p.status.short)) estado = 'FINISHED';
                     
-                    // SOLUCIÓN AL FALLO: Validar de manera segura la existencia de scores pre-partido
                     let scoreHome = p.scores && p.scores.home ? (p.scores.home.total ?? 0) : 0;
                     let scoreAway = p.scores && p.scores.away ? (p.scores.away.total ?? 0) : 0;
 
@@ -330,8 +329,13 @@
             
             try {
                 const todosLosPartidos = await fetchPartidos();
-                if (deporteActivo === 'futbol') baseDeDatosHoy = todosLosPartidos.filter(p => LIGAS_TOP_FUTBOL.includes(p.competition.id));
-                else if (deporteActivo === 'basquet') baseDeDatosHoy = todosLosPartidos.filter(p => LIGAS_TOP_BASKET.includes(p.competition.id));
+                
+                // SOLUCIÓN: El fútbol usa ligas Top filtradas, pero el Básquet ahora acepta CUALQUIER liga/partido que devuelva la API
+                if (deporteActivo === 'futbol') {
+                    baseDeDatosHoy = todosLosPartidos.filter(p => LIGAS_TOP_FUTBOL.includes(p.competition.id));
+                } else if (deporteActivo === 'basquet') {
+                    baseDeDatosHoy = todosLosPartidos; // Apertura completa de datos para básquetbol
+                }
 
                 baseDeDatosHoy.forEach(p => { scoresAnteriores[p.id] = { h: p.score?.fullTime?.home || 0, a: p.score?.fullTime?.away || 0 }; });
 
@@ -340,7 +344,7 @@
                     cargarBuscadorLigas(baseDeDatosHoy);
                     aplicarFiltrosMaster();
                 } else {
-                    contenedor.innerHTML = `<p style="padding:20px; text-align:center; color:var(--texto-gris)">⚠️ No hay eventos programados en las ligas analizadas para hoy.</p>`;
+                    contenedor.innerHTML = `<p style="padding:20px; text-align:center; color:var(--texto-gris)">⚠️ No hay eventos programados en esta sección para hoy.</p>`;
                 }
             } catch(e) {
                 contenedor.innerHTML = `<p style="padding:20px; text-align:center; color:var(--alerta)">❌ Error crítico al inicializar datos.</p>`;
@@ -683,6 +687,7 @@
         }
 
         function volverAlLobby() { 
+            document.getElementById('lobby-selector').classList.remove('remove'); 
             document.getElementById('lobby-selector').classList.remove('oculto'); 
             document.getElementById('app-content').classList.add('oculto'); 
             document.getElementById('vista-detalle').classList.add('oculto');
@@ -695,7 +700,7 @@
             try {
                 const actualizados = await fetchPartidos(); 
                 if (deporteActivo === 'futbol') baseDeDatosHoy = actualizados.filter(p => LIGAS_TOP_FUTBOL.includes(p.competition.id));
-                else if (deporteActivo === 'basquet') baseDeDatosHoy = actualizados.filter(p => LIGAS_TOP_BASKET.includes(p.competition.id));
+                else if (deporteActivo === 'basquet') baseDeDatosHoy = actualizados; // Mantener apertura completa en refresco
                 
                 let goles = []; let hubo = false;
                 baseDeDatosHoy.forEach(p => {
