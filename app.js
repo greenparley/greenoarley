@@ -1,7 +1,6 @@
 // ==========================================
 // CONFIGURACIÓN GLOBAL Y ROTACIÓN DE KEYS
 // ==========================================
-// Agregá todas las keys de API-Sports que quieras acá. El sistema rotará automáticamente.
 const API_KEYS = [
     "0464d33c8013d01fb7387b5148f18a9a", 
     "31dc5f2762254847a825e1025257a759"
@@ -21,25 +20,7 @@ const ESCUDO_RESPALDO = "https://cdn-icons-png.flaticon.com/512/53/53283.png";
 // FILTRO DE LIGAS (Solo Ligas Top, Arg y Bra)
 // ==========================================
 const LIGAS_TOP = [
-    1,   // Mundial
-    2,   // Champions League
-    3,   // Europa League
-    4,   // Eurocopa
-    9,   // Copa América
-    13,  // Copa Libertadores
-    11,  // Copa Sudamericana
-    12,  // Recopa Sudamericana
-    39,  // Premier League
-    140, // La Liga
-    135, // Serie A
-    78,  // Bundesliga
-    61,  // Ligue 1
-    128, // Argentina - Liga Profesional
-    130, // Argentina - Copa de la Liga
-    129, // Argentina - Copa Argentina
-    131, // Argentina - Supercopa
-    71,  // Brasil - Serie A
-    73   // Brasil - Copa do Brasil
+    1, 2, 3, 4, 9, 13, 11, 12, 39, 140, 135, 78, 61, 128, 130, 129, 131, 71, 73
 ];
 
 // ==========================================
@@ -65,7 +46,32 @@ function reproducirBeep() {
 }
 
 // ==========================================
-// MOTOR DE ROTACIÓN DE KEYS (¡NUEVO!)
+// TRADUCTOR DE CONSEJOS (INGLÉS A ESPAÑOL)
+// ==========================================
+function traducirConsejo(texto) {
+    if (!texto) return 'No disponible';
+    let t = texto.toLowerCase();
+    
+    // Diccionario de palabras clave de la API
+    const dicc = {
+        "winner": "Ganador", "home": "Local", "away": "Visitante", "draw": "Empate",
+        "combo": "Combinada", "double chance": "Doble Oportunidad", "and": "y", "or": "o",
+        "over": "Más de", "under": "Menos de", "goals": "goles", "yes": "Sí", "no": "No",
+        "to score": "anota", "both teams": "Ambos equipos"
+    };
+
+    // Reemplazamos cada palabra clave
+    for (let eng in dicc) {
+        let re = new RegExp("\\b" + eng + "\\b", "gi");
+        t = t.replace(re, dicc[eng]);
+    }
+    
+    // Capitalizamos la primera letra para que quede prolijo
+    return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+// ==========================================
+// MOTOR DE ROTACIÓN DE KEYS
 // ==========================================
 async function fetchConRotacion(url) {
     for (let i = 0; i < API_KEYS.length; i++) {
@@ -73,7 +79,6 @@ async function fetchConRotacion(url) {
             const res = await fetch(url, { headers: { 'x-apisports-key': API_KEYS[i] } });
             const data = await res.json();
             
-            // Si la API dice que no hay error o no es un error de cuota, devolvemos los datos
             if (!data.errors || data.errors.length === 0 || !data.errors.rateLimit) {
                 return data;
             }
@@ -82,23 +87,37 @@ async function fetchConRotacion(url) {
             console.warn(`Error de red con Key ${i + 1}.`);
         }
     }
-    // Si llegamos acá, significa que todas las keys fallaron o están agotadas
     return null; 
 }
 
 // ==========================================
-// CARGA INICIAL DE PARTIDOS
+// CARGA INICIAL DE PARTIDOS (Ventana 24HS Reales)
 // ==========================================
 async function fetchPartidos() {
     const zona = Intl.DateTimeFormat().resolvedOptions().timeZone; 
-    const fecha = new Date();
-    const hoy = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`;
-    const url = `https://v3.football.api-sports.io/fixtures?date=${hoy}&timezone=${zona}`;
+    const ahora = new Date();
+    const manana = new Date(ahora.getTime() + 24 * 60 * 60 * 1000);
+
+    const formatoDia = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     
-    const data = await fetchConRotacion(url);
-    if (!data || !data.response) return [];
+    // Pedimos hoy y mañana para cubrir la noche/madrugada
+    const dataHoy = await fetchConRotacion(`https://v3.football.api-sports.io/fixtures?date=${formatoDia(ahora)}&timezone=${zona}`);
+    const dataManana = await fetchConRotacion(`https://v3.football.api-sports.io/fixtures?date=${formatoDia(manana)}&timezone=${zona}`);
     
-    return data.response.map(p => {
+    let todosLosEventos = [];
+    if (dataHoy && dataHoy.response) todosLosEventos = todosLosEventos.concat(dataHoy.response);
+    if (dataManana && dataManana.response) todosLosEventos = todosLosEventos.concat(dataManana.response);
+    
+    // Filtramos la ventana de 24hs (Mantenemos los que empezaron hace 4hs para no perder el vivo)
+    const limiteInferior = ahora.getTime() - (4 * 60 * 60 * 1000);
+    const limiteSuperior = ahora.getTime() + (24 * 60 * 60 * 1000);
+
+    const eventos24h = todosLosEventos.filter(p => {
+        const tiempoPartido = new Date(p.fixture.date).getTime();
+        return tiempoPartido >= limiteInferior && tiempoPartido <= limiteSuperior;
+    });
+
+    return eventos24h.map(p => {
         let estado = 'SCHEDULED';
         const estadosLive = ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'SUSP', 'INT', 'LIVE'];
         const estadosTerm = ['FT', 'AET', 'PEN', 'AWD', 'WO'];
@@ -118,11 +137,10 @@ async function fetchPartidos() {
 
 async function iniciarApp() {
     const contenedor = document.getElementById('contenedor-partidos');
-    contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px;">⏳ Conectando servidores y procesando datos...</p>`;
+    contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px;">⏳ Conectando servidores y procesando datos de las próximas 24hs...</p>`;
     
     const todosLosPartidos = await fetchPartidos();
     
-    // Aplicamos el colador de ligas top
     baseDeDatosHoy = todosLosPartidos.filter(p => LIGAS_TOP.includes(p.competition.id));
 
     baseDeDatosHoy.forEach(p => { scoresAnteriores[p.id] = { h: p.score?.fullTime?.home || 0, a: p.score?.fullTime?.away || 0 }; });
@@ -132,7 +150,7 @@ async function iniciarApp() {
         cargarBuscadorLigas(baseDeDatosHoy);
         aplicarFiltrosMaster();
     } else {
-        contenedor.innerHTML = `<div style="padding:20px; border:1px solid var(--alerta); margin:20px;"><p style="color:var(--alerta)">⚠️ Hoy no hay partidos programados de las Ligas Top seleccionadas.</p></div>`;
+        contenedor.innerHTML = `<div style="padding:20px; border:1px solid var(--alerta); margin:20px;"><p style="color:var(--alerta)">⚠️ No hay partidos de Ligas Top en las próximas 24 horas.</p></div>`;
     }
 }
 
@@ -185,12 +203,14 @@ async function obtenerDatosReales(idFixture) {
         
     if (data && data.response && data.response.length > 0) {
         const analisis = data.response[0];
+        
         const resultado = {
             exito: true,
             local: analisis.predictions.percent.home,
             empate: analisis.predictions.percent.draw,
             visita: analisis.predictions.percent.away,
-            consejo: analisis.predictions.advice
+            // Aplicamos el traductor de inglés a español al consejo de la API
+            consejo: traducirConsejo(analisis.predictions.advice)
         };
         localStorage.setItem(cacheKey, JSON.stringify(resultado));
         return resultado;
@@ -273,6 +293,7 @@ function renderizarPartidos(partidos, idsGoles = []) {
     partidos.forEach(p => {
         const isLive = estadosEnVivo.includes(p.status);
         const esFechaValida = p.utcDate && !isNaN(new Date(p.utcDate).getTime());
+        // Ajustamos la hora al huso horario local de forma limpia
         let hora = esFechaValida ? new Date(p.utcDate).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) : "TBA";
         
         const gL = p.score?.fullTime?.home ?? 0; 
