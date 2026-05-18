@@ -65,7 +65,7 @@
         /* Vista Detalle */
         .cabecera-detalle-grid { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; background: var(--tarjeta-bg); padding: 20px 10px; border-radius: 14px; border: 1px solid var(--tarjeta-borde); }
         .barra-container { margin-bottom: 15px; }
-        .barra-container span { block; font-size: 0.85rem; margin-bottom: 5px; color: var(--texto-blanco); }
+        .barra-container span { display: block; font-size: 0.85rem; margin-bottom: 5px; color: var(--texto-blanco); }
         .barra-fondo { background: rgba(255,255,255,0.06); height: 10px; border-radius: 5px; overflow: hidden; width: 100%; }
         .barra-progreso { height: 100%; width: 0%; border-radius: 5px; transition: width 0.6s ease-out; }
 
@@ -124,14 +124,6 @@
                     <p>NBA, Euroleague y Mercados Totales</p>
                 </div>
                 <div class="deporte-icono">🏀</div>
-            </button>
-
-            <button class="btn-deporte-card" onclick="irADeporte('f1')">
-                <div class="deporte-info">
-                    <h3>Fórmula 1</h3>
-                    <p>Grandes Premios, Clasificaciones y Desempeño</p>
-                </div>
-                <div class="deporte-icono">🏎️</div>
             </button>
         </div>
 
@@ -208,7 +200,6 @@
 
         const estadosEnVivoFutbol = ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'SUSP', 'INT', 'LIVE'];
         const estadosEnVivoBasket = ['Q1', 'Q2', 'Q3', 'Q4', 'OT', 'BT', 'HT', 'LIVE', 'IN_PLAY'];
-        const estadosProximos = ['TIMED', 'SCHEDULED', 'LIVE', 'IN_PLAY'];
         const ESCUDO_RESPALDO = "https://cdn-icons-png.flaticon.com/512/53/53283.png";
 
         const LIGAS_TOP_FUTBOL = [1, 2, 3, 4, 9, 13, 11, 12, 39, 140, 135, 78, 61, 128, 130, 129, 131, 71, 73];
@@ -252,20 +243,6 @@
             
             const timestampAhora = ahora.getTime();
             const timestampLimite = timestampAhora + (24 * 60 * 60 * 1000);
-
-            if (deporteActivo === 'f1') {
-                const urlF1 = `https://v1.formula-1.api-sports.io/races?next=5&timezone=${zona}`;
-                const data = await fetchConRotacion(urlF1);
-                if (!data || !data.response) return [];
-                return data.response.map(r => ({
-                    id: r.id, utcDate: r.date, status: r.status === 'Completed' ? 'FINISHED' : (r.status === 'Live' ? 'IN_PLAY' : 'SCHEDULED'),
-                    competition: { id: r.competition.id, name: r.competition.location.country, emblem: "🏎️" },
-                    homeTeam: { id: r.circuit.id, name: r.competition.name, crest: "" },
-                    awayTeam: { id: r.id, name: r.circuit.name, crest: "" },
-                    score: { fullTime: { home: 0, away: 0 } },
-                    tipo: 'f1', infoExtra: r.type
-                }));
-            }
 
             const manana = new Date(timestampAhora + (24 * 60 * 60 * 1000));
             let urlHoy = `https://v3.football.api-sports.io/fixtures?date=${formatoDia(ahora)}&timezone=${zona}`;
@@ -317,7 +294,6 @@
                 const todosLosPartidos = await fetchPartidos();
                 if (deporteActivo === 'futbol') baseDeDatosHoy = todosLosPartidos.filter(p => LIGAS_TOP_FUTBOL.includes(p.competition.id));
                 else if (deporteActivo === 'basquet') baseDeDatosHoy = todosLosPartidos.filter(p => LIGAS_TOP_BASKET.includes(p.competition.id));
-                else baseDeDatosHoy = todosLosPartidos;
 
                 baseDeDatosHoy.forEach(p => { scoresAnteriores[p.id] = { h: p.score?.fullTime?.home || 0, a: p.score?.fullTime?.away || 0 }; });
 
@@ -379,30 +355,22 @@
                 if (l >= v && l >= e) return [{m:"1-0", p:l*0.4}, {m:"2-0", p:l*0.3}, {m:"2-1", p:l*0.2}];
                 else if (v >= l && v >= e) return [{m:"0-1", p:v*0.4}, {m:"0-2", p:v*0.3}, {m:"1-2", p:v*0.2}];
                 else return [{m:"1-1", p:e*0.5}, {m:"0-0", p:e*0.3}, {m:"2-2", p:e*0.15}];
-            } else if (deporteActivo === 'basquet') {
+            } else {
                 let l = parseInt(pL) || 50; let v = parseInt(pV) || 50;
                 let overProb = 45 + (l > v ? (l - 50) / 2 : (v - 50) / 2);
                 return [{m: "Más 218.5", p: overProb}, {m: "Menos 218.5", p: 100 - overProb}];
-            } else {
-                return [{m: "Puntos Escudería", p: 65}, {m: "Podio Seguro", p: 45}];
             }
         }
 
         function cambiarTabDetalle(idTab, btn) {
-            document.querySelectorAll('.tab-detalle-content').forEach(el => el.classList.remove('activo'));
+            document.querySelectorAll('.tab-whitespace.tab-detalle-content').forEach(el => el.classList.remove('activo'));
+            document.querySelectorAll('#tab-pred.tab-detalle-content').forEach(el => el.classList.remove('activo'));
             document.querySelectorAll('.tab-detalle-btn').forEach(el => el.classList.remove('activo'));
             document.getElementById(idTab).classList.add('activo');
             btn.classList.add('activo');
         }
 
         function analizarMercadosPartido(p) {
-            if (p.tipo === 'f1') {
-                return [
-                    { mercado: "🏆 Ganador: Piloto Favorito", prob: 55, cuota: "1.80" },
-                    { mercado: "🏎️ Vuelta Rápida en Carrera", prob: 40, cuota: "2.50" },
-                    { mercado: "🏁 Ambos en zona de puntos", prob: 70, cuota: "1.42" }
-                ];
-            }
             const loc = p.homeTeam.shortName || p.homeTeam.name;
             let probGanaLocal = Math.min(Math.max(45 + (p.homeTeam.id % 15) - (p.awayTeam.id % 10), 15), 85);
             let probMas = Math.min(Math.max(40 + (p.competition.id % 5) * 7, 20), 85);
@@ -434,20 +402,11 @@
 
             document.getElementById('detalle-status').innerHTML = isLive ? `<div class="live-badge">EN CURSO</div>` : `<span>Pre-Partido</span>`;
             
-            if (p.tipo === 'f1') {
-                document.getElementById('detalle-cabecera').innerHTML = `
-                    <div style="text-align:center; width:100%;">
-                        <h3>🏁 ${p.homeTeam.name}</h3>
-                        <p style="color:var(--verde-principal); margin-top:5px; font-weight:bold;">${p.awayTeam.name} (${p.infoExtra || 'Carrera'})</p>
-                    </div>
-                `;
-            } else {
-                document.getElementById('detalle-cabecera').innerHTML = `
-                    <div style="text-align:center; width:40%;"><img src="${p.homeTeam.crest || ESCUDO_RESPALDO}" style="max-height:40px;"><p style="font-size:0.85rem;margin-top:5px;">${p.homeTeam.name}</p></div>
-                    <h2 style="width:20%; text-align:center; color:var(--verde-principal);">${isLive ? gL + ' - ' + gV : 'VS'}</h2>
-                    <div style="text-align:center; width:40%;"><img src="${p.awayTeam.crest || ESCUDO_RESPALDO}" style="max-height:40px;"><p style="font-size:0.85rem;margin-top:5px;">${p.awayTeam.name}</p></div>
-                `;
-            }
+            document.getElementById('detalle-cabecera').innerHTML = `
+                <div style="text-align:center; width:40%;"><img src="${p.homeTeam.crest || ESCUDO_RESPALDO}" style="max-height:40px;"><p style="font-size:0.85rem;margin-top:5px;">${p.homeTeam.name}</p></div>
+                <h2 style="width:20%; text-align:center; color:var(--verde-principal);">${isLive ? gL + ' - ' + gV : 'VS'}</h2>
+                <div style="text-align:center; width:40%;"><img src="${p.awayTeam.crest || ESCUDO_RESPALDO}" style="max-height:40px;"><p style="font-size:0.85rem;margin-top:5px;">${p.awayTeam.name}</p></div>
+            `;
 
             document.getElementById('detalle-barras').innerHTML = `<p style='color: var(--verde-principal); text-align:center; margin-top:20px;'>⏳ Cargando analíticas...</p>`;
 
@@ -582,31 +541,17 @@
                 let marcador = isLive ? `<div class="live-badge">LIVE</div><span style="color:var(--alerta)">${gL} - ${gV}</span>` : `<span>${hora}</span>`;
                 const claseGol = idsGoles.includes(p.id) ? 'gol-reciente' : '';
 
-                if (p.tipo === 'f1') {
-                    cont.innerHTML += `
-                        <div class="tarjeta-partido" onclick="abrirDetalle(${p.id})">
-                            <div class="encabezado-liga">🏎️ FÓRMULA 1 - ${p.competition.name}</div>
-                            <div class="cuerpo-partido">
-                                <div class="equipos">
-                                    <div class="equipo-linea" style="font-weight:bold; color:var(--verde-principal);">🏁 ${p.homeTeam.name}</div>
-                                    <div class="equipo-linea" style="font-size:0.85rem; color:var(--texto-gris);">${p.awayTeam.name}</div>
-                                </div>
-                                <div class="marcador-live"><span>${hora}</span></div>
+                cont.innerHTML += `
+                    <div class="tarjeta-partido ${claseGol}" onclick="abrirDetalle(${p.id})">
+                        <div class="encabezado-liga"><img src="${p.competition.emblem || ESCUDO_RESPALDO}" onerror="this.style.display='none'"> ${p.competition.name}</div>
+                        <div class="cuerpo-partido">
+                            <div class="equipos">
+                                <div class="equipo-linea"><img src="${p.homeTeam.crest || ESCUDO_RESPALDO}" onerror="this.src='${ESCUDO_RESPALDO}'"> ${p.homeTeam.shortName || p.homeTeam.name}</div>
+                                <div class="equipo-linea"><img src="${p.awayTeam.crest || ESCUDO_RESPALDO}" onerror="this.src='${ESCUDO_RESPALDO}'"> ${p.awayTeam.shortName || p.awayTeam.name}</div>
                             </div>
-                        </div>`;
-                } else {
-                    cont.innerHTML += `
-                        <div class="tarjeta-partido ${claseGol}" onclick="abrirDetalle(${p.id})">
-                            <div class="encabezado-liga"><img src="${p.competition.emblem || ESCUDO_RESPALDO}" onerror="this.style.display='none'"> ${p.competition.name}</div>
-                            <div class="cuerpo-partido">
-                                <div class="equipos">
-                                    <div class="equipo-linea"><img src="${p.homeTeam.crest || ESCUDO_RESPALDO}" onerror="this.src='${ESCUDO_RESPALDO}'"> ${p.homeTeam.shortName || p.homeTeam.name}</div>
-                                    <div class="equipo-linea"><img src="${p.awayTeam.crest || ESCUDO_RESPALDO}" onerror="this.src='${ESCUDO_RESPALDO}'"> ${p.awayTeam.shortName || p.awayTeam.name}</div>
-                                </div>
-                                <div class="marcador-live">${marcador}</div>
-                            </div>
-                        </div>`;
-                }
+                            <div class="marcador-live">${marcador}</div>
+                        </div>
+                    </div>`;
             });
         }
 
@@ -641,8 +586,7 @@
         function renderHTMLTick(arr, id, tit) {
             let html = `<div class="tarjeta-combinada ticket-${id}"><h4>${tit}</h4>`;
             arr.forEach(c => { 
-                let lineaRivales = c.p.tipo === 'f1' ? `${c.p.homeTeam.name}` : `${c.p.homeTeam.name} vs ${c.p.awayTeam.name}`;
-                html += `<div class="ticket-item">📍 ${lineaRivales}<br>🎯 <b>${c.mercado}</b> <strong style="color:var(--verde-principal); float:right;">x${c.cuota}</strong></div>`; 
+                html += `<div class="ticket-item">📍 ${c.p.homeTeam.name} vs ${c.p.awayTeam.name}<br>🎯 <b>${c.mercado}</b> <strong style="color:var(--verde-principal); float:right;">x${c.cuota}</strong></div>`; 
             });
             html += `<button onclick="guardarCombinada('${id}')" style="margin-top:10px; width:100%; background:rgba(255,255,255,0.08); color:white; border:1px solid var(--tarjeta-borde); padding:8px; border-radius:6px; cursor:pointer; font-weight:bold;">Guardar Ticket Completo</button></div>`; 
             return html;
@@ -681,7 +625,7 @@
                 hist.reverse().forEach(p => { 
                     c.innerHTML += `<div class="item-pick-guardado">
                         <span class="badge-estado">${p.estado}</span>
-                        <div style="color:var(--texto-gris); font-size:0.75rem;">${p.home} ${p.away ? 'vs ' + p.away : ''}</div>
+                        <div style="color:var(--texto-gris); font-size:0.75rem;">${p.home} vs ${p.away}</div>
                         <strong style="color:white; font-size:0.85rem;">${p.mercado} (x${p.cuota})</strong>
                     </div>`; 
                 });
@@ -714,7 +658,6 @@
                 const actualizados = await fetchPartidos(); 
                 if (deporteActivo === 'futbol') baseDeDatosHoy = actualizados.filter(p => LIGAS_TOP_FUTBOL.includes(p.competition.id));
                 else if (deporteActivo === 'basquet') baseDeDatosHoy = actualizados.filter(p => LIGAS_TOP_BASKET.includes(p.competition.id));
-                else baseDeDatosHoy = actualizados;
                 
                 let goles = []; let hubo = false;
                 baseDeDatosHoy.forEach(p => {
