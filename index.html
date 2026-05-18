@@ -23,15 +23,46 @@
         .contenedor-app { max-width: 500px; margin: 0 auto; padding: 15px; position: relative; }
         .oculto { display: none !important; }
 
-        /* Lobby Selector */
-        .lobby-container { text-align: center; padding: 40px 20px; }
-        .lobby-titulo { font-size: 2rem; color: var(--verde-principal); margin-bottom: 10px; font-weight: 800; }
-        .lobby-sub { color: var(--texto-gris); margin-bottom: 40px; }
-        .btn-deporte-card { background: var(--tarjeta-bg); border: 2px solid var(--tarjeta-borde); border-radius: 12px; padding: 25px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.2s; width: 100%; text-align: left; }
-        .btn-deporte-card:hover { border-color: var(--verde-principal); transform: translateY(-2px); }
-        .deporte-info h3 { color: var(--texto-blanco); font-size: 1.3rem; margin-bottom: 5px; }
-        .deporte-info p { color: var(--texto-gris); font-size: 0.85rem; }
-        .deporte-icono { font-size: 2.5rem; }
+        /* Lobby Selector Estilizado */
+        .lobby-container { text-align: center; padding: 50px 20px; }
+        .lobby-titulo { font-size: 2.4rem; color: var(--verde-principal); margin-bottom: 8px; font-weight: 800; letter-spacing: -0.5px; text-shadow: 0 4px 10px rgba(46, 204, 113, 0.2); }
+        .lobby-sub { color: var(--texto-gris); margin-bottom: 45px; font-size: 1rem; font-weight: 500; }
+        
+        .btn-deporte-card { 
+            background: linear-gradient(145deg, #151f32, #111827); 
+            border: 1px solid var(--tarjeta-borde); 
+            border-radius: 16px; 
+            padding: 22px 25px; 
+            margin-bottom: 20px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            cursor: pointer; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            width: 100%; 
+            text-align: left; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+        .btn-deporte-card:hover { 
+            border-color: var(--verde-principal); 
+            transform: translateY(-3px) scale(1.01); 
+            box-shadow: 0 12px 25px rgba(46, 204, 113, 0.15);
+        }
+        .btn-deporte-card:active {
+            transform: translateY(-1px);
+        }
+        .deporte-info h3 { color: var(--texto-blanco); font-size: 1.25rem; margin-bottom: 6px; font-weight: 700; }
+        .deporte-info p { color: var(--texto-gris); font-size: 0.88rem; line-height: 1.3; }
+        .deporte-icono { 
+            font-size: 2.2rem; 
+            background: rgba(255,255,255,0.03); 
+            padding: 12px; 
+            border-radius: 12px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
 
         /* Cabecera Interna */
         .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--tarjeta-borde); }
@@ -120,7 +151,7 @@
 
             <button class="btn-deporte-card" onclick="irADeporte('basquet')">
                 <div class="deporte-info">
-                    <h3>Básquetbol (Próximas 24hs)</h3>
+                    <h3>Básquetbol</h3>
                     <p>NBA, Euroleague y Mercados Totales</p>
                 </div>
                 <div class="deporte-icono">🏀</div>
