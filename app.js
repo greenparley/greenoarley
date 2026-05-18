@@ -36,10 +36,6 @@ estilosApp.innerHTML = `
     .tab-detalle-content { display:none; padding-top:15px; }
     .tab-detalle-content.activo { display:block; animation: fadeIn 0.3s ease-in; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    
-    .valor-caja { background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.05); padding:10px; border-radius:8px; text-align:center; margin-bottom:10px; }
-    .valor-caja span { display:block; font-size:0.8rem; color:var(--texto-gris); }
-    .valor-caja strong { display:block; font-size:1.2rem; margin-top:5px; }
 `;
 document.head.appendChild(estilosApp);
 
@@ -137,7 +133,7 @@ async function iniciarApp() {
 // PREVISIÓN Y ALGORITMOS DE APUESTAS
 // ==========================================
 async function obtenerDatosReales(idFixture) {
-    const cacheKey = `gp_prediccion_v4_${idFixture}`; // v4 limpia errores viejos
+    const cacheKey = `gp_prediccion_v4_${idFixture}`; 
     const cacheData = localStorage.getItem(cacheKey);
     if (cacheData) { return JSON.parse(cacheData); }
 
@@ -188,13 +184,6 @@ function predecirMarcadoresExactos(pL, pE, pV) {
     return marcadores;
 }
 
-// Algoritmo: Convierte probabilidad en "Cuota Justa"
-function calcularCuotaJusta(probStr) {
-    let p = parseInt(probStr);
-    if (!p || p === 0) return "0.00";
-    return (100 / p).toFixed(2);
-}
-
 // ==========================================
 // VISTA DETALLE CON NUEVAS HERRAMIENTAS
 // ==========================================
@@ -225,7 +214,6 @@ async function abrirDetalle(id) {
         <div style="display:flex; border-bottom:1px solid rgba(255,255,255,0.1); margin-top:15px; margin-bottom:15px;">
             <button class="tab-detalle-btn activo" onclick="cambiarTabDetalle('tab-pred', this)">🔮 Predicción</button>
             <button class="tab-detalle-btn" onclick="cambiarTabDetalle('tab-scores', this)">🎯 Marcadores</button>
-            <button class="tab-detalle-btn" onclick="cambiarTabDetalle('tab-valor', this)">💰 Valor</button>
         </div>
         
         <div id="tab-pred" class="tab-detalle-content activo">`;
@@ -271,18 +259,6 @@ async function abrirDetalle(id) {
         });
         htmlTabs += `</div></div>`;
 
-        // Pestaña 3: Calculadora de Valor (Value Bet)
-        let cuotaL = calcularCuotaJusta(d.local);
-        let cuotaE = calcularCuotaJusta(d.empate);
-        let cuotaV = calcularCuotaJusta(d.visita);
-
-        htmlTabs += `<div id="tab-valor" class="tab-detalle-content">
-            <p style="font-size:0.8rem; color:var(--texto-gris); margin-bottom:15px; text-align:center;">Si tu casa de apuestas paga <strong>más</strong> que estas cuotas, estás ante una "Apuesta de Valor".</p>
-            <div class="valor-caja"><span>Cuota Justa Local (${p.homeTeam.shortName})</span><strong style="color:var(--verde-principal)">${cuotaL}</strong></div>
-            <div class="valor-caja"><span>Cuota Justa Empate</span><strong style="color:var(--oro)">${cuotaE}</strong></div>
-            <div class="valor-caja"><span>Cuota Justa Visita (${p.awayTeam.shortName})</span><strong style="color:var(--alerta)">${cuotaV}</strong></div>
-        </div>`;
-
     } else {
         // Fallback si no hay datos de predicción
         htmlTabs += "<p style='color: var(--oro); font-size: 0.85rem; text-align:center; margin-bottom:15px;'>⚠️ API limitada. Mostrando estimación base.</p>";
@@ -290,7 +266,7 @@ async function abrirDetalle(id) {
             let col = i === 0 ? 'var(--verde-principal)' : (i === 1 ? 'var(--oro)' : 'var(--alerta)');
             htmlTabs += `<div class="barra-container" style="border-left-color:${col}"><div style="display:flex; justify-content:space-between;"><span>${m.mercado} <strong>(x${m.cuota})</strong></span><span style="color:${col}">${m.prob}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:${col}" data-w="${m.prob}%"></div></div><button onclick="guardarUnicoPickLocal(${p.id}, '${m.mercado.replace(/'/g,"\\'")}', '${m.cuota}', ${m.prob}, '${p.homeTeam.shortName || p.homeTeam.name}', '${p.awayTeam.shortName || p.awayTeam.name}')" style="margin-top:5px; background:var(--tarjeta-borde); color:white; border:none; padding:5px; cursor:pointer;">Guardar en mis Picks</button></div>`;
         });
-        htmlTabs += "</div><div id='tab-scores' class='tab-detalle-content'><p style='text-align:center; color:var(--texto-gris);'>Sin datos suficientes.</p></div><div id='tab-valor' class='tab-detalle-content'><p style='text-align:center; color:var(--texto-gris);'>Sin datos suficientes.</p></div>";
+        htmlTabs += "</div><div id='tab-scores' class='tab-detalle-content'><p style='text-align:center; color:var(--texto-gris);'>Sin datos suficientes.</p></div>";
         setTimeout(() => { document.querySelectorAll('.barra-progreso').forEach(b => b.style.width = b.getAttribute('data-w')); }, 80);
     }
 
