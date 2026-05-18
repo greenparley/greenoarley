@@ -1,7 +1,7 @@
 // ==========================================
 // CONFIGURACIÓN GLOBAL
 // ==========================================
-const API_KEY_PRINCIPAL = "a36999d3627d43a2a6f11c449243634e"; // football-data.org
+const API_KEY_PRINCIPAL = "31dc5f2762254847a825e1025257a759"; // Nueva Key football-data.org
 const API_KEY_SECUNDARIA = "0464d33c8013d01fb7387b5148f18a9a"; // api-football.com
 
 let baseDeDatosHoy = [];
@@ -164,7 +164,6 @@ async function obtenerDatosReales(idFixture) {
     const cacheKey = `gp_prediccion_${idFixture}`;
     const cacheData = localStorage.getItem(cacheKey);
     
-    // Si ya consultamos esto hoy, usamos la memoria para no gastar la API
     if (cacheData) { return JSON.parse(cacheData); }
 
     const urlPredicciones = `https://v3.football.api-sports.io/predictions?fixture=${idFixture}`;
@@ -181,7 +180,6 @@ async function obtenerDatosReales(idFixture) {
                 visita: analisis.predictions.percent.away,
                 consejo: analisis.predictions.advice
             };
-            // Guardamos en memoria
             localStorage.setItem(cacheKey, JSON.stringify(resultado));
             return resultado;
         } else {
@@ -193,7 +191,7 @@ async function obtenerDatosReales(idFixture) {
 }
 
 // ==========================================
-// ESTIMACIÓN BASE (Para Tarjetas de Menú y Fallback)
+// ESTIMACIÓN BASE (Reservada para Fallback y Combinadas)
 // ==========================================
 function analizarMercadosPartido(p) {
     const loc = p.homeTeam.shortName || p.homeTeam.name;
@@ -259,18 +257,19 @@ function aplicarFiltrosMaster(idsGoles = []) {
     renderizarPartidos(filtrados, idsGoles);
 }
 
+// Renderización rápida con semáforos de divulgación progresiva (ahorra peticiones API)
 function renderizarPartidos(partidos, idsGoles = []) {
     const cont = document.getElementById('contenedor-partidos'); cont.innerHTML = '';
-    if (partidos.length === 0) { cont.innerHTML = `<p style="padding:20px;">No hay eventos.</p>`; return; }
+    if (partidos.length === 0) { cont.innerHTML = `<p style="padding:20px;">No hay eventos para mostrar.</p>`; return; }
 
     partidos.forEach(p => {
         const isLive = estadosEnVivo.includes(p.status);
         const esFechaValida = p.utcDate && !isNaN(new Date(p.utcDate).getTime());
         let hora = esFechaValida ? new Date(p.utcDate).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) : "TBA";
         
-        const gL = p.score?.fullTime?.home ?? 0; const gV = p.score?.fullTime?.away ?? 0;
+        const gL = p.score?.fullTime?.home ?? 0; 
+        const gV = p.score?.fullTime?.away ?? 0;
         const marcador = isLive ? `<div class="live-badge">LIVE</div><span style="color:var(--alerta)">${gL} - ${gV}</span>` : `<span>${hora}</span>`;
-        const m = analizarMercadosPartido(p);
         const claseGol = idsGoles.includes(p.id) ? 'gol-reciente' : '';
 
         cont.innerHTML += `
@@ -282,10 +281,14 @@ function renderizarPartidos(partidos, idsGoles = []) {
                         <div class="equipo-linea"><img src="${p.awayTeam.crest || ESCUDO_RESPALDO}" onerror="this.src='${ESCUDO_RESPALDO}'"> ${p.awayTeam.shortName || p.awayTeam.name}</div>
                     </div>
                     <div class="marcador-live">${marcador}</div>
-                    <div class="semaforo">
-                        <div class="luz luz-v" title="${m[0].mercado}">x${m[0].cuota}</div>
-                        <div class="luz luz-a" title="${m[1].mercado}">x${m[1].cuota}</div>
-                        <div class="luz luz-r" title="${m[2].mercado}">x${m[2].cuota}</div>
+                    
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+                        <span style="font-size:0.7rem; color:var(--texto-gris);">Tocar para analizar</span>
+                        <div class="semaforo" style="cursor:pointer;">
+                            <div class="luz luz-v" title="Ver Predicción Local">?</div>
+                            <div class="luz luz-a" title="Ver Predicción Empate">?</div>
+                            <div class="luz luz-r" title="Ver Predicción Visita">?</div>
+                        </div>
                     </div>
                 </div>
             </div>`;
@@ -311,7 +314,6 @@ async function abrirDetalle(id) {
 
     document.getElementById('detalle-barras').innerHTML = "<p style='color: var(--verde-principal); text-align:center; margin-top:20px;'>⏳ Analizando bases de datos reales...</p>";
 
-    // Llamada a los datos verdaderos
     const datosReales = await obtenerDatosReales(p.id);
 
     if (datosReales.exito) {
@@ -335,7 +337,6 @@ async function abrirDetalle(id) {
             <button onclick="guardarUnicoPickLocal(${p.id}, 'Predicción: ${datosReales.consejo?.replace(/'/g,"\\'")}', 'N/A', 0, '${p.homeTeam.shortName}', '${p.awayTeam.shortName}')" style="margin-top:10px; width:100%; background:var(--tarjeta-borde); color:white; border:none; padding:10px; cursor:pointer; font-weight:bold;">Guardar Predicción en mis Picks</button>
         `;
     } else {
-        // Fallback a la estimación si no hay datos reales en la API para esta liga
         let bHtml = "<p style='color: var(--oro); font-size: 0.85rem; text-align:center; margin-bottom:15px;'>⚠️ Predicción pro no disponible. Mostrando estimación algorítmica.</p>";
         analizarMercadosPartido(p).forEach((m, i) => {
             let col = i === 0 ? 'var(--verde-principal)' : (i === 1 ? 'var(--oro)' : 'var(--alerta)');
