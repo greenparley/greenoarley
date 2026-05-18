@@ -36,6 +36,10 @@ estilosApp.innerHTML = `
     .tab-detalle-content { display:none; padding-top:15px; }
     .tab-detalle-content.activo { display:block; animation: fadeIn 0.3s ease-in; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    
+    .valor-caja { background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.05); padding:10px; border-radius:8px; text-align:center; margin-bottom:10px; }
+    .valor-caja span { display:block; font-size:0.8rem; color:var(--texto-gris); }
+    .valor-caja strong { display:block; font-size:1.2rem; margin-top:5px; }
 `;
 document.head.appendChild(estilosApp);
 
@@ -51,56 +55,33 @@ function reproducirBeep() {
     } catch (e) { console.log("Audio no soportado"); }
 }
 
-// ==========================================
-// TRADUCTOR DE CONSEJOS
-// ==========================================
 function traducirConsejo(texto) {
     if (!texto) return 'No disponible';
     let t = texto.toLowerCase();
-    
-    const dicc = {
-        "winner": "Ganador", "home": "Local", "away": "Visitante", "draw": "Empate",
-        "combo": "Combinada", "double chance": "Doble Oportunidad", "and": "y", "or": "o",
-        "over": "Más de", "under": "Menos de", "goals": "goles", "yes": "Sí", "no": "No",
-        "to score": "anota", "both teams": "Ambos equipos"
-    };
-
-    for (let eng in dicc) {
-        let re = new RegExp("\\b" + eng + "\\b", "gi");
-        t = t.replace(re, dicc[eng]);
-    }
-    
+    const dicc = { "winner": "Ganador", "home": "Local", "away": "Visitante", "draw": "Empate", "combo": "Combinada", "double chance": "Doble Oportunidad", "and": "y", "or": "o", "over": "Más de", "under": "Menos de", "goals": "goles", "yes": "Sí", "no": "No", "to score": "anota", "both teams": "Ambos equipos" };
+    for (let eng in dicc) { let re = new RegExp("\\b" + eng + "\\b", "gi"); t = t.replace(re, dicc[eng]); }
     return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
-// ==========================================
-// MOTOR DE ROTACIÓN DE KEYS
-// ==========================================
 async function fetchConRotacion(url) {
     for (let i = 0; i < API_KEYS.length; i++) {
         try {
             const res = await fetch(url, { headers: { 'x-apisports-key': API_KEYS[i] } });
             const data = await res.json();
-            
-            if (!data.errors || data.errors.length === 0 || !data.errors.rateLimit) {
-                return data;
-            }
+            if (!data.errors || data.errors.length === 0 || !data.errors.rateLimit) return data;
             console.warn(`Key ${i + 1} agotada. Saltando...`);
-        } catch (e) {
-            console.warn(`Error de red con Key ${i + 1}.`);
-        }
+        } catch (e) { console.warn(`Error de red con Key ${i + 1}.`); }
     }
     return null; 
 }
 
 // ==========================================
-// CARGA INICIAL (Ventana 24HS)
+// CARGA INICIAL
 // ==========================================
 async function fetchPartidos() {
     const zona = Intl.DateTimeFormat().resolvedOptions().timeZone; 
     const ahora = new Date();
     const manana = new Date(ahora.getTime() + 24 * 60 * 60 * 1000);
-
     const formatoDia = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     
     const dataHoy = await fetchConRotacion(`https://v3.football.api-sports.io/fixtures?date=${formatoDia(ahora)}&timezone=${zona}`);
@@ -122,7 +103,6 @@ async function fetchPartidos() {
         let estado = 'SCHEDULED';
         const estadosLive = ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'SUSP', 'INT', 'LIVE'];
         const estadosTerm = ['FT', 'AET', 'PEN', 'AWD', 'WO'];
-
         if (estadosLive.includes(p.fixture.status.short)) estado = 'IN_PLAY';
         else if (estadosTerm.includes(p.fixture.status.short)) estado = 'FINISHED';
 
@@ -138,7 +118,7 @@ async function fetchPartidos() {
 
 async function iniciarApp() {
     const contenedor = document.getElementById('contenedor-partidos');
-    contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px;">⏳ Conectando servidores y procesando datos de las próximas 24hs...</p>`;
+    contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px;">⏳ Conectando servidores y procesando datos...</p>`;
     
     const todosLosPartidos = await fetchPartidos();
     baseDeDatosHoy = todosLosPartidos.filter(p => LIGAS_TOP.includes(p.competition.id));
@@ -154,71 +134,11 @@ async function iniciarApp() {
 }
 
 // ==========================================
-// CACHÉ DE TABLAS DE CLASIFICACIÓN
-// ==========================================
-async function cargarTablaConCache(idPartido, forceLoad = false) {
-    const p = baseDeDatosHoy.find(item => item.id === idPartido); if (!p) return;
-    const cont = document.getElementById('contenido-lazy-tabla');
-    
-    if (cont.innerHTML !== "" && !forceLoad) return;
-    
-    const cacheKey = `gp_tabla_cache_${p.competition.id}_${p.competition.season}`;
-    const dataCache = JSON.parse(localStorage.getItem(cacheKey));
-    const ahora = Date.now();
-    
-    cont.innerHTML = '<p style="color:var(--verde-principal); text-align:center;">⏳ Buscando posiciones...</p>';
-
-    if (dataCache && (ahora - dataCache.timestamp < 86400000)) { renderizarTablaHTML(dataCache.datos, p.homeTeam.name, p.awayTeam.name); return; }
-
-    try {
-        let datosTabla = [];
-        const urlTabla = `https://v3.football.api-sports.io/standings?league=${p.competition.id}&season=${p.competition.season}`;
-        const data = await fetchConRotacion(urlTabla);
-        
-        if (data && data.response && data.response.length > 0) {
-            datosTabla = data.response[0].league.standings[0].map(t => ({ pos: t.rank, equipo: t.team.name, pts: t.points, pj: t.all.played, gd: t.goalsDiff }));
-        }
-
-        if (datosTabla.length > 0) {
-            localStorage.setItem(cacheKey, JSON.stringify({ timestamp: ahora, datos: datosTabla }));
-            renderizarTablaHTML(datosTabla, p.homeTeam.name, p.awayTeam.name);
-        } else { cont.innerHTML = '<p style="color:var(--texto-gris); text-align:center;">Torneo o Copa sin tabla de liga disponible.</p>'; }
-    } catch (e) { cont.innerHTML = '<p style="color:var(--alerta); text-align:center;">Error al cargar posiciones.</p>'; }
-}
-
-function renderizarTablaHTML(datos, equipoLocal, equipoVisita) {
-    let html = `<table style="width:100%; text-align:center; border-collapse:collapse; font-size:0.85rem; background:rgba(0,0,0,0.2); border-radius:8px; overflow:hidden;">
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.1); color:var(--texto-gris); background:rgba(0,0,0,0.4);">
-            <th style="padding:8px 5px">#</th><th style="text-align:left;">Equipo</th><th>PJ</th><th>DIF</th><th>Pts</th>
-        </tr>`;
-    
-    datos.forEach(d => { 
-        const esLocal = d.equipo === equipoLocal;
-        const esVisita = d.equipo === equipoVisita;
-        let estiloFila = `border-bottom:1px solid rgba(255,255,255,0.05);`;
-        let estiloNombre = `text-align:left;`;
-        
-        if (esLocal) { estiloFila += `background: rgba(46, 204, 113, 0.2);`; estiloNombre += `color:var(--verde-principal); font-weight:bold;`; }
-        if (esVisita) { estiloFila += `background: rgba(231, 76, 60, 0.2);`; estiloNombre += `color:var(--alerta); font-weight:bold;`; }
-
-        html += `<tr style="${estiloFila}">
-            <td style="padding:8px 5px">${d.pos}</td>
-            <td style="${estiloNombre}">${d.equipo}</td>
-            <td>${d.pj}</td>
-            <td>${d.gd > 0 ? '+'+d.gd : d.gd}</td>
-            <td style="color:var(--verde-principal); font-weight:bold;">${d.pts}</td>
-        </tr>`; 
-    });
-    document.getElementById('contenido-lazy-tabla').innerHTML = html + '</table>';
-}
-
-// ==========================================
-// DATOS REALES, RACHAS Y ESTADÍSTICAS
+// PREVISIÓN Y ALGORITMOS DE APUESTAS
 // ==========================================
 async function obtenerDatosReales(idFixture) {
-    const cacheKey = `gp_prediccion_v3_${idFixture}`;
+    const cacheKey = `gp_prediccion_v4_${idFixture}`; // v4 limpia errores viejos
     const cacheData = localStorage.getItem(cacheKey);
-    
     if (cacheData) { return JSON.parse(cacheData); }
 
     const urlPredicciones = `https://v3.football.api-sports.io/predictions?fixture=${idFixture}`;
@@ -226,7 +146,6 @@ async function obtenerDatosReales(idFixture) {
         
     if (data && data.response && data.response.length > 0) {
         const analisis = data.response[0];
-        
         const resultado = {
             exito: true,
             local: analisis.predictions.percent.home,
@@ -234,8 +153,7 @@ async function obtenerDatosReales(idFixture) {
             visita: analisis.predictions.percent.away,
             consejo: traducirConsejo(analisis.predictions.advice),
             formaLocal: analisis.teams?.home?.league?.form || analisis.teams?.home?.last_5?.form || "?????",
-            formaVisita: analisis.teams?.away?.league?.form || analisis.teams?.away?.last_5?.form || "?????",
-            comparacion: analisis.comparison || null
+            formaVisita: analisis.teams?.away?.league?.form || analisis.teams?.away?.last_5?.form || "?????"
         };
         localStorage.setItem(cacheKey, JSON.stringify(resultado));
         return resultado;
@@ -246,10 +164,8 @@ async function obtenerDatosReales(idFixture) {
 
 function renderFormaHTML(formaStr) {
     if (!formaStr || formaStr === "?????") return "<span style='color:var(--texto-gris); font-size:0.8rem;'>Sin datos</span>";
-    
     let ultimos5 = formaStr.slice(-5).toUpperCase();
     let html = '<div style="display:flex; gap:3px; justify-content:center;">';
-    
     for (let char of ultimos5) {
         let color = "var(--texto-gris)"; let letra = "-";
         if (char === 'W') { color = "var(--verde-principal)"; letra = "G"; } 
@@ -260,27 +176,27 @@ function renderFormaHTML(formaStr) {
     return html + '</div>';
 }
 
-function renderBarraComparativa(titulo, valLocalStr, valVisitaStr) {
-    let pL = parseInt(valLocalStr) || 0; let pV = parseInt(valVisitaStr) || 0;
-    let colorL = pL >= pV ? 'var(--verde-principal)' : 'var(--texto-gris)';
-    let colorV = pV >= pL ? 'var(--verde-principal)' : 'var(--texto-gris)';
+// Algoritmo: Calcula resultados exactos probables
+function predecirMarcadoresExactos(pL, pE, pV) {
+    let l = parseInt(pL) || 33; let e = parseInt(pE) || 33; let v = parseInt(pV) || 33;
+    let marcadores = [];
     
-    return `
-    <div style="margin-bottom:12px;">
-        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
-            <span style="color:${colorL}">${valLocalStr}</span>
-            <span style="color:var(--texto-gris); font-weight:bold;">${titulo}</span>
-            <span style="color:${colorV}">${valVisitaStr}</span>
-        </div>
-        <div style="display:flex; height:6px; border-radius:3px; overflow:hidden; background:rgba(255,255,255,0.1);">
-            <div style="width:${pL}%; background:${colorL};"></div>
-            <div style="width:${pV}%; background:${colorV};"></div>
-        </div>
-    </div>`;
+    if (l >= v && l >= e) { marcadores = [{m:"1-0", p:l*0.4}, {m:"2-0", p:l*0.3}, {m:"2-1", p:l*0.2}]; }
+    else if (v >= l && v >= e) { marcadores = [{m:"0-1", p:v*0.4}, {m:"0-2", p:v*0.3}, {m:"1-2", p:v*0.2}]; }
+    else { marcadores = [{m:"1-1", p:e*0.5}, {m:"0-0", p:e*0.3}, {m:"2-2", p:e*0.15}]; }
+    
+    return marcadores;
+}
+
+// Algoritmo: Convierte probabilidad en "Cuota Justa"
+function calcularCuotaJusta(probStr) {
+    let p = parseInt(probStr);
+    if (!p || p === 0) return "0.00";
+    return (100 / p).toFixed(2);
 }
 
 // ==========================================
-// VISTA DETALLE CON SISTEMA DE PESTAÑAS
+// VISTA DETALLE CON NUEVAS HERRAMIENTAS
 // ==========================================
 function cambiarTabDetalle(idTab, btn) {
     document.querySelectorAll('.tab-detalle-content').forEach(el => el.classList.remove('activo'));
@@ -301,75 +217,83 @@ async function abrirDetalle(id) {
     document.getElementById('detalle-status').innerHTML = isLive ? `<div class="live-badge">EN CURSO</div>` : `<span>Pre-Partido</span>`;
     document.getElementById('detalle-cabecera').innerHTML = `<div style="text-align:center; width:40%;"><img src="${p.homeTeam.crest || ESCUDO_RESPALDO}" style="max-height:40px;"><p>${p.homeTeam.name}</p></div><h2 style="width:20%; text-align:center; color:var(--verde-principal);">${isLive ? gL + ' - ' + gV : 'VS'}</h2><div style="text-align:center; width:40%;"><img src="${p.awayTeam.crest || ESCUDO_RESPALDO}" style="max-height:40px;"><p>${p.awayTeam.name}</p></div>`;
 
-    document.getElementById('detalle-barras').innerHTML = "<p style='color: var(--verde-principal); text-align:center; margin-top:20px;'>⏳ Cargando central de datos...</p>";
+    document.getElementById('detalle-barras').innerHTML = "<p style='color: var(--verde-principal); text-align:center; margin-top:20px;'>⏳ Analizando algoritmos de apuestas...</p>";
 
-    const datosReales = await obtenerDatosReales(p.id);
+    const d = await obtenerDatosReales(p.id);
 
     let htmlTabs = `
         <div style="display:flex; border-bottom:1px solid rgba(255,255,255,0.1); margin-top:15px; margin-bottom:15px;">
             <button class="tab-detalle-btn activo" onclick="cambiarTabDetalle('tab-pred', this)">🔮 Predicción</button>
-            <button class="tab-detalle-btn" onclick="cambiarTabDetalle('tab-stats', this)">📊 Estadísticas</button>
-            <button class="tab-detalle-btn" onclick="cambiarTabDetalle('tab-tabla', this); cargarTablaConCache(${p.id})">🏆 Tabla</button>
+            <button class="tab-detalle-btn" onclick="cambiarTabDetalle('tab-scores', this)">🎯 Marcadores</button>
+            <button class="tab-detalle-btn" onclick="cambiarTabDetalle('tab-valor', this)">💰 Valor</button>
         </div>
         
         <div id="tab-pred" class="tab-detalle-content activo">`;
 
-    if (datosReales.exito) {
+    if (d.exito) {
+        // Pestaña 1: Predicción General
         htmlTabs += `
             <div style="background: rgba(46, 204, 113, 0.1); padding: 15px; border-left: 4px solid var(--verde-principal); margin-bottom: 15px;">
-                <strong>💡 Consejo Experto:</strong> ${datosReales.consejo || 'No disponible'}
+                <strong>💡 Consejo Experto:</strong> ${d.consejo || 'No disponible'}
             </div>
             
             <h4 style="margin-bottom: 10px; text-align:center; font-size: 0.9rem; color: var(--texto-gris);">Forma (Últimos 5)</h4>
             <div style="display:flex; justify-content:space-around; align-items:center; background:rgba(0,0,0,0.2); padding:12px; border-radius:8px; margin-bottom:20px; border: 1px solid rgba(255,255,255,0.05);">
                 <div style="text-align:center; width:45%;">
                     <span style="font-size:0.75rem; color:var(--texto-gris); display:block; margin-bottom:5px;">${p.homeTeam.shortName || p.homeTeam.name}</span>
-                    ${renderFormaHTML(datosReales.formaLocal)}
+                    ${renderFormaHTML(d.formaLocal)}
                 </div>
                 <span style="color:var(--texto-gris); font-size:0.8rem; width:10%; text-align:center;">vs</span>
                 <div style="text-align:center; width:45%;">
                     <span style="font-size:0.75rem; color:var(--texto-gris); display:block; margin-bottom:5px;">${p.awayTeam.shortName || p.awayTeam.name}</span>
-                    ${renderFormaHTML(datosReales.formaVisita)}
+                    ${renderFormaHTML(d.formaVisita)}
                 </div>
             </div>
 
             <h4 style="margin-bottom: 10px;">Probabilidades (H2H)</h4>
-            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local</span><span>${datosReales.local}</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${datosReales.local}"></div></div></div>
-            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Empate</span><span>${datosReales.empate}</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${datosReales.empate}"></div></div></div>
-            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visita</span><span>${datosReales.visita}</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${datosReales.visita}"></div></div></div>
-            <button onclick="guardarUnicoPickLocal(${p.id}, 'Predicción: ${datosReales.consejo?.replace(/'/g,"\\'")}', 'N/A', 0, '${p.homeTeam.shortName || p.homeTeam.name}', '${p.awayTeam.shortName || p.awayTeam.name}')" style="margin-top:10px; width:100%; background:var(--tarjeta-borde); color:white; border:none; padding:10px; cursor:pointer; font-weight:bold;">Guardar Predicción en mis Picks</button>
+            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local</span><span>${d.local}</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${d.local}"></div></div></div>
+            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Empate</span><span>${d.empate}</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${d.empate}"></div></div></div>
+            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visita</span><span>${d.visita}</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${d.visita}"></div></div></div>
+            <button onclick="guardarUnicoPickLocal(${p.id}, 'Predicción: ${d.consejo?.replace(/'/g,"\\'")}', 'N/A', 0, '${p.homeTeam.shortName || p.homeTeam.name}', '${p.awayTeam.shortName || p.awayTeam.name}')" style="margin-top:10px; width:100%; background:var(--tarjeta-borde); color:white; border:none; padding:10px; cursor:pointer; font-weight:bold;">Guardar Predicción</button>
         </div>`;
         
-        htmlTabs += `<div id="tab-stats" class="tab-detalle-content">`;
-        if (datosReales.comparacion) {
-            let c = datosReales.comparacion;
-            htmlTabs += `
-                <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                    <strong style="color:var(--texto-gris);">${p.homeTeam.shortName || p.homeTeam.name}</strong>
-                    <strong style="color:var(--texto-gris);">${p.awayTeam.shortName || p.awayTeam.name}</strong>
-                </div>
-                ${renderBarraComparativa("Poder de Ataque", c.att?.home || '0%', c.att?.away || '0%')}
-                ${renderBarraComparativa("Solidez Defensiva", c.def?.home || '0%', c.def?.away || '0%')}
-                ${renderBarraComparativa("Estado de Forma", c.form?.home || '0%', c.form?.away || '0%')}
-                ${renderBarraComparativa("Historial (H2H)", c.h2h?.home || '0%', c.h2h?.away || '0%')}
-                ${renderBarraComparativa("Promedio Goles", c.goals?.home || '0%', c.goals?.away || '0%')}
-            `;
-        } else {
-            htmlTabs += `<p style="text-align:center; color:var(--texto-gris);">Estadísticas avanzadas no disponibles para este encuentro.</p>`;
-        }
-        htmlTabs += `</div>`;
+        // Pestaña 2: Marcadores Exactos (Algoritmo)
+        let scores = predecirMarcadoresExactos(d.local, d.empate, d.visita);
+        htmlTabs += `<div id="tab-scores" class="tab-detalle-content">
+            <p style="font-size:0.8rem; color:var(--texto-gris); margin-bottom:15px; text-align:center;">Simulación basada en algoritmos de probabilidad pura.</p>
+            <div style="display:flex; gap:10px; justify-content:center;">`;
+        scores.forEach((sc, idx) => {
+            let color = idx === 0 ? "var(--verde-principal)" : (idx === 1 ? "var(--oro)" : "var(--texto-gris)");
+            htmlTabs += `<div style="flex:1; text-align:center; background:rgba(0,0,0,0.2); padding:15px 5px; border-radius:8px; border-top: 3px solid ${color};">
+                <strong style="font-size:1.5rem; display:block; color:white;">${sc.m}</strong>
+                <span style="font-size:0.75rem; color:var(--texto-gris);">Probabilidad: ${Math.round(sc.p)}%</span>
+            </div>`;
+        });
+        htmlTabs += `</div></div>`;
+
+        // Pestaña 3: Calculadora de Valor (Value Bet)
+        let cuotaL = calcularCuotaJusta(d.local);
+        let cuotaE = calcularCuotaJusta(d.empate);
+        let cuotaV = calcularCuotaJusta(d.visita);
+
+        htmlTabs += `<div id="tab-valor" class="tab-detalle-content">
+            <p style="font-size:0.8rem; color:var(--texto-gris); margin-bottom:15px; text-align:center;">Si tu casa de apuestas paga <strong>más</strong> que estas cuotas, estás ante una "Apuesta de Valor".</p>
+            <div class="valor-caja"><span>Cuota Justa Local (${p.homeTeam.shortName})</span><strong style="color:var(--verde-principal)">${cuotaL}</strong></div>
+            <div class="valor-caja"><span>Cuota Justa Empate</span><strong style="color:var(--oro)">${cuotaE}</strong></div>
+            <div class="valor-caja"><span>Cuota Justa Visita (${p.awayTeam.shortName})</span><strong style="color:var(--alerta)">${cuotaV}</strong></div>
+        </div>`;
 
     } else {
-        htmlTabs += "<p style='color: var(--oro); font-size: 0.85rem; text-align:center; margin-bottom:15px;'>⚠️ Predicción no disponible. Mostrando estimación algorítmica.</p>";
+        // Fallback si no hay datos de predicción
+        htmlTabs += "<p style='color: var(--oro); font-size: 0.85rem; text-align:center; margin-bottom:15px;'>⚠️ API limitada. Mostrando estimación base.</p>";
         analizarMercadosPartido(p).forEach((m, i) => {
             let col = i === 0 ? 'var(--verde-principal)' : (i === 1 ? 'var(--oro)' : 'var(--alerta)');
             htmlTabs += `<div class="barra-container" style="border-left-color:${col}"><div style="display:flex; justify-content:space-between;"><span>${m.mercado} <strong>(x${m.cuota})</strong></span><span style="color:${col}">${m.prob}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:${col}" data-w="${m.prob}%"></div></div><button onclick="guardarUnicoPickLocal(${p.id}, '${m.mercado.replace(/'/g,"\\'")}', '${m.cuota}', ${m.prob}, '${p.homeTeam.shortName || p.homeTeam.name}', '${p.awayTeam.shortName || p.awayTeam.name}')" style="margin-top:5px; background:var(--tarjeta-borde); color:white; border:none; padding:5px; cursor:pointer;">Guardar en mis Picks</button></div>`;
         });
-        htmlTabs += "</div><div id='tab-stats' class='tab-detalle-content'><p style='text-align:center; color:var(--texto-gris);'>Sin datos estadísticos.</p></div>";
+        htmlTabs += "</div><div id='tab-scores' class='tab-detalle-content'><p style='text-align:center; color:var(--texto-gris);'>Sin datos suficientes.</p></div><div id='tab-valor' class='tab-detalle-content'><p style='text-align:center; color:var(--texto-gris);'>Sin datos suficientes.</p></div>";
         setTimeout(() => { document.querySelectorAll('.barra-progreso').forEach(b => b.style.width = b.getAttribute('data-w')); }, 80);
     }
 
-    htmlTabs += `<div id="tab-tabla" class="tab-detalle-content"><div id="contenido-lazy-tabla"></div></div>`;
     document.getElementById('detalle-barras').innerHTML = htmlTabs;
 }
 
@@ -446,7 +370,7 @@ function renderizarPartidos(partidos, idsGoles = []) {
 }
 
 // ==========================================
-// COMBINADAS Y ESTIMACIONES BASE
+// COMBINADAS (Fallback Algorítmico)
 // ==========================================
 function analizarMercadosPartido(p) {
     const loc = p.homeTeam.shortName || p.homeTeam.name;
@@ -493,7 +417,7 @@ function renderHTMLTick(arr, id, tit) {
 }
 
 // ==========================================
-// SISTEMA DE PICKS Y LOBBY
+// LOBBY Y PICKS
 // ==========================================
 function obtenerPicksLocales() { return JSON.parse(localStorage.getItem('gp_picks')) || []; }
 function guardarPicksLocales(l) { localStorage.setItem('gp_picks', JSON.stringify(l)); actualizarEstructuraPicksLocales(); }
