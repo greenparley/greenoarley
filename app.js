@@ -1,3 +1,6 @@
+// ==========================================
+// CONFIGURACIÓN GLOBAL Y ROTACIÓN DE KEYS
+// ==========================================
 const API_KEYS = [
     "0464d33c8013d01fb7387b5148f18a9a", 
     "31dc5f2762254847a825e1025257a759"
@@ -13,10 +16,16 @@ const estadosEnVivo = ['IN_PLAY', 'PAUSED', 'LIVE'];
 const estadosProximos = ['TIMED', 'SCHEDULED', 'LIVE'];
 const ESCUDO_RESPALDO = "https://cdn-icons-png.flaticon.com/512/53/53283.png";
 
+// ==========================================
+// FILTRO DE LIGAS (Solo Ligas Top, Arg y Bra)
+// ==========================================
 const LIGAS_TOP = [
     1, 2, 3, 4, 9, 13, 11, 12, 39, 140, 135, 78, 61, 128, 130, 129, 131, 71, 73
 ];
 
+// ==========================================
+// ESTILOS DINÁMICOS Y AUDIOS
+// ==========================================
 const estilosApp = document.createElement('style');
 estilosApp.innerHTML = `
     @keyframes flashGol { 0% { background-color: #2ecc71; transform: scale(1.02); } 100% { background-color: var(--tarjeta-bg); transform: scale(1); } }
@@ -27,42 +36,6 @@ estilosApp.innerHTML = `
     .tab-detalle-content { display:none; padding-top:15px; }
     .tab-detalle-content.activo { display:block; animation: fadeIn 0.3s ease-in; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-    /* Estilos del Lobby de Deportes */
-    #lobby-selector {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 20px;
-        padding: 20px;
-    }
-    .tarjeta-deporte {
-        background: var(--tarjeta-bg);
-        border: 2px solid transparent;
-        border-radius: 12px;
-        padding: 15px;
-        text-align: center;
-        cursor: pointer;
-        transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
-        width: 150px; /* Tamaño fijo para que se vean parecidas */
-    }
-    .tarjeta-deporte:hover {
-        transform: translateY(-5px);
-        border-color: var(--verde-principal);
-        box-shadow: 0 8px 16px rgba(0,0,0,0.4);
-    }
-    .tarjeta-deporte img {
-        width: 100%;
-        height: 120px; /* Alto fijo para uniformidad */
-        object-fit: cover; /* Recorta la imagen para que encaje bien */
-        border-radius: 8px;
-        margin-bottom: 10px;
-    }
-    .tarjeta-deporte h3 {
-        margin: 0;
-        color: white;
-        font-size: 1.1rem;
-    }
 `;
 document.head.appendChild(estilosApp);
 
@@ -98,6 +71,9 @@ async function fetchConRotacion(url) {
     return null; 
 }
 
+// ==========================================
+// CARGA INICIAL
+// ==========================================
 async function fetchPartidos() {
     const zona = Intl.DateTimeFormat().resolvedOptions().timeZone; 
     const ahora = new Date();
@@ -136,35 +112,26 @@ async function fetchPartidos() {
     });
 }
 
-// Función para renderizar el Lobby de Deportes
-function renderizarLobby() {
-    const contenedor = document.getElementById('contenedor-partidos'); 
-    contenedor.innerHTML = `
-        <div id="lobby-selector">
-            <div class="tarjeta-deporte" onclick="irADeporte('futbol')">
-                <img src="https://images.unsplash.com/photo-1579952363873-27f3bade9f55?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Fútbol">
-                <h3>Fútbol</h3>
-            </div>
-            <div class="tarjeta-deporte" onclick="irADeporte('tenis')">
-                <img src="https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Tenis">
-                <h3>Tenis</h3>
-            </div>
-            <div class="tarjeta-deporte" onclick="irADeporte('basquet')">
-                <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Básquet">
-                <h3>Básquet</h3>
-            </div>
-             <div class="tarjeta-deporte" onclick="irADeporte('beisbol')">
-                <img src="https://images.unsplash.com/photo-1508344928928-7165b67de128?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Béisbol">
-                <h3>Béisbol</h3>
-            </div>
-        </div>
-    `;
-}
-
 async function iniciarApp() {
-    renderizarLobby(); // Mostrar el lobby al iniciar
+    const contenedor = document.getElementById('contenedor-partidos');
+    contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px;">⏳ Conectando servidores y procesando datos...</p>`;
+    
+    const todosLosPartidos = await fetchPartidos();
+    baseDeDatosHoy = todosLosPartidos.filter(p => LIGAS_TOP.includes(p.competition.id));
+    baseDeDatosHoy.forEach(p => { scoresAnteriores[p.id] = { h: p.score?.fullTime?.home || 0, a: p.score?.fullTime?.away || 0 }; });
+
+    if (baseDeDatosHoy.length > 0) {
+        generarCombinadaDelDia(); 
+        cargarBuscadorLigas(baseDeDatosHoy);
+        aplicarFiltrosMaster();
+    } else {
+        contenedor.innerHTML = `<div style="padding:20px; border:1px solid var(--alerta); margin:20px;"><p style="color:var(--alerta)">⚠️ No hay partidos de Ligas Top en las próximas 24 horas.</p></div>`;
+    }
 }
 
+// ==========================================
+// PREVISIÓN Y ALGORITMOS DE APUESTAS
+// ==========================================
 async function obtenerDatosReales(idFixture) {
     const cacheKey = `gp_prediccion_v4_${idFixture}`; 
     const cacheData = localStorage.getItem(cacheKey);
@@ -205,6 +172,7 @@ function renderFormaHTML(formaStr) {
     return html + '</div>';
 }
 
+// Algoritmo: Calcula resultados exactos probables
 function predecirMarcadoresExactos(pL, pE, pV) {
     let l = parseInt(pL) || 33; let e = parseInt(pE) || 33; let v = parseInt(pV) || 33;
     let marcadores = [];
@@ -216,6 +184,9 @@ function predecirMarcadoresExactos(pL, pE, pV) {
     return marcadores;
 }
 
+// ==========================================
+// VISTA DETALLE CON NUEVAS HERRAMIENTAS
+// ==========================================
 function cambiarTabDetalle(idTab, btn) {
     document.querySelectorAll('.tab-detalle-content').forEach(el => el.classList.remove('activo'));
     document.querySelectorAll('.tab-detalle-btn').forEach(el => el.classList.remove('activo'));
@@ -248,6 +219,7 @@ async function abrirDetalle(id) {
         <div id="tab-pred" class="tab-detalle-content activo">`;
 
     if (d.exito) {
+        // Pestaña 1: Predicción General
         htmlTabs += `
             <div style="background: rgba(46, 204, 113, 0.1); padding: 15px; border-left: 4px solid var(--verde-principal); margin-bottom: 15px;">
                 <strong>💡 Consejo Experto:</strong> ${d.consejo || 'No disponible'}
@@ -273,6 +245,7 @@ async function abrirDetalle(id) {
             <button onclick="guardarUnicoPickLocal(${p.id}, 'Predicción: ${d.consejo?.replace(/'/g,"\\'")}', 'N/A', 0, '${p.homeTeam.shortName || p.homeTeam.name}', '${p.awayTeam.shortName || p.awayTeam.name}')" style="margin-top:10px; width:100%; background:var(--tarjeta-borde); color:white; border:none; padding:10px; cursor:pointer; font-weight:bold;">Guardar Predicción</button>
         </div>`;
         
+        // Pestaña 2: Marcadores Exactos (Algoritmo)
         let scores = predecirMarcadoresExactos(d.local, d.empate, d.visita);
         htmlTabs += `<div id="tab-scores" class="tab-detalle-content">
             <p style="font-size:0.8rem; color:var(--texto-gris); margin-bottom:15px; text-align:center;">Simulación basada en algoritmos de probabilidad pura.</p>
@@ -287,6 +260,7 @@ async function abrirDetalle(id) {
         htmlTabs += `</div></div>`;
 
     } else {
+        // Fallback si no hay datos de predicción
         htmlTabs += "<p style='color: var(--oro); font-size: 0.85rem; text-align:center; margin-bottom:15px;'>⚠️ API limitada. Mostrando estimación base.</p>";
         analizarMercadosPartido(p).forEach((m, i) => {
             let col = i === 0 ? 'var(--verde-principal)' : (i === 1 ? 'var(--oro)' : 'var(--alerta)');
@@ -301,6 +275,9 @@ async function abrirDetalle(id) {
 
 function cerrarDetalle() { document.getElementById('vista-detalle').classList.add('oculto'); document.getElementById('vista-principal').classList.remove('oculto'); }
 
+// ==========================================
+// RENDER Y FILTROS DEL MENÚ PRINCIPAL
+// ==========================================
 function setFiltroEstado(estado) {
     estadoFiltroActual = estado;
     document.querySelectorAll('.btn-filto-main').forEach(b => b.classList.remove('activo'));
@@ -343,17 +320,7 @@ function aplicarFiltrosMaster(idsGoles = []) {
 
 function renderizarPartidos(partidos, idsGoles = []) {
     const cont = document.getElementById('contenedor-partidos'); cont.innerHTML = '';
-    
-    // Mantenemos la foto de Baggio (o el botón que tenías para volver al lobby de deportes)
-    //  Si ya no lo querés, podés borrar este bloque:
-    cont.innerHTML += `
-        <div class="tarjeta-partido" onclick="volverAlLobby()" style="cursor: pointer; text-align: center; background: none; border: none; box-shadow: none;">
-            <img src="image_0.png" alt="Roberto Baggio WC94" style="width: 100%; border-radius: 8px; border: 2px solid var(--verde-principal); box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
-            <h3 style="margin-top: 10px; color: white;">Volver al Menú de Deportes</h3>
-        </div>
-    `;
-
-    if (partidos.length === 0) { cont.innerHTML += `<p style="padding:20px;">No hay eventos para mostrar.</p>`; return; }
+    if (partidos.length === 0) { cont.innerHTML = `<p style="padding:20px;">No hay eventos para mostrar.</p>`; return; }
 
     partidos.forEach(p => {
         const isLive = estadosEnVivo.includes(p.status);
@@ -378,6 +345,9 @@ function renderizarPartidos(partidos, idsGoles = []) {
     });
 }
 
+// ==========================================
+// COMBINADAS (Fallback Algorítmico)
+// ==========================================
 function analizarMercadosPartido(p) {
     const loc = p.homeTeam.shortName || p.homeTeam.name;
     let probGanaLocal = Math.min(Math.max(45 + (p.homeTeam.id % 15) - (p.awayTeam.id % 10), 12), 88);
@@ -422,6 +392,9 @@ function renderHTMLTick(arr, id, tit) {
     html += `<button onclick="guardarCombinada('${id}')" style="margin-top:10px; width:100%; padding:5px;">Guardar Ticket</button></div>`; return html;
 }
 
+// ==========================================
+// LOBBY Y PICKS
+// ==========================================
 function obtenerPicksLocales() { return JSON.parse(localStorage.getItem('gp_picks')) || []; }
 function guardarPicksLocales(l) { localStorage.setItem('gp_picks', JSON.stringify(l)); actualizarEstructuraPicksLocales(); }
 
@@ -446,31 +419,14 @@ function actualizarEstructuraPicksLocales() {
 function togglePanelPicks() { document.getElementById('panel-picks').classList.toggle('oculto-panel'); }
 function cargarBuscadorLigas(pts) { let dl = document.getElementById('lista-ligas'); dl.innerHTML = ''; let lu = []; pts.forEach(p => { if (!lu.find(l => l.id === p.competition.id)) lu.push({ id: p.competition.id, name: p.competition.name }); }); lu.forEach(l => { dl.innerHTML += `<option value="${l.name}">`; }); }
 
-async function irADeporte(deporte) {
+function irADeporte(deporte) {
     if (deporte !== 'futbol') { alert("¡Integración en proceso!"); return; }
-    
-    // Limpiamos el contenedor (quitamos el lobby) y mostramos mensaje de carga
-    const contenedor = document.getElementById('contenedor-partidos');
-    contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px; text-align: center;">⏳ Conectando servidores y procesando datos...</p>`;
-    
-    // Fetch real a la API
-    const todosLosPartidos = await fetchPartidos();
-    baseDeDatosHoy = todosLosPartidos.filter(p => LIGAS_TOP.includes(p.competition.id));
-    baseDeDatosHoy.forEach(p => { scoresAnteriores[p.id] = { h: p.score?.fullTime?.home || 0, a: p.score?.fullTime?.away || 0 }; });
-
-    if (baseDeDatosHoy.length > 0) {
-        generarCombinadaDelDia(); 
-        cargarBuscadorLigas(baseDeDatosHoy);
-        aplicarFiltrosMaster();
-    } else {
-        contenedor.innerHTML = `<div style="padding:20px; border:1px solid var(--alerta); margin:20px;"><p style="color:var(--alerta)">⚠️ No hay partidos de Ligas Top en las próximas 24 horas.</p></div>`;
-    }
+    document.getElementById('lobby-selector').classList.add('oculto');
+    document.getElementById('app-content').classList.remove('oculto');
+    iniciarApp();
 }
 
-function volverAlLobby() { 
-    baseDeDatosHoy = []; 
-    renderizarLobby(); // Volvemos a dibujar el menú inicial
-}
+function volverAlLobby() { document.getElementById('lobby-selector').classList.remove('oculto'); document.getElementById('app-content').classList.add('oculto'); baseDeDatosHoy = []; }
 
 async function forzarActualizacionLive() {
     const btn = document.getElementById('btn-refresh'); btn.innerText = "⏳"; btn.disabled = true;
@@ -489,7 +445,4 @@ async function forzarActualizacionLive() {
     btn.innerText = "🔄"; btn.disabled = false;
 }
 
-window.onload = () => { 
-    actualizarEstructuraPicksLocales(); 
-    iniciarApp(); // Esto dibuja el lobby al cargar la página
-};
+window.onload = () => { actualizarEstructuraPicksLocales(); };
