@@ -210,25 +210,23 @@
                     localStorage.setItem('gp_ligas_futbol_odds_cache', JSON.stringify(ligasFutbolObj));
                 }
 
-                // CORRECCIÓN: Filtro ampliado y exacto con Serie A, Ligue 1, Bundesliga y Conference League
+                // CORRECCIÓN: Filtramos para que traiga SOLAMENTE la bundesliga de Alemania
                 let torneosPrioritarios = ligasFutbolObj.ligas.filter(key => {
                     const k = key.toLowerCase();
                     return k.includes('argentina') || 
-                           k.includes('champs_league') || // Champions League real key
+                           k.includes('champs_league') || 
                            k.includes('europa_league') || 
-                           k.includes('conference') ||    // Conference League
-                           k.includes('libertadores') ||  // Copa Libertadores
-                           k.includes('sudamericana') ||  // Copa Sudamericana
-                           k.includes('epl') ||           // Premier League
-                           k.includes('la_liga') ||       // Liga España
-                           k.includes('serie_a') ||       // Serie A Italia
-                           k.includes('bundesliga') ||    // Bundesliga Alemania
-                           k.includes('ligue_one');       // Ligue 1 Francia
+                           k.includes('conference') ||    
+                           k.includes('libertadores') ||  
+                           k.includes('sudamericana') ||  
+                           k.includes('epl') ||           
+                           k.includes('la_liga') ||       
+                           k.includes('serie_a') ||       
+                           k.includes('germany_bundesliga') || // <- Solo Alemania, chau Austria
+                           k.includes('ligue_one');       
                 });
                 
-                // Si no hay ninguno de los prioritarios activos, traemos un surtido más grande para no quedar vacíos
                 if (torneosPrioritarios.length === 0) torneosPrioritarios = ligasFutbolObj.ligas.slice(0, 10);
-                // Limitamos a 10 torneos máximo para no reventar la cuota de la API
                 torneosPrioritarios = torneosPrioritarios.slice(0, 10);
 
                 let poolResultados = [];
