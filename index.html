@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GreenPicks Pro - Mercados de Tenis Premium</title>
+    <title>GreenPicks Pro - App Deportiva</title>
     <style>
         :root { --bg-principal: #0b0f19; --tarjeta-bg: #151f32; --tarjeta-borde: #223452; --verde-principal: #2ecc71; --oro: #f1c40f; --alerta: #e74c3c; --texto-blanco: #ffffff; --texto-gris: #8a99ad; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -26,8 +26,11 @@
         .btn-filto-main { flex: 1; background: transparent; border: none; color: var(--texto-gris); padding: 10px 5px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.8rem; }
         .btn-filto-main.activo { background: var(--bg-principal); color: var(--verde-principal); }
         .tarjeta-partido { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); border-radius: 12px; padding: 15px; margin-bottom: 12px; cursor: pointer; }
-        .encabezado-liga { font-size: 0.75rem; color: var(--texto-blanco); display: flex; align-items: center; gap: 6px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 5px; font-weight: bold; text-transform: uppercase;}
-        .etiqueta-hora { color: var(--oro); background: rgba(0,0,0,0.4); padding: 3px 6px; border-radius: 4px; font-size: 0.70rem; display: flex; align-items: center; gap: 4px;}
+        
+        /* AJUSTE: Etiqueta de fecha y hora más ancha para que entre el texto nuevo */
+        .encabezado-liga { font-size: 0.75rem; color: var(--texto-blanco); display: flex; align-items: center; gap: 8px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 5px; font-weight: bold; text-transform: uppercase;}
+        .etiqueta-hora { color: var(--oro); background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; display: flex; align-items: center; gap: 4px; letter-spacing: 0.5px;}
+        
         .cuerpo-partido { display: flex; justify-content: space-between; align-items: center; }
         .equipos { flex: 1; display: flex; flex-direction: column; gap: 8px; }
         .equipo-linea { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; font-weight: 500; }
@@ -37,12 +40,13 @@
         .badge-live { background: var(--alerta); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; animation: titilar 1.5s infinite; }
         @keyframes titilar { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         
-        /* ESTILOS DE MERCADOS */
         .mercado-box { background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.02); }
         .mercado-box h5 { color: var(--texto-blanco); margin-bottom: 10px; font-size: 0.90rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;}
         .cuota-grid { display: flex; gap: 8px; margin-bottom: 8px; }
-        .btn-cuota { flex: 1; background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); color: white; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; transition: border 0.2s;}
-        .btn-cuota span:last-child { color: var(--verde-principal); font-weight: bold; font-size: 0.95rem; }
+        .btn-cuota { flex: 1; background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); color: white; padding: 8px 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; transition: border 0.2s;}
+        .cuota-valor { display:flex; flex-direction:column; align-items:flex-end; line-height: 1.2;}
+        .cuota-multi { font-weight: bold; font-size: 0.95rem; }
+        .cuota-prob { font-size: 0.65rem; color: var(--texto-gris); margin-bottom: 2px; }
         
         .cabecera-detalle-grid { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; background: var(--tarjeta-bg); padding: 20px 10px; border-radius: 14px; border: 1px solid var(--tarjeta-borde); }
         .caja-consejo { background: rgba(46, 204, 113, 0.08); border-left: 4px solid var(--verde-principal); padding: 12px 15px; border-radius: 0 8px 8px 0; margin-bottom: 20px; font-size: 0.85rem; line-height: 1.5; }
@@ -107,7 +111,6 @@
     <div id="panel-picks" class="panel-picks-lateral oculto-panel"><div class="panel-header"><h3>Mis Picks</h3><button class="btn-volver-lobby" onclick="togglePanelPicks()">❌</button></div><div id="contenedor-lista-picks"></div></div>
 
     <script>
-        // CONFIGURACIÓN DE APIS
         const API_KEY_FUTBOL = "b1068f561f80975166b5c1ab67a2888a"; 
         const API_KEY_TENIS = "d3d7b6a1627d78292b24d7b2554e8c5d"; 
 
@@ -124,15 +127,20 @@
 
         function esPartidoEnVivo(p) { return p.isLiveNative === true; }
 
-        function formatearHoraLocal(fechaIso) {
-            if (!fechaIso) return "--:--";
-            const fecha = new Date(fechaIso);
-            return fecha.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        // NUEVA FUNCIÓN: Ahora formatea Día/Mes y Hora
+        function formatearFechaHoraLocal(fechaIso) {
+            if (!fechaIso) return "--/-- --:--";
+            const f = new Date(fechaIso);
+            const dia = String(f.getDate()).padStart(2, '0');
+            const mes = String(f.getMonth() + 1).padStart(2, '0');
+            const horas = String(f.getHours()).padStart(2, '0');
+            const mins = String(f.getMinutes()).padStart(2, '0');
+            return `${dia}/${mes} - ${horas}:${mins}`;
         }
 
         function mostrarError(mensaje) {
             const logBox = document.getElementById('logs-servidor-error');
-            logBox.innerHTML = `<div class="banner-error-api" style="background: rgba(231, 76, 60, 0.15); border: 1px solid var(--alerta); color: #ff7675; padding: 15px; border-radius: 10px; margin-bottom: 15px; font-size: 0.9rem; text-align: center;"><b>⚠️ Estado de Servidores</b><br>${mensaje}</div>`;
+            logBox.innerHTML = `<div class="banner-error-api" style="background: rgba(231, 76, 60, 0.15); border: 1px solid var(--alerta); color: #ff7675; padding: 15px; border-radius: 10px; margin-bottom: 15px; font-size: 0.9rem; text-align: center;"><b>⚠️ Estado del Servidor</b><br>${mensaje}</div>`;
             logBox.classList.remove('oculto');
         }
 
@@ -160,16 +168,33 @@
             return datosProcesados;
         }
 
-        // FÚTBOL
+        // FUNCIÓN DE RESCATE PARA FÚTBOL
+        function generarMockFutbol() {
+            const ahora = new Date();
+            const m1 = new Date(ahora.getTime() + 7200000).toISOString(); // +2 horas
+            const m2 = new Date(ahora.getTime() + 86400000).toISOString(); // mañana
+            return [
+                { id: 'fb_m1', utcDate: ahora.toISOString(), competition: { name: "Liga Profesional (ARG)" }, homeTeam: { name: "Boca Juniors" }, awayTeam: { name: "River Plate" }, cuotasReales: { local: 2.40, empate: 3.10, visita: 2.90 }, mercadosExtra: null, isLiveNative: true },
+                { id: 'fb_m2', utcDate: m1, competition: { name: "Premier League (ENG)" }, homeTeam: { name: "Man City" }, awayTeam: { name: "Arsenal" }, cuotasReales: { local: 1.85, empate: 3.60, visita: 4.20 }, mercadosExtra: null, isLiveNative: false },
+                { id: 'fb_m3', utcDate: m2, competition: { name: "Champions League" }, homeTeam: { name: "Real Madrid" }, awayTeam: { name: "B. Múnich" }, cuotasReales: { local: 2.10, empate: 3.50, visita: 3.20 }, mercadosExtra: null, isLiveNative: false }
+            ];
+        }
+
         async function fetchFutbolApiSports() {
             try {
                 const hoyStr = new Date().toISOString().split('T')[0];
                 const res = await fetch(`https://v3.football.api-sports.io/fixtures?date=${hoyStr}`, {
                     method: 'GET', headers: { 'x-apisports-key': API_KEY_FUTBOL }
                 });
-                if (res.status === 401) { mostrarError("API Key de Fútbol inválida."); return []; }
+                
                 const data = await res.json();
-                if (!data.response || data.response.length === 0) return [];
+                
+                // Si la API no devuelve partidos o te quedaste sin límite, inyectamos el Rescate
+                if (!data.response || data.response.length === 0 || data.errors?.requests) { 
+                    mostrarError("La API oficial se quedó sin límite o no hay partidos hoy. Cargando Liga de Prueba...");
+                    return generarMockFutbol();
+                }
+
                 return data.response.map(item => {
                     return {
                         id: 'fb_' + item.fixture.id, utcDate: item.fixture.date, competition: { name: item.league.name + " (" + item.league.country + ")" },
@@ -177,10 +202,12 @@
                         cuotasReales: { local: 2.10, empate: 3.30, visita: 3.10 }, mercadosExtra: null, isLiveNative: ["1H", "2H", "HT", "ET", "P"].includes(item.fixture.status.short)
                     };
                 });
-            } catch (error) { return []; }
+            } catch (error) { 
+                mostrarError("Fallo de conexión. Cargando Liga de Prueba...");
+                return generarMockFutbol(); 
+            }
         }
 
-        // BÁSQUET
         async function fetchBasketESPNPublico() {
             let pool = [];
             const endpoints = [{ id: "nba", tag: "NBA" }, { id: "mens-euroleague", tag: "Euroliga" }];
@@ -208,7 +235,6 @@
             return pool;
         }
 
-        // TENIS CON ALGORITMO DE MERCADOS EXTRAS
         async function fetchTenisOddsApi() {
             let resultadosTotales = [];
             const hoyStr = new Date().toISOString().split('T')[0];
@@ -249,15 +275,12 @@
                     }
                 }
                 
-                // --- MOTOR MATEMÁTICO PARA MERCADOS DE TENIS ---
                 let cL = cuotas.local !== "N/A" ? parseFloat(cuotas.local) : 1.85;
                 let cV = cuotas.visita !== "N/A" ? parseFloat(cuotas.visita) : 1.85;
                 
-                // Ambos marcan set
                 let ambosGananS = (cL < 1.3 || cV < 1.3) ? 2.90 : 2.25; 
                 let ambosGananN = (cL < 1.3 || cV < 1.3) ? 1.35 : 1.55;
                 
-                // Líneas Base
                 let lineaFavorito = 12.5; let lineaNoFavorito = 10.5; let lineaParejo = 12.5;
                 
                 let extras = {
@@ -305,7 +328,6 @@
             probL = Math.round((probL / totalProb) * 100); probV = Math.round((probV / totalProb) * 100); 
             if(probE > 0) probE = Math.round((probE / totalProb) * 100);
 
-            // MOTOR DE CONSEJO INTELIGENTE (DINÁMICO)
             let textoConsejo = "";
             if (deporteActivo === 'tenis') {
                 if (probL >= 65) textoConsejo = `¡${p.homeTeam.name} es claro favorito! Una excelente opción estadística es apostar al <strong>Under (-) de games de ${p.awayTeam.name}</strong> o que "Ambos ganan set: NO".`;
@@ -321,7 +343,6 @@
 
             document.getElementById('detalle-consejo').innerHTML = `<div class="caja-consejo">💡 <strong>Consejo del Algoritmo:</strong><br>${textoConsejo}</div>`;
 
-            // RENDER DE BARRAS PRINCIPALES
             let htmlTabs = `<div>
                 <h4 style="margin-bottom:12px; color:white; font-size:0.9rem;">Ganador Directo</h4>
                 <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local <span class="cuota-real-badge">x${p.cuotasReales.local}</span></span><span>${probL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}%"></div></div></div>`;
@@ -330,7 +351,18 @@
             
             htmlTabs += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visita <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div></div>`;
             
-            // RENDERING DE MERCADOS EXCLUSIVOS DE TENIS
+            const renderBtn = (label, cuota, isAlert = false) => {
+                let probCalculada = Math.round((1 / parseFloat(cuota)) * 100) + '%';
+                let colorClass = isAlert ? 'style="color:var(--alerta)"' : 'style="color:var(--verde-principal)"';
+                return `<div class="btn-cuota">
+                            <span>${label}</span> 
+                            <div class="cuota-valor">
+                                <span class="cuota-prob">${probCalculada} prob.</span>
+                                <span class="cuota-multi" ${colorClass}>x${cuota}</span>
+                            </div>
+                        </div>`;
+            };
+
             if (deporteActivo === 'tenis' && p.mercadosExtra) {
                 htmlTabs += `<div style="margin-top:25px; border-top:1px solid rgba(255,255,255,0.05); padding-top:20px;">
                     <h4 style="margin-bottom:15px; color:var(--oro); font-size:1.1rem; text-align:center;">🎾 MERCADOS PREMIUM TENIS</h4>
@@ -338,36 +370,36 @@
                     <div class="mercado-box">
                         <h5>🏆 ¿Ambos ganan al menos 1 Set?</h5>
                         <div class="cuota-grid">
-                            <div class="btn-cuota"><span>Sí</span> <span>x${p.mercadosExtra.ambosSets.si}</span></div>
-                            <div class="btn-cuota"><span>No</span> <span style="color:var(--alerta)">x${p.mercadosExtra.ambosSets.no}</span></div>
+                            ${renderBtn('Sí', p.mercadosExtra.ambosSets.si)}
+                            ${renderBtn('No', p.mercadosExtra.ambosSets.no, true)}
                         </div>
                     </div>
                     
                     <div class="mercado-box">
-                        <h5>📈 Games Totales del Partido (Por Jugador)</h5>
+                        <h5>📈 Games Totales (Por Jugador)</h5>
                         <div style="font-size:0.80rem; color:var(--oro); margin-bottom:6px; font-weight:bold;">Jugador: ${p.homeTeam.name}</div>
                         <div class="cuota-grid" style="margin-bottom:12px;">
-                            <div class="btn-cuota"><span>Más de ${p.mercadosExtra.gamesTot.local.linea}</span> <span>x${p.mercadosExtra.gamesTot.local.over}</span></div>
-                            <div class="btn-cuota"><span>Menos de ${p.mercadosExtra.gamesTot.local.linea}</span> <span style="color:var(--alerta)">x${p.mercadosExtra.gamesTot.local.under}</span></div>
+                            ${renderBtn(`Más de ${p.mercadosExtra.gamesTot.local.linea}`, p.mercadosExtra.gamesTot.local.over)}
+                            ${renderBtn(`Menos de ${p.mercadosExtra.gamesTot.local.linea}`, p.mercadosExtra.gamesTot.local.under, true)}
                         </div>
                         <div style="font-size:0.80rem; color:var(--oro); margin-bottom:6px; font-weight:bold;">Jugador: ${p.awayTeam.name}</div>
                         <div class="cuota-grid">
-                            <div class="btn-cuota"><span>Más de ${p.mercadosExtra.gamesTot.visita.linea}</span> <span>x${p.mercadosExtra.gamesTot.visita.over}</span></div>
-                            <div class="btn-cuota"><span>Menos de ${p.mercadosExtra.gamesTot.visita.linea}</span> <span style="color:var(--alerta)">x${p.mercadosExtra.gamesTot.visita.under}</span></div>
+                            ${renderBtn(`Más de ${p.mercadosExtra.gamesTot.visita.linea}`, p.mercadosExtra.gamesTot.visita.over)}
+                            ${renderBtn(`Menos de ${p.mercadosExtra.gamesTot.visita.linea}`, p.mercadosExtra.gamesTot.visita.under, true)}
                         </div>
                     </div>
 
                     <div class="mercado-box">
-                        <h5>🔥 Games Totales en el 1er Set (Por Jugador)</h5>
+                        <h5>🔥 Total Games 1er Set (Indiv.)</h5>
                         <div style="font-size:0.80rem; color:var(--oro); margin-bottom:6px; font-weight:bold;">Jugador: ${p.homeTeam.name}</div>
                         <div class="cuota-grid" style="margin-bottom:12px;">
-                            <div class="btn-cuota"><span>Más de ${p.mercadosExtra.gamesS1.local.linea}</span> <span>x${p.mercadosExtra.gamesS1.local.over}</span></div>
-                            <div class="btn-cuota"><span>Menos de ${p.mercadosExtra.gamesS1.local.linea}</span> <span style="color:var(--alerta)">x${p.mercadosExtra.gamesS1.local.under}</span></div>
+                            ${renderBtn(`Más de ${p.mercadosExtra.gamesS1.local.linea}`, p.mercadosExtra.gamesS1.local.over)}
+                            ${renderBtn(`Menos de ${p.mercadosExtra.gamesS1.local.linea}`, p.mercadosExtra.gamesS1.local.under, true)}
                         </div>
                         <div style="font-size:0.80rem; color:var(--oro); margin-bottom:6px; font-weight:bold;">Jugador: ${p.awayTeam.name}</div>
                         <div class="cuota-grid">
-                            <div class="btn-cuota"><span>Más de ${p.mercadosExtra.gamesS1.visita.linea}</span> <span>x${p.mercadosExtra.gamesS1.visita.over}</span></div>
-                            <div class="btn-cuota"><span>Menos de ${p.mercadosExtra.gamesS1.visita.linea}</span> <span style="color:var(--alerta)">x${p.mercadosExtra.gamesS1.visita.under}</span></div>
+                            ${renderBtn(`Más de ${p.mercadosExtra.gamesS1.visita.linea}`, p.mercadosExtra.gamesS1.visita.over)}
+                            ${renderBtn(`Menos de ${p.mercadosExtra.gamesS1.visita.linea}`, p.mercadosExtra.gamesS1.visita.under, true)}
                         </div>
                     </div>
                 </div>`;
@@ -396,7 +428,9 @@
             
             f.forEach(p => { 
                 let renderEstado = esPartidoEnVivo(p) ? `<span class="badge-live">EN VIVO</span>` : `🏟️ Mercados`;
-                let renderHora = p.utcDate ? `<span class="etiqueta-hora">🕒 ${formatearHoraLocal(p.utcDate)}</span>` : '';
+                // AQUÍ APLICAMOS LA FUNCIÓN DE FECHA Y HORA
+                let renderHora = p.utcDate ? `<span class="etiqueta-hora">🕒 ${formatearFechaHoraLocal(p.utcDate)}</span>` : '';
+                
                 c.innerHTML += `<div class="tarjeta-partido" onclick="abrirDetalle('${p.id}')">
                     <div class="encabezado-liga">${renderHora} <span>${p.competition.name}</span></div>
                     <div class="cuerpo-partido"><div class="equipos"><div class="equipo-linea">${generarMonograma(p.homeTeam.name)} ${p.homeTeam.name}</div><div class="equipo-linea">${generarMonograma(p.awayTeam.name)} ${p.awayTeam.name}</div></div><div class="marcador-live">${renderEstado}</div></div></div>`;
