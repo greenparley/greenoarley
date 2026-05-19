@@ -1,4 +1,24 @@
 // =========================================================================
+// FUNCIÓN AUXILIAR: DETECTOR UNIVERSAL DE PARTIDOS EN VIVO
+// =========================================================================
+function verificarSiEsEnVivo(p) {
+    if (p.live === true || p.isLive === true) return true;
+    if (p.status) {
+        let estadoTexto = JSON.stringify(p.status).toLowerCase();
+        if (
+            estadoTexto.includes('live') || 
+            estadoTexto.includes('inprogress') || 
+            estadoTexto.includes('in_progress') || 
+            estadoTexto.includes('started') ||
+            estadoTexto.includes('playing')
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// =========================================================================
 // 1. GENERACIÓN DE COMBINADAS DEL DÍA (MÁXIMA PROBABILIDAD - ANTI BATACAZOS)
 // =========================================================================
 function generarCombinadaDelDia() {
@@ -6,12 +26,13 @@ function generarCombinadaDelDia() {
     if (!contenedor) return;
     contenedor.innerHTML = '';
 
-    // Filtrar partidos del deporte activo con cuotas válidas (Pre-match o Live con data básica)
+    // Filtrar partidos del deporte activo: Pasan si están en VIVO o si tienen cuotas previas
     let partidosValidos = partidosDisponibles.filter(p => {
         if (deporteActivo === 'futbol' || deporteActivo === 'tenis') {
-            // Si está en vivo, permitimos que pase aunque no tenga cuotas fijas pre-match
-            let esEnVivo = p.status && (p.status.type === 'inprogress' || p.status.description === 'Live');
+            let esEnVivo = verificarSiEsEnVivo(p);
+            // Si está en vivo, pasa el filtro directo
             if (esEnVivo) return true;
+            // Si no está en vivo, exigimos que tenga cuotas reales válidas
             return p.cuotasReales && p.cuotasReales.local && p.cuotasReales.visita;
         }
         return true; 
@@ -48,6 +69,7 @@ function generarCombinadaDelDia() {
             let nombreLocal = p.homeTeam?.name || p.local || "Local";
             let nombreVisita = p.awayTeam?.name || p.visita || "Visita";
             
+            // Si es un partido en vivo y no trae cuotas, usamos 1.85 para forzar la lógica de "partido parejo"
             let cLocal = p.cuotasReales?.local ? parseFloat(p.cuotasReales.local) : 1.85;
             let cVisita = p.cuotasReales?.visita ? parseFloat(p.cuotasReales.visita) : 1.85;
             
@@ -55,7 +77,7 @@ function generarCombinadaDelDia() {
             let cuotaFav = esFavLocal ? cLocal : cVisita;
             let nameFav = esFavLocal ? nombreLocal : nombreVisita;
 
-            // REGLA INDISCUTIBLE: Si la cuota supera 1.65, NO hay favorito claro. Es un partido parejo.
+            // REGLA INDISCUTIBLE ANTI-BATACAZO: Si la cuota supera 1.65, NO hay favorito claro.
             let hayFavoritoClaro = cuotaFav <= 1.65;
 
             let pickMercado = '';
@@ -111,7 +133,7 @@ function generarCombinadaDelDia() {
                 }
             }
 
-            if (pickCuota > 1.85) pickCuota = 1.75; // Cap de seguridad estricto
+            if (pickCuota > 1.85) pickCuota = 1.75; // Tope estricto por jugada individual
             cuotaTotalCombinada *= pickCuota;
 
             htmlTickets += `
@@ -148,22 +170,19 @@ function generarCombinadaDelDia() {
     });
 }
 
-
 // =========================================================================
-// 2. VISTA DETALLE DE MERCADOS (CON SOPORTE EN VIVO CORREGIDO PARA TENIS)
+// 2. VISTA DETALLE DE MERCADOS (SOPORTE TOTAL PARA LIVE EN TENIS)
 // =========================================================================
 function abrirDetalle(partidoId) {
-    // Buscar el partido correspondiente por ID
     let p = partidosDisponibles.find(item => (item.id == partidoId || item.id_partido == partidoId));
     if (!p) return;
 
-    // Elemento contenedor donde renderizás los mercados en tu interfaz/modal
     const contenedorMercados = document.getElementById('contenedor-mercados');
     if (!contenedorMercados) return;
 
     let htmlMercados = '';
 
-    // ---------------- LÓGICA PARA FÚTBOL ----------------
+    // ---------------- FÚTBOL ----------------
     if (deporteActivo === 'futbol') {
         let nombreL = p.homeTeam?.name || p.local || "Local";
         let nombreV = p.awayTeam?.name || p.visita || "Visita";
@@ -175,14 +194,13 @@ function abrirDetalle(partidoId) {
             <div class="barra-container"><span>Gana ${nombreV} (x${cVisita})</span></div></div>`;
     } 
     
-    // ---------------- LÓGICA PARA TENIS (MÁXIMA SEGURIDAD LIVE) ----------------
+    // ---------------- TENIS ----------------
     else if (deporteActivo === 'tenis') {
-        let esEnVivo = p.status && (p.status.type === 'inprogress' || p.status.description === 'Live');
+        let esEnVivo = verificarSiEsEnVivo(p); // Usamos el detector universal acá también
         let nombreL = p.homeTeam?.name || p.local || "Jugador 1";
         let nombreV = p.awayTeam?.name || p.visita || "Jugador 2";
 
         if (esEnVivo) {
-            // --- MODO LIVE: Extraer marcadores en tiempo real ---
             let marcadorL = p.homeScore?.current !== undefined ? p.homeScore.current : "-";
             let marcadorV = p.awayScore?.current !== undefined ? p.awayScore.current : "-";
             let puntosL = p.homeScore?.point !== undefined ? p.homeScore.point : "";
@@ -204,7 +222,6 @@ function abrirDetalle(partidoId) {
                 </div>
             `;
 
-            // Mercados dinámicos en vivo para evitar nulos por cuotas pre-match inexistentes
             htmlMercados += `
                 <div class="bloque-mercado"><div class="titulo-mercado">🎯 GANADOR DEL SET EN JUEGO</div>
                     <div class="barra-container"><div><span>${nombreL} gana el Set</span></div></div>
@@ -216,7 +233,6 @@ function abrirDetalle(partidoId) {
                 </div>
             `;
         } else {
-            // --- MODO PRE-PARTIDO: Cálculos estadísticos estándar ---
             let cLocal = p.cuotasReales?.local ? parseFloat(p.cuotasReales.local) : 1.85;
             let cVisita = p.cuotasReales?.visita ? parseFloat(p.cuotasReales.visita) : 1.85;
             let probL = Math.round((1 / cLocal) * 100);
@@ -228,7 +244,7 @@ function abrirDetalle(partidoId) {
         }
     } 
     
-    // ---------------- LÓGICA PARA BÁSQUET ----------------
+    // ---------------- BÁSQUET ----------------
     else {
         let nombreL = p.local || "Equipo Local";
         let nombreV = p.visita || "Equipo Visitante";
@@ -237,6 +253,5 @@ function abrirDetalle(partidoId) {
             <div class="barra-container"><span>Gana ${nombreV} (x1.85)</span></div></div>`;
     }
 
-    // Inyectar todo el HTML procesado en tu panel de mercados
     contenedorMercados.innerHTML = htmlMercados;
 }
