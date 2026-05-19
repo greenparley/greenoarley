@@ -37,15 +37,15 @@
         .badge-live { background: var(--alerta); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; animation: titilar 1.5s infinite; }
         @keyframes titilar { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         
-        /* ESTILOS NUEVOS DE MERCADOS */
+        /* ESTILOS DE MERCADOS */
         .mercado-box { background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.02); }
-        .mercado-box h5 { color: var(--texto-gris); margin-bottom: 10px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;}
-        .cuota-grid { display: flex; gap: 8px; }
+        .mercado-box h5 { color: var(--texto-blanco); margin-bottom: 10px; font-size: 0.90rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;}
+        .cuota-grid { display: flex; gap: 8px; margin-bottom: 8px; }
         .btn-cuota { flex: 1; background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); color: white; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; transition: border 0.2s;}
         .btn-cuota span:last-child { color: var(--verde-principal); font-weight: bold; font-size: 0.95rem; }
         
         .cabecera-detalle-grid { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; background: var(--tarjeta-bg); padding: 20px 10px; border-radius: 14px; border: 1px solid var(--tarjeta-borde); }
-        .caja-consejo { background: rgba(46, 204, 113, 0.08); border-left: 4px solid var(--verde-principal); padding: 12px 15px; border-radius: 0 8px 8px 0; margin-bottom: 20px; font-size: 0.85rem; line-height: 1.4; }
+        .caja-consejo { background: rgba(46, 204, 113, 0.08); border-left: 4px solid var(--verde-principal); padding: 12px 15px; border-radius: 0 8px 8px 0; margin-bottom: 20px; font-size: 0.85rem; line-height: 1.5; }
         .barra-container { margin-bottom: 15px; }
         .barra-container span { display: block; font-size: 0.85rem; margin-bottom: 5px; color: var(--texto-blanco); }
         .barra-fondo { background: rgba(255,255,255,0.06); height: 10px; border-radius: 5px; overflow: hidden; width: 100%; }
@@ -76,7 +76,7 @@
                 <div class="deporte-info"><h3>Básquetbol Global</h3><p>Cartelera Gratuita ESPN</p></div><div class="deporte-icono">🏀</div>
             </button>
             <button class="btn-deporte-card" onclick="irADeporte('tenis')">
-                <div class="deporte-info"><h3>Tenis Internacional</h3><p>The Odds API (Mercados Premium)</p></div><div class="deporte-icono">🎾</div>
+                <div class="deporte-info"><h3>Tenis Internacional</h3><p>Mercados Premium de Sets y Games</p></div><div class="deporte-icono">🎾</div>
             </button>
         </div>
 
@@ -84,7 +84,7 @@
             <div class="app-header"><button class="btn-volver-lobby" onclick="volverAlLobby()">⬅️ Volver</button><h2 id="titulo-deporte-activo" style="color: var(--verde-principal);">FÚTBOL</h2></div>
             <div id="logs-servidor-error" class="oculto"></div>
             <div id="herramientas-top" class="herramientas-grid">
-                <input type="text" id="filtro-ligas-input" oninput="aplicarFiltrosMaster()" placeholder="Buscar equipo, torneo o jugador..." class="buscador-input">
+                <input type="text" id="filtro-ligas-input" oninput="aplicarFiltrosMaster()" placeholder="Buscar equipo o jugador..." class="buscador-input">
                 <button id="btn-refresh" class="btn-refresh-live" onclick="forzarActualizacion()">🔄</button>
             </div>
             <div class="nav-filtros">
@@ -103,11 +103,11 @@
         </div>
     </div>
 
-    <div class="bottom-nav"><button class="nav-item-btn activo" onclick="cerrarDetalle(); setFiltroEstado('proximos');"><span>🏟️</span><span>Partidos</span></button><button class="nav-item-btn" style="position:relative;" onclick="togglePanelPicks()"><span id="contador-picks-badge" class="badge-contador">0</span><span>📋</span><span>Mis Picks</span></button></div>
+    <div class="bottom-nav"><button class="nav-item-btn activo" onclick="cerrarDetalle(); setFiltroEstado('proximos');"><span>🏟️</span><span>Eventos</span></button><button class="nav-item-btn" style="position:relative;" onclick="togglePanelPicks()"><span id="contador-picks-badge" class="badge-contador">0</span><span>📋</span><span>Mis Picks</span></button></div>
     <div id="panel-picks" class="panel-picks-lateral oculto-panel"><div class="panel-header"><h3>Mis Picks</h3><button class="btn-volver-lobby" onclick="togglePanelPicks()">❌</button></div><div id="contenedor-lista-picks"></div></div>
 
     <script>
-        // CONFIGURACIÓN MIXTA DE APIS
+        // CONFIGURACIÓN DE APIS
         const API_KEY_FUTBOL = "b1068f561f80975166b5c1ab67a2888a"; 
         const API_KEY_TENIS = "d3d7b6a1627d78292b24d7b2554e8c5d"; 
 
@@ -208,7 +208,7 @@
             return pool;
         }
 
-        // TENIS CON ALGORITMO DE MERCADOS
+        // TENIS CON ALGORITMO DE MERCADOS EXTRAS
         async function fetchTenisOddsApi() {
             let resultadosTotales = [];
             const hoyStr = new Date().toISOString().split('T')[0];
@@ -217,10 +217,7 @@
             if (!ligasTenisObj || ligasTenisObj.fecha !== hoyStr) {
                 try {
                     const resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${API_KEY_TENIS}`);
-                    if (!resSports.ok) {
-                        if(resSports.status === 401) mostrarError("API Key de Tenis agotada o inválida.");
-                        return [];
-                    }
+                    if (!resSports.ok) { return []; }
                     const sports = await resSports.json();
                     let torneosActivos = sports.filter(s => s.group === 'Tennis' || s.key.startsWith('tennis_')).map(s => s.key);
                     ligasTenisObj = { fecha: hoyStr, ligas: torneosActivos };
@@ -228,14 +225,11 @@
                 } catch (error) { return []; }
             }
 
-            let torneosPrioritarios = ligasTenisObj.ligas.filter(l => 
-                l.includes('atp') || l.includes('wta') || l.includes('challenger') || l.includes('roland_garros') || l.includes('qual')
-            ).slice(0, 10);
+            let torneosPrioritarios = ligasTenisObj.ligas.filter(l => l.includes('atp') || l.includes('wta') || l.includes('challenger') || l.includes('qual')).slice(0, 10);
 
             for (let liga of torneosPrioritarios) {
                 try {
-                    const url = `https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${API_KEY_TENIS}&regions=eu&markets=h2h`;
-                    const res = await fetch(url);
+                    const res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${API_KEY_TENIS}&regions=eu&markets=h2h`);
                     if (res.ok) {
                         const data = await res.json();
                         if (Array.isArray(data)) resultadosTotales = resultadosTotales.concat(data);
@@ -255,15 +249,15 @@
                     }
                 }
                 
-                // --- MOTOR DE CÁLCULO DE MERCADOS SECUNDARIOS ---
+                // --- MOTOR MATEMÁTICO PARA MERCADOS DE TENIS ---
                 let cL = cuotas.local !== "N/A" ? parseFloat(cuotas.local) : 1.85;
                 let cV = cuotas.visita !== "N/A" ? parseFloat(cuotas.visita) : 1.85;
                 
-                // Lógica de cálculo proporcional a H2H
-                let ambosGananS = (cL < 1.3 || cV < 1.3) ? 2.90 : 2.25; // Si está disparejo paga más
+                // Ambos marcan set
+                let ambosGananS = (cL < 1.3 || cV < 1.3) ? 2.90 : 2.25; 
                 let ambosGananN = (cL < 1.3 || cV < 1.3) ? 1.35 : 1.55;
                 
-                // Líneas base
+                // Líneas Base
                 let lineaFavorito = 12.5; let lineaNoFavorito = 10.5; let lineaParejo = 12.5;
                 
                 let extras = {
@@ -278,9 +272,8 @@
                     }
                 };
 
-                let ligaLimpia = partido.sport_title.replace("Tennis - ", "");
                 return { 
-                    id: 'tn_' + partido.id, utcDate: partido.commence_time, competition: { name: ligaLimpia }, 
+                    id: 'tn_' + partido.id, utcDate: partido.commence_time, competition: { name: partido.sport_title.replace("Tennis - ", "") }, 
                     homeTeam: { name: partido.home_team }, awayTeam: { name: partido.away_team }, 
                     cuotasReales: cuotas, mercadosExtra: extras, isLiveNative: false 
                 };
@@ -293,8 +286,7 @@
             baseDeDatosHoy = await cargarDatosDeportivos();
             
             if (baseDeDatosHoy.length > 0) { 
-                generarCombinadaDelDia(); 
-                aplicarFiltrosMaster(); 
+                generarCombinadaDelDia(); aplicarFiltrosMaster(); 
             } else { 
                 contenedor.innerHTML = `<p style="text-align:center; color:var(--texto-gris); background:rgba(255,255,255,0.05); padding:20px; border-radius:10px;">⚠️ Cartelera vacía. Tocá 🔄 para forzar una consulta.</p>`; 
             }
@@ -313,23 +305,38 @@
             probL = Math.round((probL / totalProb) * 100); probV = Math.round((probV / totalProb) * 100); 
             if(probE > 0) probE = Math.round((probE / totalProb) * 100);
 
-            document.getElementById('detalle-consejo').innerHTML = `<div class="caja-consejo">💡 <strong>Análisis Estructural:</strong><br>Valores basados en flujos del mercado global en tiempo real.</div>`;
+            // MOTOR DE CONSEJO INTELIGENTE (DINÁMICO)
+            let textoConsejo = "";
+            if (deporteActivo === 'tenis') {
+                if (probL >= 65) textoConsejo = `¡${p.homeTeam.name} es claro favorito! Una excelente opción estadística es apostar al <strong>Under (-) de games de ${p.awayTeam.name}</strong> o que "Ambos ganan set: NO".`;
+                else if (probV >= 65) textoConsejo = `¡Tendencia fuerte para ${p.awayTeam.name}! El mercado de valor está en la victoria directa o el <strong>Over (+) de games de ${p.awayTeam.name}</strong> en el 1er Set.`;
+                else textoConsejo = `Partido extremadamente parejo según las cuotas. Se proyecta un partido largo, ideal para apostar a <strong>"Ambos ganan set: SÍ"</strong> o al Over de Games Totales.`;
+            } else if (deporteActivo === 'futbol') {
+                if (probL > 55) textoConsejo = `Local fuerte. Buscá líneas de Hándicap Asiático a favor de ${p.homeTeam.name} o "Más de 1.5 Goles".`;
+                else if (probV > 55) textoConsejo = `La visita es superior. Valor en apuesta "Empate Apuesta No Válida" para ${p.awayTeam.name}.`;
+                else textoConsejo = `Cruce cerrado. Tendencia estadística a "Menos de 2.5 Goles" o "Empate en el 1er Tiempo".`;
+            } else {
+                textoConsejo = `Las cuotas marcan un favoritismo del ${Math.max(probL, probV)}%. Operar con cautela gestionando el bankroll.`;
+            }
 
+            document.getElementById('detalle-consejo').innerHTML = `<div class="caja-consejo">💡 <strong>Consejo del Algoritmo:</strong><br>${textoConsejo}</div>`;
+
+            // RENDER DE BARRAS PRINCIPALES
             let htmlTabs = `<div>
-                <h4 style="margin-bottom:12px; color:white; font-size:0.9rem;">Ganador del Partido (H2H)</h4>
+                <h4 style="margin-bottom:12px; color:white; font-size:0.9rem;">Ganador Directo</h4>
                 <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local <span class="cuota-real-badge">x${p.cuotasReales.local}</span></span><span>${probL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}%"></div></div></div>`;
             
             if(deporteActivo === 'futbol') htmlTabs += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Empate <span class="cuota-real-badge">x${p.cuotasReales.empate}</span></span><span>${probE}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probE}%"></div></div></div>`;
             
             htmlTabs += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visita <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div></div>`;
             
-            // RENDERING MERCADOS DE TENIS
+            // RENDERING DE MERCADOS EXCLUSIVOS DE TENIS
             if (deporteActivo === 'tenis' && p.mercadosExtra) {
                 htmlTabs += `<div style="margin-top:25px; border-top:1px solid rgba(255,255,255,0.05); padding-top:20px;">
-                    <h4 style="margin-bottom:15px; color:var(--oro); font-size:1rem;">🎾 Player Props (Motor IA)</h4>
+                    <h4 style="margin-bottom:15px; color:var(--oro); font-size:1.1rem; text-align:center;">🎾 MERCADOS PREMIUM TENIS</h4>
                     
                     <div class="mercado-box">
-                        <h5>¿Ambos ganan al menos 1 Set?</h5>
+                        <h5>🏆 ¿Ambos ganan al menos 1 Set?</h5>
                         <div class="cuota-grid">
                             <div class="btn-cuota"><span>Sí</span> <span>x${p.mercadosExtra.ambosSets.si}</span></div>
                             <div class="btn-cuota"><span>No</span> <span style="color:var(--alerta)">x${p.mercadosExtra.ambosSets.no}</span></div>
@@ -337,30 +344,30 @@
                     </div>
                     
                     <div class="mercado-box">
-                        <h5>Games Totales (Por Jugador)</h5>
-                        <div style="font-size:0.75rem; color:var(--texto-gris); margin-bottom:6px;">${p.homeTeam.name}</div>
+                        <h5>📈 Games Totales del Partido (Por Jugador)</h5>
+                        <div style="font-size:0.80rem; color:var(--oro); margin-bottom:6px; font-weight:bold;">Jugador: ${p.homeTeam.name}</div>
                         <div class="cuota-grid" style="margin-bottom:12px;">
-                            <div class="btn-cuota"><span>+${p.mercadosExtra.gamesTot.local.linea}</span> <span>x${p.mercadosExtra.gamesTot.local.over}</span></div>
-                            <div class="btn-cuota"><span>-${p.mercadosExtra.gamesTot.local.linea}</span> <span style="color:var(--alerta)">x${p.mercadosExtra.gamesTot.local.under}</span></div>
+                            <div class="btn-cuota"><span>Más de ${p.mercadosExtra.gamesTot.local.linea}</span> <span>x${p.mercadosExtra.gamesTot.local.over}</span></div>
+                            <div class="btn-cuota"><span>Menos de ${p.mercadosExtra.gamesTot.local.linea}</span> <span style="color:var(--alerta)">x${p.mercadosExtra.gamesTot.local.under}</span></div>
                         </div>
-                        <div style="font-size:0.75rem; color:var(--texto-gris); margin-bottom:6px;">${p.awayTeam.name}</div>
+                        <div style="font-size:0.80rem; color:var(--oro); margin-bottom:6px; font-weight:bold;">Jugador: ${p.awayTeam.name}</div>
                         <div class="cuota-grid">
-                            <div class="btn-cuota"><span>+${p.mercadosExtra.gamesTot.visita.linea}</span> <span>x${p.mercadosExtra.gamesTot.visita.over}</span></div>
-                            <div class="btn-cuota"><span>-${p.mercadosExtra.gamesTot.visita.linea}</span> <span style="color:var(--alerta)">x${p.mercadosExtra.gamesTot.visita.under}</span></div>
+                            <div class="btn-cuota"><span>Más de ${p.mercadosExtra.gamesTot.visita.linea}</span> <span>x${p.mercadosExtra.gamesTot.visita.over}</span></div>
+                            <div class="btn-cuota"><span>Menos de ${p.mercadosExtra.gamesTot.visita.linea}</span> <span style="color:var(--alerta)">x${p.mercadosExtra.gamesTot.visita.under}</span></div>
                         </div>
                     </div>
 
                     <div class="mercado-box">
-                        <h5>Total Games en 1er Set (Indiv.)</h5>
-                        <div style="font-size:0.75rem; color:var(--texto-gris); margin-bottom:6px;">${p.homeTeam.name}</div>
+                        <h5>🔥 Games Totales en el 1er Set (Por Jugador)</h5>
+                        <div style="font-size:0.80rem; color:var(--oro); margin-bottom:6px; font-weight:bold;">Jugador: ${p.homeTeam.name}</div>
                         <div class="cuota-grid" style="margin-bottom:12px;">
-                            <div class="btn-cuota"><span>+${p.mercadosExtra.gamesS1.local.linea}</span> <span>x${p.mercadosExtra.gamesS1.local.over}</span></div>
-                            <div class="btn-cuota"><span>-${p.mercadosExtra.gamesS1.local.linea}</span> <span style="color:var(--alerta)">x${p.mercadosExtra.gamesS1.local.under}</span></div>
+                            <div class="btn-cuota"><span>Más de ${p.mercadosExtra.gamesS1.local.linea}</span> <span>x${p.mercadosExtra.gamesS1.local.over}</span></div>
+                            <div class="btn-cuota"><span>Menos de ${p.mercadosExtra.gamesS1.local.linea}</span> <span style="color:var(--alerta)">x${p.mercadosExtra.gamesS1.local.under}</span></div>
                         </div>
-                        <div style="font-size:0.75rem; color:var(--texto-gris); margin-bottom:6px;">${p.awayTeam.name}</div>
+                        <div style="font-size:0.80rem; color:var(--oro); margin-bottom:6px; font-weight:bold;">Jugador: ${p.awayTeam.name}</div>
                         <div class="cuota-grid">
-                            <div class="btn-cuota"><span>+${p.mercadosExtra.gamesS1.visita.linea}</span> <span>x${p.mercadosExtra.gamesS1.visita.over}</span></div>
-                            <div class="btn-cuota"><span>-${p.mercadosExtra.gamesS1.visita.linea}</span> <span style="color:var(--alerta)">x${p.mercadosExtra.gamesS1.visita.under}</span></div>
+                            <div class="btn-cuota"><span>Más de ${p.mercadosExtra.gamesS1.visita.linea}</span> <span>x${p.mercadosExtra.gamesS1.visita.over}</span></div>
+                            <div class="btn-cuota"><span>Menos de ${p.mercadosExtra.gamesS1.visita.linea}</span> <span style="color:var(--alerta)">x${p.mercadosExtra.gamesS1.visita.under}</span></div>
                         </div>
                     </div>
                 </div>`;
