@@ -14,10 +14,6 @@
         .lobby-titulo { font-size: 2.4rem; color: var(--verde-principal); margin-bottom: 8px; font-weight: 800; }
         .lobby-sub { color: var(--texto-gris); margin-bottom: 30px; font-size: 1rem; }
         
-        .caja-config-api { background: #111827; border: 1px dashed var(--tarjeta-borde); padding: 15px; border-radius: 12px; margin-bottom: 25px; text-align: left; }
-        .caja-config-api label { display: block; font-size: 0.8rem; color: var(--oro); margin-bottom: 5px; font-weight: bold; }
-        .input-api-key { width: 100%; background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); padding: 8px 12px; border-radius: 6px; color: white; font-size: 0.85rem; margin-bottom: 8px; }
-        
         .btn-deporte-card { background: linear-gradient(145deg, #151f32, #111827); border: 1px solid var(--tarjeta-borde); border-radius: 16px; padding: 22px 25px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; width: 100%; text-align: left; }
         .deporte-info h3 { color: var(--texto-blanco); font-size: 1.25rem; margin-bottom: 6px; }
         .deporte-info p { color: var(--texto-gris); font-size: 0.88rem; }
@@ -65,18 +61,12 @@
         <div id="lobby-selector" class="lobby-container">
             <h1 class="lobby-titulo">GreenPicks Pro</h1>
             <p class="lobby-sub">Plataforma de Tendencias Deportivas</p>
-            
-            <div class="caja-config-api">
-                <label>⚙️ LLAVE API PERSONALIZADA (OPCIONAL):</label>
-                <input type="text" id="user-api-key" class="input-api-key" placeholder="Pega tu API Key si querés usar una propia..." onchange="guardarLlaveManual()">
-                <p style="font-size: 0.7rem; color: var(--texto-gris);">Por defecto la app ahora usa la Key alternativa que funciona bien.</p>
-            </div>
 
             <button class="btn-deporte-card" onclick="irADeporte('futbol')">
-                <div class="deporte-info"><h3>Fútbol Profesional ⚽</h3><p>Consultando cartelera con llave alternativa activa</p></div><div class="deporte-icono">🏟️</div>
+                <div class="deporte-info"><h3>Fútbol Profesional ⚽</h3><p>Grandes Ligas, Copas Europeas y Conmebol</p></div><div class="deporte-icono">🏟️</div>
             </button>
             <button class="btn-deporte-card" onclick="irADeporte('basquet')">
-                <div class="deporte-info"><h3>Básquetbol Global 🏀</h3><p>Cartelera Directa de ESPN (Sin Llaves)</p></div><div class="deporte-icono">🏀</div>
+                <div class="deporte-info"><h3>Básquetbol Global 🏀</h3><p>Cartelera Directa de ESPN</p></div><div class="deporte-icono">🏀</div>
             </button>
             <button class="btn-deporte-card" onclick="irADeporte('tenis')">
                 <div class="deporte-info"><h3>Tenis Internacional 🎾</h3><p>Torneos ATP, WTA y Challengers</p></div><div class="deporte-icono">🎾</div>
@@ -110,28 +100,12 @@
     <div id="panel-picks" class="panel-picks-lateral oculto-panel"><div class="panel-header"><h3>Mis Picks</h3><button class="btn-volver-lobby" onclick="togglePanelPicks()">❌</button></div><div id="contenedor-lista-picks"></div></div>
 
     <script>
-        // ASIGNADA LA KEY DE TENIS PARA AMBOS DEPORTES
-        let INTERCAMBIO_KEY = "d3d7b6a1627d78292b24d7b2554e8c5d"; 
+        let API_KEY_ACTIVA = "d3d7b6a1627d78292b24d7b2554e8c5d"; 
 
         let baseDeDatosHoy = [];
         let estadoFiltroActual = 'proximos';
         let ticketsMultiplesGenerados = {}; 
         let deporteActivo = 'futbol'; 
-
-        function obtenerApiKeyActiva() {
-            const guardada = localStorage.getItem('gp_user_api_key');
-            return (guardada && guardada.trim() !== "") ? guardada.trim() : INTERCAMBIO_KEY;
-        }
-
-        function guardarLlaveManual() {
-            const val = document.getElementById('user-api-key').value;
-            localStorage.setItem('gp_user_api_key', val);
-        }
-
-        function cargarLlaveEnPantalla() {
-            const guardada = localStorage.getItem('gp_user_api_key');
-            if(guardada) document.getElementById('user-api-key').value = guardada;
-        }
 
         function generarMonograma(nombre, extraClass = "") {
             if(!nombre) nombre = "X";
@@ -153,7 +127,7 @@
 
         function mostrarError(mensaje) {
             const logBox = document.getElementById('logs-servidor-error');
-            logBox.innerHTML = `<div class="banner-error-api" style="background: rgba(231, 76, 60, 0.15); border: 1px solid var(--alerta); color: #ff7675; padding: 15px; border-radius: 10px; margin-bottom: 15px; font-size: 0.9rem; text-align: center;"><b>⚠️ Estado del Servidor</b><br>${mensaje}</div>`;
+            logBox.innerHTML = `<div class="banner-error-api" style="background: rgba(231, 76, 60, 0.15); border: 1px solid var(--alerta); color: #ff7675; padding: 15px; border-radius: 10px; margin-bottom: 15px; font-size: 0.9rem; text-align: center;"><b>⚠️ Estado de API</b><br>${mensaje}</div>`;
             logBox.classList.remove('oculto');
         }
 
@@ -182,15 +156,14 @@
         }
 
         async function fetchFutbolOddsApi() {
-            const API_KEY = obtenerApiKeyActiva();
             try {
                 const hoyStr = new Date().toISOString().split('T')[0];
                 let ligasFutbolObj = JSON.parse(localStorage.getItem('gp_ligas_futbol_odds_cache'));
                 
                 if (!ligasFutbolObj || ligasFutbolObj.fecha !== hoyStr) {
-                    const resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${API_KEY}`);
+                    const resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${API_KEY_ACTIVA}`);
                     if (!resSports.ok) {
-                        mostrarError("La API Key compartida arrojó un error de conexión o alcanzó su cuota.");
+                        mostrarError("Límite de API excedido o error de conexión.");
                         return [];
                     }
                     const sports = await resSports.json();
@@ -199,19 +172,26 @@
                     localStorage.setItem('gp_ligas_futbol_odds_cache', JSON.stringify(ligasFutbolObj));
                 }
 
-                // Selección dinámica amplia para encontrar partidos en mayo de 2026
-                let torneosPrioritarios = ligasFutbolObj.ligas.filter(l => 
-                    l.includes('argentina') || l.includes('epl') || l.includes('spain') || 
-                    l.includes('champions') || l.includes('italy') || l.includes('brazil') || 
-                    l.includes('mexico') || l.includes('usa')
-                ).slice(0, 3);
+                // FILTRADO ESTRICTO DE GRANDES LIGAS, CHAMPIONS, EUROPA, CONFERENCE, LIBERTADORES, SUDAMERICANA Y ARGENTINA
+                let torneosPrioritarios = ligasFutbolObj.ligas.filter(key => {
+                    return key.includes('argentina') || 
+                           key.includes('champions_league') || 
+                           key.includes('europa_league') || 
+                           key.includes('conference_league') || 
+                           key.includes('libertadores') || 
+                           key.includes('sudamericana') || 
+                           key.includes('epl') || 
+                           key.includes('spain_la_liga') || 
+                           key.includes('italy_serie_a') || 
+                           key.includes('germany_bundesliga');
+                });
 
-                if (torneosPrioritarios.length === 0) torneosPrioritarios = ligasFutbolObj.ligas.slice(0, 2);
+                if (torneosPrioritarios.length === 0) torneosPrioritarios = ligasFutbolObj.ligas.slice(0, 4);
 
                 let poolResultados = [];
                 const promesas = torneosPrioritarios.map(async (liga) => {
                     try {
-                        const res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${API_KEY}&regions=eu&markets=h2h`);
+                        const res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${API_KEY_ACTIVA}&regions=eu&markets=h2h`);
                         if (res.ok) return await res.json();
                     } catch (e) {}
                     return [];
@@ -243,7 +223,7 @@
                 }).filter(p => new Date(p.utcDate) >= limiteTiempoFiltro);
 
             } catch (error) {
-                mostrarError("No se pudo obtener la cartelera de fútbol.");
+                mostrarError("Error al conectar con los mercados de fútbol.");
                 return [];
             }
         }
@@ -276,16 +256,15 @@
         }
 
         async function fetchTenisOddsApi() {
-            const API_KEY = obtenerApiKeyActiva();
             let resultadosTotales = [];
             try {
-                const resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${API_KEY}`);
-                if (!resSports.ok) { mostrarError("La Key no responde para la consulta de Tenis."); return []; }
+                const resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${API_KEY_ACTIVA}`);
+                if (!resSports.ok) { return []; }
                 const sports = await resSports.json();
                 let torneosTenis = sports.filter(s => s.group === 'Tennis').map(s => s.key).slice(0, 2);
 
                 const promesas = torneosTenis.map(async (liga) => {
-                    const res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${API_KEY}&regions=eu&markets=h2h`);
+                    const res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${API_KEY_ACTIVA}&regions=eu&markets=h2h`);
                     if (res.ok) return await res.json();
                     return [];
                 });
@@ -320,7 +299,7 @@
             if (baseDeDatosHoy.length > 0) { 
                 generarCombinadaDelDia(); aplicarFiltrosMaster(); 
             } else { 
-                contenedor.innerHTML = `<p style="text-align:center; color:var(--texto-gris); background:rgba(255,255,255,0.05); padding:20px; border-radius:10px;">⚠️ Cartelera vacía o sin respuesta del servidor.</p>`; 
+                contenedor.innerHTML = `<p style="text-align:center; color:var(--texto-gris); background:rgba(255,255,255,0.05); padding:20px; border-radius:10px;">⚠️ Cartelera sin eventos disponibles para este filtro.</p>`; 
             }
         }
 
@@ -337,7 +316,7 @@
             probL = Math.round((probL / totalProb) * 100); probV = Math.round((probV / totalProb) * 100); 
             if(probE > 0) probE = Math.round((probE / totalProb) * 100);
 
-            document.getElementById('detalle-consejo').innerHTML = `<div class="caja-consejo">💡 <b>Cálculo Probabilístico Pro:</b><br>Análisis estructural completado para mercados principales basados en cuotas reales.</div>`;
+            document.getElementById('detalle-consejo').innerHTML = `<div class="caja-consejo">💡 <b>Análisis Estadístico:</b><br>Tendencia probabilística calculada sobre cuotas vigentes de mercado.</div>`;
 
             let htmlTabs = `<div>
                 <h4 style="margin-bottom:12px; color:white; font-size:0.9rem;">Probabilidad Estimada (Algoritmo)</h4>
@@ -367,7 +346,7 @@
             if (i && i.value.trim() !== '') { const txt = i.value.toLowerCase().trim(); f = f.filter(p => p.competition.name.toLowerCase().includes(txt) || p.homeTeam.name.toLowerCase().includes(txt) || p.awayTeam.name.toLowerCase().includes(txt)); }
             
             const c = document.getElementById('contenedor-partidos'); c.innerHTML = '';
-            if (f.length === 0) { c.innerHTML = `<p style="padding:30px; text-align:center; color:var(--texto-gris);">No hay partidos en esta categoría en este momento.</p>`; return; }
+            if (f.length === 0) { c.innerHTML = `<p style="padding:30px; text-align:center; color:var(--texto-gris);">No hay partidos disponibles para mostrar en este momento.</p>`; return; }
             
             f.forEach(p => { 
                 let renderEstado = esPartidoEnVivo(p) ? `<span style="color:var(--alerta); font-weight:bold;">🔴 EN VIVO</span>` : `🏟️ Ver Análisis`;
@@ -381,7 +360,7 @@
 
         function generarCombinadaDelDia() {
             const s = document.getElementById('seccion-combinada'); s.innerHTML = ''; ticketsMultiplesGenerados = {};
-            if (baseDeDatosHoy.length < 2) { s.innerHTML = `<p style="padding:20px; text-align:center; color:var(--texto-gris);">Se necesitan al menos 2 partidos vigentes.</p>`; return; }
+            if (baseDeDatosHoy.length < 2) { s.innerHTML = `<p style="padding:20px; text-align:center; color:var(--texto-gris);">Se necesitan más partidos cargados para armar la sugerencia múltiple.</p>`; return; }
             
             let pool = baseDeDatosHoy.slice(0, 2);
             let idTicket = "cb_sports_day";
@@ -407,7 +386,7 @@
         
         function forzarActualizacion() { localStorage.removeItem(`sports_cache_mix_${deporteActivo}`); iniciarApp(); }
         
-        window.onload = () => { cargarLlaveEnPantalla(); actualizarEstructuraPicksLocales(); };
+        window.onload = () => { actualizarEstructuraPicksLocales(); };
     </script>
 </body>
 </html>
