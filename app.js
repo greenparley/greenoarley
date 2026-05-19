@@ -1,7 +1,12 @@
 // =========================================================================
-// FUNCIÓN AUXILIAR: DETECTOR UNIVERSAL DE PARTIDOS EN VIVO
+// 🛠️ DETECTORES UNIVERSALES (EN VIVO, FINALIZADOS Y TIEMPO)
 // =========================================================================
+
+// 1. Detector de En Vivo (Cubre casi cualquier estructura de API)
 function verificarSiEsEnVivo(p) {
+    // Si ya está marcado como finalizado, no puede estar en vivo
+    if (verificarSiEstaFinalizado(p)) return false;
+    
     if (p.live === true || p.isLive === true) return true;
     if (p.status) {
         let estadoTexto = JSON.stringify(p.status).toLowerCase();
@@ -18,28 +23,66 @@ function verificarSiEsEnVivo(p) {
     return false;
 }
 
+// 2. Detector de Partidos Finalizados
+function verificarSiEstaFinalizado(p) {
+    if (p.finished === true || p.isFinished === true || p.status?.type === 'finished') return true;
+    if (p.status) {
+        let estadoTexto = JSON.stringify(p.status).toLowerCase();
+        if (
+            estadoTexto.includes('finished') || 
+            estadoTexto.includes('ft') || 
+            estadoTexto.includes('ended') ||
+            estadoTexto.includes('finalizado') ||
+            estadoTexto.includes('concluded')
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// 3. Validador de ventana de tiempo (Menos de 24 horas desde que terminó/empezó)
+function pasoMenosDe24Horas(p) {
+    let timestamp = p.timestamp || p.startTimestamp || p.fixture?.timestamp;
+    if (timestamp) {
+        if (timestamp < 10000000000) timestamp *= 1000; // Ajuste de segundos a milisegundos
+        const diferenciaHoras = (Date.now() - timestamp) / (1000 * 60 * 60);
+        return diferenciaHoras >= 0 && diferenciaHoras <= 24;
+    }
+    
+    let fechaStr = p.date || p.fixture?.date || p.fecha;
+    if (fechaStr) {
+        const fechaPartido = new Date(fechaStr);
+        const diferenciaHoras = (Date.now() - fechaPartido.getTime()) / (1000 * 60 * 60);
+        return diferenciaHoras >= 0 && diferenciaHoras <= 24;
+    }
+    
+    return true; // Si la API no da fecha, lo dejamos por seguridad
+}
+
+
 // =========================================================================
-// 1. GENERACIÓN DE COMBINADAS DEL DÍA (MÁXIMA PROBABILIDAD - ANTI BATACAZOS)
+// 📊 1. COMBINADAS DEL DÍA (MÁXIMA PROBABILIDAD - SIN BATACAZOS)
 // =========================================================================
 function generarCombinadaDelDia() {
     const contenedor = document.getElementById('contenedor-combinadas');
     if (!contenedor) return;
     contenedor.innerHTML = '';
 
-    // Filtrar partidos del deporte activo: Pasan si están en VIVO o si tienen cuotas previas
+    // Filtrar partidos activos (Excluye finalizados, incluye vivos o pre-match con cuotas)
     let partidosValidos = partidosDisponibles.filter(p => {
+        if (verificarSiEstaFinalizado(p)) return false; // Los terminados NO entran a combinadas
+
         if (deporteActivo === 'futbol' || deporteActivo === 'tenis') {
             let esEnVivo = verificarSiEsEnVivo(p);
-            // Si está en vivo, pasa el filtro directo
             if (esEnVivo) return true;
-            // Si no está en vivo, exigimos que tenga cuotas reales válidas
             return p.cuotasReales && p.cuotasReales.local && p.cuotasReales.visita;
         }
         return true; 
     });
 
     if (partidosValidos.length < 3) {
-        contenedor.innerHTML = `<div class="alerta-error">Se necesitan al menos 3 partidos de ${deporteActivo.toUpperCase()} para armar las combinadas.</div>`;
+        contenedor.innerHTML = `<div class="alerta-error">Se necesitan al menos 3 partidos de ${deporteActivo.toUpperCase()} disponibles para armar las combinadas.</div>`;
         return;
     }
 
@@ -69,7 +112,6 @@ function generarCombinadaDelDia() {
             let nombreLocal = p.homeTeam?.name || p.local || "Local";
             let nombreVisita = p.awayTeam?.name || p.visita || "Visita";
             
-            // Si es un partido en vivo y no trae cuotas, usamos 1.85 para forzar la lógica de "partido parejo"
             let cLocal = p.cuotasReales?.local ? parseFloat(p.cuotasReales.local) : 1.85;
             let cVisita = p.cuotasReales?.visita ? parseFloat(p.cuotasReales.visita) : 1.85;
             
@@ -77,8 +119,7 @@ function generarCombinadaDelDia() {
             let cuotaFav = esFavLocal ? cLocal : cVisita;
             let nameFav = esFavLocal ? nombreLocal : nombreVisita;
 
-            // REGLA INDISCUTIBLE ANTI-BATACAZO: Si la cuota supera 1.65, NO hay favorito claro.
-            let hayFavoritoClaro = cuotaFav <= 1.65;
+            let hayFavoritoClaro = cuotaFav <= 1.65; // REGLA ANTI-BATACAZOS
 
             let pickMercado = '';
             let pickCuota = 1.30;
@@ -133,7 +174,7 @@ function generarCombinadaDelDia() {
                 }
             }
 
-            if (pickCuota > 1.85) pickCuota = 1.75; // Tope estricto por jugada individual
+            if (pickCuota > 1.85) pickCuota = 1.75; // Cap de seguridad
             cuotaTotalCombinada *= pickCuota;
 
             htmlTickets += `
@@ -171,7 +212,7 @@ function generarCombinadaDelDia() {
 }
 
 // =========================================================================
-// 2. VISTA DETALLE DE MERCADOS (SOPORTE TOTAL PARA LIVE EN TENIS)
+// 🔍 2. PANEL DE DETALLE Y MERCADOS (CON VIVO TOTALMENTE SEGURO)
 // =========================================================================
 function abrirDetalle(partidoId) {
     let p = partidosDisponibles.find(item => (item.id == partidoId || item.id_partido == partidoId));
@@ -196,7 +237,7 @@ function abrirDetalle(partidoId) {
     
     // ---------------- TENIS ----------------
     else if (deporteActivo === 'tenis') {
-        let esEnVivo = verificarSiEsEnVivo(p); // Usamos el detector universal acá también
+        let esEnVivo = verificarSiEsEnVivo(p);
         let nombreL = p.homeTeam?.name || p.local || "Jugador 1";
         let nombreV = p.awayTeam?.name || p.visita || "Jugador 2";
 
@@ -227,20 +268,13 @@ function abrirDetalle(partidoId) {
                     <div class="barra-container"><div><span>${nombreL} gana el Set</span></div></div>
                     <div class="barra-container"><div><span>${nombreV} gana el Set</span></div></div>
                 </div>
-                <div class="bloque-mercado"><div class="titulo-mercado">📊 TOTAL GAMES EN EL SET</div>
-                    <div class="barra-container"><div><span>Más de 9.5 Games Totales</span></div></div>
-                    <div class="barra-container"><div><span>Menos de 9.5 Games Totales</span></div></div>
-                </div>
             `;
         } else {
             let cLocal = p.cuotasReales?.local ? parseFloat(p.cuotasReales.local) : 1.85;
             let cVisita = p.cuotasReales?.visita ? parseFloat(p.cuotasReales.visita) : 1.85;
-            let probL = Math.round((1 / cLocal) * 100);
-            let probV = Math.round((1 / cVisita) * 100);
-
             htmlMercados += `<div class="bloque-mercado"><div class="titulo-mercado">🎯 GANADOR DEL PARTIDO (H2H)</div>
-                <div class="barra-container"><span>Gana ${nombreL} (x${cLocal}) - Probabilidad: ${probL}%</span></div>
-                <div class="barra-container"><span>Gana ${nombreV} (x${cVisita}) - Probabilidad: ${probV}%</span></div></div>`;
+                <div class="barra-container"><span>Gana ${nombreL} (x${cLocal})</span></div>
+                <div class="barra-container"><span>Gana ${nombreV} (x${cVisita})</span></div></div>`;
         }
     } 
     
@@ -254,4 +288,66 @@ function abrirDetalle(partidoId) {
     }
 
     contenedorMercados.innerHTML = htmlMercados;
+}
+
+// =========================================================================
+// 🏁 3. SECCIÓN HISTORIAL DE PARTIDOS FINALIZADOS (CONGELADOS POR 24HS)
+// =========================================================================
+function mostrarPartidosFinalizados() {
+    const contenedor = document.getElementById('contenedor-finalizados');
+    if (!contenedor) return;
+    contenedor.innerHTML = '';
+
+    // Filtrar los que pertenecen al deporte activo, están cerrados y llevan menos de 24 horas
+    let finalizados = partidosDisponibles.filter(p => {
+        let esDeporteActivo = false;
+        if (deporteActivo === 'futbol' && (p.golesLocal !== undefined || p.deporte === 'futbol' || p.league?.sport === 'football')) esDeporteActivo = true;
+        if (deporteActivo === 'tenis' && (p.homeScore?.point !== undefined || p.deporte === 'tenis' || p.league?.sport === 'tennis')) esDeporteActivo = true;
+        if (deporteActivo === 'basquet' && (p.puntosLocal !== undefined || p.deporte === 'basquet' || p.league?.sport === 'basketball')) esDeporteActivo = true;
+        
+        if (!p.deporte) esDeporteActivo = true; // Fallback por si no viene tipado
+
+        return esDeporteActivo && verificarSiEstaFinalizado(p) && pasoMenosDe24Horas(p);
+    });
+
+    if (finalizados.length === 0) {
+        contenedor.innerHTML = `<div style="color: var(--texto-gris); text-align: center; padding: 25px; font-size: 0.85rem;">No hay resultados recientes de ${deporteActivo.toUpperCase()} en las últimas 24 horas.</div>`;
+        return;
+    }
+
+    finalizados.forEach(p => {
+        let nombreLocal = p.homeTeam?.name || p.local || "Local";
+        let nombreVisita = p.awayTeam?.name || p.visita || "Visita";
+        
+        let resultadoL = "-";
+        let resultadoV = "-";
+
+        // Extraer score definitivo según la API
+        if (p.homeScore?.display !== undefined) {
+            resultadoL = p.homeScore.display;
+            resultadoV = p.awayScore?.display;
+        } else {
+            resultadoL = p.golesLocal ?? p.puntosLocal ?? p.scoreLocal ?? "-";
+            resultadoV = p.golesVisita ?? p.puntosVisita ?? p.scoreVisita ?? "-";
+        }
+
+        contenedor.innerHTML += `
+            <div class="tarjeta-finalizado" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); padding: 12px; margin-bottom: 8px; border-radius: 8px; border-left: 4px solid #6c757d;">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: #e0e0e0; font-size: 0.9rem;">${nombreLocal}</span>
+                        <span style="font-weight: 700; color: var(--oro); font-size: 1rem;">${resultadoL}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: #e0e0e0; font-size: 0.9rem;">${nombreVisita}</span>
+                        <span style="font-weight: 700; color: var(--oro); font-size: 1rem;">${resultadoV}</span>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.04); padding-top: 5px; font-size: 0.7rem; color: var(--texto-gris);">
+                    <span>🏁 FINALIZADO</span>
+                    <span>Historial (24hs)</span>
+                </div>
+            </div>
+        `;
+    });
 }
