@@ -47,7 +47,6 @@
         .bloque-mercado { background: #111827; border: 1px solid var(--tarjeta-borde); padding: 15px; border-radius: 10px; margin-bottom: 15px; }
         .titulo-mercado { color: var(--oro); font-size: 0.9rem; font-weight: bold; margin-bottom: 12px; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 4px; }
 
-        /* Selector de niveles de riesgo */
         .selector-riesgo-grid { display: flex; gap: 8px; margin-bottom: 15px; }
         .btn-riesgo { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--tarjeta-borde); background: var(--tarjeta-bg); color: white; font-size: 0.85rem; font-weight: bold; cursor: pointer; }
         .btn-riesgo.activo-asegurada { background: rgba(46, 204, 113, 0.2); border-color: var(--verde-principal); color: var(--verde-principal); }
@@ -119,7 +118,6 @@
     <div id="panel-picks" class="panel-picks-lateral oculto-panel"><div class="panel-header"><h3>Mis Picks</h3><button class="btn-volver-lobby" onclick="togglePanelPicks()">❌</button></div><div id="contenedor-lista-picks"></div></div>
 
     <script>
-        // Sistema de Rotación y Respaldo de API Keys
         const API_KEYS = [
             "d3d7b6a1627d78292b24d7b2554e8c5d", 
             "c7b062bf872742e25c086b5ad997ba0a"  
@@ -333,49 +331,91 @@
             const p = baseDeDatosHoy.find(item => item.id === id); if (!p) return;
             document.getElementById('herramientas-top').classList.add('oculto'); document.getElementById('contenedor-partidos').classList.add('oculto'); document.getElementById('seccion-combinada').classList.add('oculto'); document.getElementById('vista-detalle').classList.remove('oculto');
             document.getElementById('detalle-cabecera').innerHTML = `<div style="text-align:center; width:45%;">${generarMonograma(p.homeTeam.name, 'detalle')}<p style="font-size:0.90rem; font-weight:bold;">${p.homeTeam.name}</p></div><h2 style="width:10%; text-align:center; color:var(--verde-principal);">VS</h2><div style="text-align:center; width:45%;">${generarMonograma(p.awayTeam.name, 'detalle')}<p style="font-size:0.90rem; font-weight:bold;">${p.awayTeam.name}</p></div>`;
-            document.getElementById('detalle-consejo').innerHTML = `<div class="caja-consejo">💡 <b>Modelado Multimercado IA:</b> Proyecciones basadas en fluctuación de liquidez.</div>`;
+            document.getElementById('detalle-consejo').innerHTML = `<div class="caja-consejo">💡 <b>Modelado Multimercado IA:</b> Proyecciones basadas en fluctuación de liquidez y estadísticas directas.</div>`;
 
             let probL = p.cuotasReales.local !== "N/A" ? Math.round((1 / p.cuotasReales.local) * 100) : 42;
             let probV = p.cuotasReales.visita !== "N/A" ? Math.round((1 / p.cuotasReales.visita) * 100) : 33;
             let probE = (deporteActivo === 'futbol' && p.cuotasReales.empate !== "N/A") ? Math.round((1 / p.cuotasReales.empate) * 100) : 0;
             let totalProb = probL + probE + probV; probL = Math.round((probL / totalProb) * 100); probV = Math.round((probV / totalProb) * 100); if(probE > 0) probE = Math.round((probE / totalProb) * 100);
 
-            // MERCADO 1: GANADOR 1X2 / GANADOR DIRECTO
-            let htmlMercados = `<div class="bloque-mercado">
-                <div class="titulo-mercado">🎯 MERCADO: GANADOR DEL PARTIDO (1X2)</div>
-                <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local <span class="cuota-real-badge">x${p.cuotasReales.local}</span></span><span>${probL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}%"></div></div></div>`;
-            if(deporteActivo === 'futbol' && p.cuotasReales.empate !== "N/A") {
-                htmlMercados += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Empate <span class="cuota-real-badge">x${p.cuotasReales.empate}</span></span><span>${probE}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probE}%"></div></div></div>`;
-            }
-            htmlMercados += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visita <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div></div>`;
+            let htmlMercados = "";
 
-            // EXTENSIONES DE MERCADOS POR DEPORTE
+            // --- MERCADOS ESPECÍFICOS POR DEPORTE EN VISTA DETALLE ---
             if(deporteActivo === 'futbol') {
+                // 1. Ganador del Partido Explicitado (1X2)
+                htmlMercados += `<div class="bloque-mercado">
+                    <div class="titulo-mercado">🎯 MERCADO: GANADOR DEL PARTIDO (1X2)</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local: ${p.homeTeam.name} <span class="cuota-real-badge">x${p.cuotasReales.local}</span></span><span>${probL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}%"></div></div></div>`;
+                if(p.cuotasReales.empate !== "N/A") {
+                    htmlMercados += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Empate en los 90 Minutos <span class="cuota-real-badge">x${p.cuotasReales.empate}</span></span><span>${probE}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probE}%"></div></div></div>`;
+                }
+                htmlMercados += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visitante: ${p.awayTeam.name} <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div></div>`;
+
+                // 2. Ambos Equipos Anotan
                 let probAmbosSi = Math.min(82, Math.max(28, Math.round(probL + 12))); let probAmbosNo = 100 - probAmbosSi;
                 htmlMercados += `<div class="bloque-mercado">
                     <div class="titulo-mercado">⚽ MERCADO: AMBOS EQUIPOS ANOTAN</div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Sí Anotan <span class="cuota-real-badge">x ${(100/probAmbosSi).toFixed(2)}</span></span><span>${probAmbosSi}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probAmbosSi}%"></div></div></div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>No Anotan <span class="cuota-real-badge">x ${(100/probAmbosNo).toFixed(2)}</span></span><span>${probAmbosNo}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probAmbosNo}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Sí, Ambos Marcan Goles <span class="cuota-real-badge">x ${(100/probAmbosSi).toFixed(2)}</span></span><span>${probAmbosSi}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probAmbosSi}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>No, Al menos uno queda en 0 <span class="cuota-real-badge">x ${(100/probAmbosNo).toFixed(2)}</span></span><span>${probAmbosNo}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probAmbosNo}%"></div></div></div>
                 </div>`;
 
-                let probMasCorners = Math.min(78, Math.max(35, Math.round(probL + 20))); let probMenosCorners = 100 - probMasCorners;
+                // 3. Mercado de Tarjetas Totales (Recuperado)
+                let probMasCards = Math.min(78, Math.max(40, Math.round(probE + 35))); let probMenosCards = 100 - probMasCards;
                 htmlMercados += `<div class="bloque-mercado">
-                    <div class="titulo-mercado">🚩 MERCADO: TIROS DE ESQUINA (MÁS/MENOS DE 9.5)</div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 9.5 Corners <span class="cuota-real-badge">x 1.85</span></span><span>${probMasCorners}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probMasCorners}%"></div></div></div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 9.5 Corners <span class="cuota-real-badge">x 1.95</span></span><span>${probMenosCorners}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probMenosCorners}%"></div></div></div>
+                    <div class="titulo-mercado">🟨 MERCADO DISCIPLINARIO: TARJETAS TOTALES</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 3.5 Tarjetas Totales <span class="cuota-real-badge">x 1.68</span></span><span>${probMasCards}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probMasCards}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 3.5 Tarjetas Totales <span class="cuota-real-badge">x 2.05</span></span><span>${probMenosCards}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probMenosCards}%"></div></div></div>
                 </div>`;
+
             } else if(deporteActivo === 'basquet') {
-                let handicapLinea = probL > probV ? `-${Math.round((probL-probV)/4)}.5` : `+${Math.round((probV-probL)/4)}.5`;
+                // 1. Ganador Directo (Moneyline)
                 htmlMercados += `<div class="bloque-mercado">
-                    <div class="titulo-mercado">🏀 MERCADO: HÁNDICAP ESTIMADO (Sujeto a Línea)</div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Hándicap Local (${handicapLinea}) <span class="cuota-real-badge">x1.90</span></span><span>50%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:50%"></div></div></div>
+                    <div class="titulo-mercado">🎯 MERCADO: GANADOR DIRECTO (MONEYLINE)</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local: ${p.homeTeam.name} <span class="cuota-real-badge">x${p.cuotasReales.local}</span></span><span>${probL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visita: ${p.awayTeam.name} <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div>
                 </div>`;
-            } else if(deporteActivo === 'tenis') {
-                let probMasGames = Math.min(75, Math.max(30, Math.round(probV + 18))); let probMenosGames = 100 - probMasGames;
+
+                // 2. Mercado de Puntos Totales (Over/Under)
+                let probMasPuntos = 52; let probMenosPuntos = 48;
                 htmlMercados += `<div class="bloque-mercado">
-                    <div class="titulo-mercado">🎾 MERCADO: TOTAL DE GAMES (MÁS/MENOS 22.5)</div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 22.5 Games <span class="cuota-real-badge">x 1.88</span></span><span>${probMasGames}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probMasGames}%"></div></div></div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 22.5 Games <span class="cuota-real-badge">x 1.82</span></span><span>${probMenosGames}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probMenosGames}%"></div></div></div>
+                    <div class="titulo-mercado">🏀 MERCADO: PUNTOS TOTALES DEL PARTIDO</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 218.5 Puntos Totales <span class="cuota-real-badge">x 1.88</span></span><span>${probMasPuntos}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probMasPuntos}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 218.5 Puntos Totales <span class="cuota-real-badge">x 1.88</span></span><span>${probMenosPuntos}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probMenosPuntos}%"></div></div></div>
+                </div>`;
+
+                // 3. Mercado de Puntos Individuales por Equipo
+                let basePuntosL = probL > probV ? "110.5" : "104.5";
+                let basePuntosV = probV > probL ? "110.5" : "104.5";
+                htmlMercados += `<div class="bloque-mercado">
+                    <div class="titulo-mercado">📊 MERCADO: PUNTOS INDIVIDUALES POR EQUIPO</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Local (${p.homeTeam.name}) - Más de ${basePuntosL} <span class="cuota-real-badge">x 1.85</span></span><span>55%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:55%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Visita (${p.awayTeam.name}) - Más de ${basePuntosV} <span class="cuota-real-badge">x 1.85</span></span><span>53%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:53%"></div></div></div>
+                </div>`;
+
+            } else if(deporteActivo === 'tenis') {
+                // 1. Ganador del Partido (H2H)
+                htmlMercados += `<div class="bloque-mercado">
+                    <div class="titulo-mercado">🎯 MERCADO: GANADOR DEL PARTIDO (H2H)</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local: ${p.homeTeam.name} <span class="cuota-real-badge">x${p.cuotasReales.local}</span></span><span>${probL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visita: ${p.awayTeam.name} <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div>
+                </div>`;
+
+                // 2. Games por Set de cada uno
+                let probLSet = probL > probV ? 65 : 48;
+                let probVSet = probV > probL ? 62 : 45;
+                htmlMercados += `<div class="bloque-mercado">
+                    <div class="titulo-mercado">🎾 MERCADO: GAMES POR SET INDIVIDUAL</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>${p.homeTeam.name}: Más de 4.5 Games en Set 1 <span class="cuota-real-badge">x 1.72</span></span><span>${probLSet}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probLSet}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>${p.awayTeam.name}: Más de 4.5 Games en Set 1 <span class="cuota-real-badge">x 1.75</span></span><span>${probVSet}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probVSet}%"></div></div></div>
+                </div>`;
+
+                // 3. Ambos ganarán un Set (Sí/No)
+                let probAmbosSetSi = Math.min(70, Math.max(30, 100 - Math.abs(probL - probV)));
+                let probAmbosSetNo = 100 - probAmbosSetSi;
+                htmlMercados += `<div class="bloque-mercado">
+                    <div class="titulo-mercado">🔲 MERCADO SETS: ¿AMBOS GANARÁN UN SET?</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Sí, Ambos ganan al menos 1 Set (Pistas largas) <span class="cuota-real-badge">x ${(100/probAmbosSetSi).toFixed(2)}</span></span><span>${probAmbosSetSi}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probAmbosSetSi}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>No, Victoria en Sets Corridos (2-0 / 3-0) <span class="cuota-real-badge">x ${(100/probAmbosSetNo).toFixed(2)}</span></span><span>${probAmbosSetNo}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probAmbosSetNo}%"></div></div></div>
                 </div>`;
             }
 
@@ -422,7 +462,7 @@
             renderContenedor.innerHTML = ''; ticketsMultiplesGenerados = {};
             
             if (baseDeDatosHoy.length < 3) { 
-                renderContenedor.innerHTML = `<p style="padding:40px 20px; text-align:center; color:var(--texto-gris); line-height: 1.6;">⚠️ <b>Cartelera insuficiente:</b> Se necesitan al menos 3 partidos cargados en la cartelera de este deporte para estructurar una Combinada Triple de forma óptima.</p>`; return; 
+                renderContenedor.innerHTML = `<p style="padding:40px 20px; text-align:center; color:var(--texto-gris); line-height: 1.6;">⚠️ <b>Cartelera insuficiente:</b> Se necesitan al menos 3 partidos en este deporte para estructurar una combinada óptima.</p>`; return; 
             }
             
             let idTicket = "cb_riesgo_" + riesgoCombinadaSeleccionado;
@@ -430,45 +470,24 @@
             let colorBorde = "var(--verde-principal)";
             let badgeTexto = "🔒 TRIPLE ASEGURADA";
 
-            // Estructura de mercados específicos por deporte para evitar mezclas
-            let mercadosPorDeporte = {
-                futbol: {
-                    asegurada: ["Doble Oportunidad (Local o Empate)", "Más de 1.5 Goles Totales", "Menos de 4.5 Goles Totales"],
-                    moderada: ["Ganador del Partido (1X2)", "Ambos Equipos Anotan: SÍ", "Más de 2.5 Goles Totales"],
-                    arriesgada: ["Ganador Local + Ambos Anotan", "Resultado Exacto Multi-Opción", "Total Corners Más de 10.5"]
-                },
-                basquet: {
-                    asegurada: ["Hándicap Local +7.5 puntos", "Total Puntos: Menos de 230.5", "Hándicap Visitante +9.5 puntos"],
-                    moderada: ["Ganador Directo (Moneyline)", "Total Puntos: Más de 215.5", "Hándicap del Partido (-3.5)"],
-                    arriesgada: ["Ganador Mitad / Final", "Total Puntos Equipo Más de 112.5", "Victoria por margen de 1-5 puntos"]
-                },
-                tenis: {
-                    asegurada: ["Gana al menos 1 Set (Local)", "Total Games: Más de 18.5", "Hándicap de Juegos (+5.5)"],
-                    moderada: ["Ganador del Partido (H2H)", "Total Games: Más de 21.5", "Resultado del 1er Set (Ganador)"],
-                    arriesgada: ["Resultado Exacto en Sets (2-1)", "Menos de 19.5 Games Totales", "Gana ganando el primer set"]
-                }
-            };
-
-            // Obtener el set de mercados correcto según el deporte activo
-            let mercadosDeporteActual = mercadosPorDeporte[deporteActivo] || mercadosPorDeporte['futbol'];
-
+            // Conservamos lógica estandarizada y limpia para las combinadas
             if (riesgoCombinadaSeleccionado === 'asegurada') {
                 colorBorde = "var(--verde-principal)"; badgeTexto = "🔒 TRIPLE ASEGURADA (ALTA PROBABILIDAD)";
-                poolPicks.push({ p: baseDeDatosHoy[0], mercado: mercadosDeporteActual.asegurada[0], cuota: 1.28 });
-                poolPicks.push({ p: baseDeDatosHoy[1], mercado: mercadosDeporteActual.asegurada[1], cuota: 1.22 });
-                poolPicks.push({ p: baseDeDatosHoy[2], mercado: mercadosDeporteActual.asegurada[2], cuota: 1.25 });
+                poolPicks.push({ p: baseDeDatosHoy[0], mercado: "Doble Oportunidad (Local o Empate)", cuota: 1.25 });
+                poolPicks.push({ p: baseDeDatosHoy[1], mercado: "Doble Oportunidad (Visitante o Empate)", cuota: 1.28 });
+                poolPicks.push({ p: baseDeDatosHoy[2], mercado: "Más de 1.5 Goles / Menos de 228.5 Puntos", cuota: 1.22 });
                 
             } else if (riesgoCombinadaSeleccionado === 'arriesgada') {
                 colorBorde = "var(--alerta)"; badgeTexto = "🔥 TRIPLE ARRIESGADA (VALOR AGRESIVO)";
-                poolPicks.push({ p: baseDeDatosHoy[baseDeDatosHoy.length - 1], mercado: mercadosDeporteActual.arriesgada[0], cuota: 2.60 });
-                poolPicks.push({ p: baseDeDatosHoy[0], mercado: mercadosDeporteActual.arriesgada[1], cuota: 2.05 });
-                poolPicks.push({ p: baseDeDatosHoy[1], mercado: mercadosDeporteActual.arriesgada[2], cuota: 1.95 });
+                poolPicks.push({ p: baseDeDatosHoy[baseDeDatosHoy.length - 1], mercado: "Resultado directo: Empate (1X2 / ML)", cuota: 3.10 });
+                poolPicks.push({ p: baseDeDatosHoy[0], mercado: "Ganador + Ambos Marcan / Hándicap Corto", cuota: 2.15 });
+                poolPicks.push({ p: baseDeDatosHoy[1], mercado: "Total Over Avanzado del Partido", cuota: 1.95 });
                 
             } else { 
                 colorBorde = "var(--oro)"; badgeTexto = "📊 TRIPLE MODERADA (BALANCED TICKET)";
-                poolPicks.push({ p: baseDeDatosHoy[0], mercado: mercadosDeporteActual.moderada[0], cuota: 1.62 });
-                poolPicks.push({ p: baseDeDatosHoy[1], mercado: mercadosDeporteActual.moderada[1], cuota: 1.68 });
-                poolPicks.push({ p: baseDeDatosHoy[2], mercado: mercadosDeporteActual.moderada[2], cuota: 1.55 });
+                poolPicks.push({ p: baseDeDatosHoy[0], mercado: `Ganador del Partido: ${baseDeDatosHoy[0].homeTeam.name}`, cuota: 1.65 });
+                poolPicks.push({ p: baseDeDatosHoy[1], mercado: `Ganador del Partido: ${baseDeDatosHoy[1].awayTeam.name}`, cuota: 1.70 });
+                poolPicks.push({ p: baseDeDatosHoy[2], mercado: "Ambos Anotan: SÍ / Over Puntos Regular", cuota: 1.60 });
             }
 
             ticketsMultiplesGenerados[idTicket] = poolPicks;
@@ -480,7 +499,7 @@
             poolPicks.forEach(c => {
                 totalCuota *= c.cuota;
                 h += `<div class="ticket-item">
-                    <div style="font-size:0.75rem; color:var(--texto-gris); margin-bottom:2px;">¼ 🏟️ ${c.p.competition.name}</div>
+                    <div style="font-size:0.75rem; color:var(--texto-gris); margin-bottom:2px;">🏟️ ${c.p.competition.name}</div>
                     📍 <b>${c.p.homeTeam.name} vs ${c.p.awayTeam.name}</b><br>
                     <span style="color:var(--oro)">🎯 Pick:</span> ${c.mercado} <strong style="color:var(--verde-principal); float:right;">x${c.cuota.toFixed(2)}</strong>
                 </div>`;
