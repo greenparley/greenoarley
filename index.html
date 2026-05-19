@@ -119,7 +119,25 @@
     <div id="panel-picks" class="panel-picks-lateral oculto-panel"><div class="panel-header"><h3>Mis Picks</h3><button class="btn-volver-lobby" onclick="togglePanelPicks()">❌</button></div><div id="contenedor-lista-picks"></div></div>
 
     <script>
-        let API_KEY_ACTIVA = "d3d7b6a1627d78292b24d7b2554e8c5d"; 
+        // Sistema de Rotación y Respaldo de API Keys
+        const API_KEYS = [
+            "d3d7b6a1627d78292b24d7b2554e8c5d", // Llave Principal
+            "c7b062bf872742e25c086b5ad997ba0a"  // Llave de Respaldo Nueva
+        ];
+        let indiceApiKeyActual = 0;
+
+        function obtenerApiKeyActiva() {
+            return API_KEYS[indiceApiKeyActual];
+        }
+
+        function rotarApiKey() {
+            if (indiceApiKeyActual < API_KEYS.length - 1) {
+                indiceApiKeyActual++;
+                console.warn(`⚠️ Límite alcanzado. Rotando a la API Key de respaldo: Módulo ${indiceApiKeyActual}`);
+                return true; // Se pudo rotar con éxito
+            }
+            return false; // Ya no quedan llaves disponibles
+        }
 
         let baseDeDatosHoy = [];
         let estadoFiltroActual = 'proximos';
@@ -181,8 +199,14 @@
                 let ligasFutbolObj = JSON.parse(localStorage.getItem('gp_ligas_futbol_odds_cache'));
                 
                 if (!ligasFutbolObj || ligasFutbolObj.fecha !== hoyStr) {
-                    const resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${API_KEY_ACTIVA}`);
-                    if (!resSports.ok) { mostrarError("Límite de API excedido."); return []; }
+                    let resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
+                    
+                    // Si falla por cuota/límite, intentamos rotar la llave inmediatamente
+                    if (!resSports.ok && rotarApiKey()) {
+                        resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
+                    }
+                    
+                    if (!resSports.ok) { mostrarError("Límite de todas las API keys excedido."); return []; }
                     const sports = await resSports.json();
                     let torneosActivos = sports.filter(s => s.group === 'Soccer' || s.key.startsWith('soccer_')).map(s => s.key);
                     ligasFutbolObj = { fecha: hoyStr, ligas: torneosActivos };
@@ -202,7 +226,10 @@
                 let poolResultados = [];
                 const promesas = torneosPrioritarios.map(async (liga) => {
                     try {
-                        const res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${API_KEY_ACTIVA}&regions=eu&markets=h2h`);
+                        let res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${obtenerApiKeyActiva()}&regions=eu&markets=h2h`);
+                        if (!res.ok && rotarApiKey()) {
+                            res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${obtenerApiKeyActiva()}&regions=eu&markets=h2h`);
+                        }
                         if (res.ok) return await res.json();
                     } catch (e) {}
                     return [];
@@ -260,11 +287,19 @@
         async function fetchTenisOddsApi() {
             let resultadosTotales = [];
             try {
-                const resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${API_KEY_ACTIVA}`);
-                if (!resSports.ok) return []; const sports = await resSports.json();
+                let resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
+                if (!resSports.ok && rotarApiKey()) {
+                    resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
+                }
+                if (!resSports.ok) return []; 
+                const sports = await resSports.json();
                 let torneosTenis = sports.filter(s => s.group === 'Tennis').map(s => s.key).slice(0, 3);
+                
                 const promesas = torneosTenis.map(async (liga) => {
-                    const res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${API_KEY_ACTIVA}&regions=eu&markets=h2h`);
+                    let res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${obtenerApiKeyActiva()}&regions=eu&markets=h2h`);
+                    if (!res.ok && rotarApiKey()) {
+                        res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${obtenerApiKeyActiva()}&regions=eu&markets=h2h`);
+                    }
                     if (res.ok) return await res.json(); return [];
                 });
                 const resultados = await Promise.all(promesas);
@@ -329,7 +364,7 @@
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>No Anotan <span class="cuota-real-badge">x ${(100/probAmbosNo).toFixed(2)}</span></span><span>${probAmbosNo}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probAmbosNo}%"></div></div></div>
                 </div>`;
 
-                // Corners (NUEVO)
+                // Corners
                 let probMasCorners = Math.min(78, Math.max(35, Math.round(probL + 20))); let probMenosCorners = 100 - probMasCorners;
                 htmlMercados += `<div class="bloque-mercado">
                     <div class="titulo-mercado">🚩 MERCADO: TIROS DE ESQUINA (MÁS/MENOS DE 9.5)</div>
@@ -337,8 +372,8 @@
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 9.5 Corners <span class="cuota-real-badge">x 1.95</span></span><span>${probMenosCorners}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probMenosCorners}%"></div></div></div>
                 </div>`;
 
-                // Tarjetas (NUEVO)
-                let probMasTarjetas = Math.min(80, Math.max(30, Math.round(probV + 22))); let probMenosTarjetas = 100 - probMasTarjetas;
+                // Tarjetas
+                let probMasTarjetas = Math.min(80, Math.max(30, Math.round(probV + 22)));
                 htmlMercados += `<div class="bloque-mercado">
                     <div class="titulo-mercado">🟨 MERCADO: TARJETAS TOTALES (MÁS/MENOS DE 4.5)</div>
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 4.5 Tarjetas <span class="cuota-real-badge">x 1.75</span></span><span>${probMasTarjetas}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probMasTarjetas}%"></div></div></div>
@@ -350,7 +385,7 @@
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Hándicap Local (${handicapLinea}) <span class="cuota-real-badge">x1.90</span></span><span>50%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:50%"></div></div></div>
                 </div>`;
             } else if(deporteActivo === 'tenis') {
-                // Mercado de Games (VOLVIÓ)
+                // Mercado de Games
                 let probMasGames = Math.min(75, Math.max(30, Math.round(probV + 18))); let probMenosGames = 100 - probMasGames;
                 htmlMercados += `<div class="bloque-mercado">
                     <div class="titulo-mercado">🎾 MERCADO: TOTAL DE GAMES (MÁS/MENOS 22.5)</div>
@@ -401,56 +436,53 @@
             const renderContenedor = document.getElementById('combinada-ticket-render'); 
             renderContenedor.innerHTML = ''; ticketsMultiplesGenerados = {};
             
-            if (baseDeDatosHoy.length < 1) { 
-                renderContenedor.innerHTML = `<p style="padding:40px 20px; text-align:center; color:var(--texto-gris);">Cargando cartelera de eventos...</p>`; return; 
+            // VALIDACIÓN: MÍNIMO 3 PARTIDOS OBLIGATORIOS
+            if (baseDeDatosHoy.length < 3) { 
+                renderContenedor.innerHTML = `<p style="padding:40px 20px; text-align:center; color:var(--texto-gris); line-height: 1.6;">⚠️ <b>Cartelera insuficiente:</b> Se necesitan al menos 3 partidos cargados en la cartelera de este deporte para estructurar una Combinada Triple IA de forma óptima.</p>`; return; 
             }
             
             let idTicket = "cb_riesgo_" + riesgoCombinadaSeleccionado;
             let poolPicks = [];
             let colorBorde = "var(--verde-principal)";
-            let badgeTexto = "🔒 SEGURA (SHIELD)";
+            let badgeTexto = "🔒 TRIPLE ASEGURADA (SHIELD)";
 
-            // CONFIGURADOR DE PERFILES DE RIESGO DE LAS COMBINADAS
+            // CONFIGURADOR DE PERFILES DE RIESGO DE LAS COMBINADAS (MINIMO 3 PARTIDOS)
             if (riesgoCombinadaSeleccionado === 'asegurada') {
-                colorBorde = "var(--verde-principal)"; badgeTexto = "🔒 ASEGURADA (ALTA PROBABILIDAD)";
-                let evento = baseDeDatosHoy[0];
-                poolPicks.push({ p: evento, mercado: "Hándicap/Doble Oportunidad Local", cuota: 1.30 });
-                if(baseDeDatosHoy.length > 1) {
-                    poolPicks.push({ p: baseDeDatosHoy[1], mercado: "Más de 1.5 goles totales / Más de 18.5 Games", cuota: 1.25 });
-                }
+                colorBorde = "var(--verde-principal)"; badgeTexto = "🔒 TRIPLE ASEGURADA (ALTA PROBABILIDAD)";
+                poolPicks.push({ p: baseDeDatosHoy[0], mercado: "Hándicap/Doble Oportunidad Local", cuota: 1.28 });
+                poolPicks.push({ p: baseDeDatosHoy[1], mercado: "Más de 1.5 goles totales / Más de 18.5 Games", cuota: 1.22 });
+                poolPicks.push({ p: baseDeDatosHoy[2], mercado: "Menos de 4.5 goles / Hándicap Juegos (+5.5)", cuota: 1.25 });
+                
             } else if (riesgoCombinadaSeleccionado === 'arriesgada') {
-                colorBorde = "var(--alerta)"; badgeTexto = "🔥 ARRIESGADA (VALOR AGRESIVO)";
-                let evento = baseDeDatosHoy[baseDeDatosHoy.length - 1];
-                poolPicks.push({ p: evento, mercado: "Ganador Directo / Ambos Anotan + Gana", cuota: 2.80 });
-                if(baseDeDatosHoy.length > 1) {
-                    poolPicks.push({ p: baseDeDatosHoy[0], mercado: "Línea de Goles Alta o Triunfo Visitante", cuota: 2.10 });
-                }
+                colorBorde = "var(--alerta)"; badgeTexto = "🔥 TRIPLE ARRIESGADA (VALOR AGRESIVO)";
+                poolPicks.push({ p: baseDeDatosHoy[baseDeDatosHoy.length - 1], mercado: "Ganador Directo / Ambos Anotan", cuota: 2.60 });
+                poolPicks.push({ p: baseDeDatosHoy[0], mercado: "Línea de Goles Alta o Triunfo Visitante", cuota: 2.05 });
+                poolPicks.push({ p: baseDeDatosHoy[1], mercado: "Margen de Victoria Ajustado / Total Corners Más 10.5", cuota: 1.95 });
+                
             } else { // Moderada por defecto
-                colorBorde = "var(--oro)"; badgeTexto = "📊 MODERADA (BALANCED TICKET)";
-                let evento = baseDeDatosHoy[0];
-                poolPicks.push({ p: evento, mercado: "Ganador del Partido (1 o 2)", cuota: 1.65 });
-                if(baseDeDatosHoy.length > 1) {
-                    poolPicks.push({ p: baseDeDatosHoy[1], mercado: "Ambos Equipos Anotan: SÍ / Más 21.5 Games", cuota: 1.72 });
-                }
+                colorBorde = "var(--oro)"; badgeTexto = "📊 TRIPLE MODERADA (BALANCED TICKET)";
+                poolPicks.push({ p: baseDeDatosHoy[0], mercado: "Ganador del Partido (Resultado Fijo)", cuota: 1.62 });
+                poolPicks.push({ p: baseDeDatosHoy[1], mercado: "Ambos Equipos Anotan: SÍ / Más 21.5 Games", cuota: 1.68 });
+                poolPicks.push({ p: baseDeDatosHoy[2], mercado: "Línea de Goles Estándar o Más de 8.5 Corners", cuota: 1.55 });
             }
 
             ticketsMultiplesGenerados[idTicket] = poolPicks;
             let totalCuota = 1.0;
             
             let h = `<div class="tarjeta-combinada" style="border-top: 4px solid ${colorBorde};">
-                <div style="margin-bottom:12px;"><span style="color:${colorBorde}; font-weight:bold; font-size:0.75rem; letter-spacing:1px; display:block;">${badgeTexto}</span><h3>Sugerencia Combinada Algorítmica</h3></div>`;
+                <div style="margin-bottom:12px;"><span style="color:${colorBorde}; font-weight:bold; font-size:0.75rem; letter-spacing:1px; display:block;">${badgeTexto}</span><h3>Sugerencia Múltiple IA (3 Eventos)</h3></div>`;
             
             poolPicks.forEach(c => {
                 totalCuota *= c.cuota;
                 h += `<div class="ticket-item">
-                    <div style="font-size:0.75rem; color:var(--texto-gris); margin-bottom:2px;">🏟️ ${c.p.competition.name}</div>
+                    <div style="font-size:0.75rem; color:var(--texto-gris); margin-bottom:2px;">¼ 🏟️ ${c.p.competition.name}</div>
                     📍 <b>${c.p.homeTeam.name} vs ${c.p.awayTeam.name}</b><br>
                     <span style="color:var(--oro)">🎯 Pick:</span> ${c.mercado} <strong style="color:var(--verde-principal); float:right;">x${c.cuota.toFixed(2)}</strong>
                 </div>`;
             });
             
             h += `<div style="text-align:right; margin:15px 0 10px 0; font-size:1.1rem; font-weight:800; color:var(--oro)">Multiplicador Total: <span style="background:rgba(241,196,15,0.1); padding:4px 8px; border-radius:6px;">x${totalCuota.toFixed(2)}</span></div>
-            <button onclick="guardarCombinada('${idTicket}')" style="width:100%; background:${colorBorde}; color:#111; border:none; font-weight:bold; padding:12px; border-radius:8px; cursor:pointer; font-size:0.9rem;">🔒 Fijar Pick en Mis Picks</button></div>`;
+            <button onclick="guardarCombinada('${idTicket}')" style="width:100%; background:${colorBorde}; color:#111; border:none; font-weight:bold; padding:12px; border-radius:8px; cursor:pointer; font-size:0.9rem;">🔒 Fijar Bloque en Mis Picks</button></div>`;
             
             renderContenedor.innerHTML = h;
         }
@@ -463,7 +495,7 @@
                 h.push({ id: Date.now() + Math.random(), home: i.p.homeTeam.name, away: i.p.awayTeam.name, mercado: i.mercado, cuota: i.cuota.toFixed(2), estado: 'PROYECTADO' }); 
             }); 
             localStorage.setItem('gp_picks', JSON.stringify(h)); actualizarEstructuraPicksLocales(); 
-            alert("🎯 ¡Combinada guardada con éxito en la sección Mis Picks!"); 
+            alert("🎯 ¡Combinada Triple guardada con éxito en la sección Mis Picks!"); 
         }
 
         function actualizarEstructuraPicksLocales() { 
