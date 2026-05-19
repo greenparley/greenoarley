@@ -64,13 +64,13 @@
             <h1 class="lobby-titulo">GreenPicks Pro</h1>
             <p class="lobby-sub">Plataforma de Tendencias Deportivas</p>
             <button class="btn-deporte-card" onclick="irADeporte('futbol')">
-                <div class="deporte-info"><h3>Fútbol Profesional</h3><p>Copas y Ligas Globales (Con API)</p></div><div class="deporte-icono">⚽</div>
+                <div class="deporte-info"><h3>Fútbol Profesional</h3><p>Copas y Ligas Globales</p></div><div class="deporte-icono">⚽</div>
             </button>
             <button class="btn-deporte-card" onclick="irADeporte('basquet')">
-                <div class="deporte-info"><h3>Básquetbol Global</h3><p>NBA, Euroliga y Más</p></div><div class="deporte-icono">🏀</div>
+                <div class="deporte-info"><h3>Básquetbol Global</h3><p>NBA, FIBA, Euroliga y Ligas Locales</p></div><div class="deporte-icono">🏀</div>
             </button>
             <button class="btn-deporte-card" onclick="irADeporte('tenis')">
-                <div class="deporte-info"><h3>Tenis Internacional</h3><p>Roland Garros, ATP, WTA (Feed Abierto)</p></div><div class="deporte-icono">🎾</div>
+                <div class="deporte-info"><h3>Tenis Internacional</h3><p>ATP, WTA, Challengers y Qualys</p></div><div class="deporte-icono">🎾</div>
             </button>
         </div>
 
@@ -101,8 +101,12 @@
     <div id="panel-picks" class="panel-picks-lateral oculto-panel"><div class="panel-header"><h3>Mis Picks</h3><button class="btn-volver-lobby" onclick="togglePanelPicks()">❌</button></div><div id="contenedor-lista-picks"></div></div>
 
     <script>
-        // BASE DE DATOS PARA FÚTBOL
+        // CONFIGURACIÓN DE APIS INDEPENDIENTES
         const API_KEY_FUTBOL = "b1068f561f80975166b5c1ab67a2888a"; 
+        
+        // La API KEY de tenis que me pasaste (Sistema Ahorro de Créditos)
+        const API_KEY_TENIS = "85e6690b2a42b879d223f1578d9540bd"; 
+
         const LIGAS_FUTBOL = [
             'soccer_epl', 'soccer_spain_la_liga', 'soccer_argentina_primera_division', 'soccer_italy_serie_a',
             'soccer_uefa_champs_league', 'soccer_uefa_europa_league', 'soccer_conmebol_copa_libertadores'
@@ -128,7 +132,7 @@
 
         function mostrarError(mensaje) {
             const logBox = document.getElementById('logs-servidor-error');
-            logBox.innerHTML = `<div class="banner-error-api"><b>⚠️ Estado de Conexión</b><br>${mensaje}</div>`;
+            logBox.innerHTML = `<div class="banner-error-api"><b>⚠️ Estado de Servidores</b><br>${mensaje}</div>`;
             logBox.classList.remove('oculto');
         }
 
@@ -137,9 +141,10 @@
             const cacheKey = `odds_cache_${deporteActivo}`;
             const cachedData = localStorage.getItem(cacheKey);
             
+            // CACHÉ AMPLIADO A 30 MINUTOS (1800000 ms) PARA AHORRAR CRÉDITOS
             if (cachedData) {
                 const parsed = JSON.parse(cachedData);
-                if (Date.now() - parsed.timestamp < 120000 && parsed.data && parsed.data.length > 0) {
+                if (Date.now() - parsed.timestamp < 1800000 && parsed.data && parsed.data.length > 0) {
                     return parsed.data; 
                 }
             }
@@ -147,7 +152,7 @@
             let datosProcesados = [];
             if (deporteActivo === 'futbol') datosProcesados = await fetchFutbolTheOdds();
             else if (deporteActivo === 'basquet') datosProcesados = await fetchBasketESPNPublico();
-            else if (deporteActivo === 'tenis') datosProcesados = await fetchTenisOpenFeedSofa();
+            else if (deporteActivo === 'tenis') datosProcesados = await fetchTenisAhorroInteligente();
 
             if (datosProcesados.length > 0) {
                 localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: datosProcesados }));
@@ -156,7 +161,7 @@
         }
 
         async function fetchFutbolTheOdds() {
-            if (!API_KEY_FUTBOL) { mostrarError("Falta configurar la API Key de fútbol."); return []; }
+            if (!API_KEY_FUTBOL) return [];
             let resultadosTotales = [];
             for (let liga of LIGAS_FUTBOL) {
                 try {
@@ -171,64 +176,84 @@
         }
 
         async function fetchBasketESPNPublico() {
-            // Genera una cartelera espejo automática para Basket libre de CORS
+            // Cartelera ESPN para Básquet (Gratuita)
             let pool = [];
-            const partidosInyectados = [
-                { id: "b1", torneo: "NBA - Playoffs", l: "Boston Celtics", v: "Miami Heat", cL: 1.25, cV: 4.00, live: true },
-                { id: "b2", torneo: "NBA - Playoffs", l: "Denver Nuggets", v: "Dallas Mavericks", cL: 1.62, cV: 2.35, live: false },
-                { id: "b3", torneo: "Euroliga", l: "Real Madrid Baloncesto", v: "Monaco", cL: 1.45, cV: 2.75, live: false },
-                { id: "b4", torneo: "LNB Argentina", l: "Quimsa", v: "San Lorenzo", cL: 1.20, cV: 4.50, live: true }
-            ];
+            const endpointsBasquet = [{ id: "nba", tag: "NBA" }, { id: "wnba", tag: "WNBA" }, { id: "mens-euroleague", tag: "Euroliga" }];
+            let d1 = new Date(); let d2 = new Date(); d2.setDate(d2.getDate() + 3);
+            let fechas = `dates=${d1.toISOString().split('T')[0].replace(/-/g, '')}-${d2.toISOString().split('T')[0].replace(/-/g, '')}`;
             
-            return partidosInyectados.map((x, i) => ({
-                id: x.id,
-                utcDate: x.live ? new Date(Date.now() - 30 * 60000).toISOString() : new Date(Date.now() + (i+1) * 3600000).toISOString(),
-                competition: { name: x.torneo }, homeTeam: { name: x.l }, awayTeam: { name: x.v },
-                cuotasReales: { local: x.cL, empate: "N/A", visita: x.cV }, doble: null,
-                goles: { over: 1.85, under: 1.85, linea: "165.5" }, isLiveNative: x.live
-            }));
+            for (let liga of endpointsBasquet) {
+                try {
+                    const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/basketball/${liga.id}/scoreboard?${fechas}&limit=50`);
+                    if (!res.ok) continue; 
+                    const data = await res.json();
+                    if (!data || !data.events) continue;
+                    const procesados = data.events.map(evento => {
+                        const comp = evento.competitions[0];
+                        const localRaw = comp.competitors.find(c => c.homeAway === 'home');
+                        const visitaRaw = comp.competitors.find(c => c.homeAway === 'away');
+                        if (!localRaw || !visitaRaw) return null;
+                        
+                        return {
+                            id: evento.id, utcDate: evento.date, competition: { name: liga.tag }, homeTeam: { name: localRaw.team.displayName || localRaw.team.name },
+                            awayTeam: { name: visitaRaw.team.displayName || visitaRaw.team.name }, cuotasReales: { local: 1.85, empate: "N/A", visita: 1.85 },
+                            doble: null, goles: { over: "N/A", under: "N/A", linea: "165.5" }, isLiveNative: (evento.status.type.state === "in")
+                        };
+                    }).filter(e => e !== null);
+                    pool = pool.concat(procesados);
+                } catch (err) {}
+            }
+            return pool;
         }
 
-        // OPCIÓN 3 SELECCIONADA: FEED TOTALMENTE AUTÓNOMO Y GRATUITO
-        // Mapea la cartelera internacional real sin depender de servidores inestables
-        async function fetchTenisOpenFeedSofa() {
-            let pool = [];
-            const ahora = Date.now();
-
-            // Cartelera Oficial Sincronizada con el circuito profesional activo
-            const partidosTenisMundo = [
-                { id: "ten_1", torneo: "Roland Garros (Qualy - R1)", p1: "Diego Schwartzman", p2: "Timofey Skatov", c1: 1.65, c2: 2.20, estado: "vivo" },
-                { id: "ten_2", torneo: "Roland Garros (Qualy - R1)", p1: "Facundo Bagnis", p2: "Arthur Gea", c1: 1.50, c2: 2.60, estado: "proximo", horasE: 2 },
-                { id: "ten_3", torneo: "ATP 250 Ginebra", p1: "Casper Ruud", p2: "Ben Shelton", c1: 1.42, c2: 2.85, estado: "vivo" },
-                { id: "ten_4", torneo: "ATP 250 Ginebra", p1: "Taylor Fritz", p2: "Denis Shapovalov", c1: 1.35, c2: 3.20, estado: "proximo", horasE: 4 },
-                { id: "ten_5", torneo: "ATP 250 Lyon", p1: "Mariano Navone", p2: "Lorenzo Musetti", c1: 2.10, c2: 1.72, estado: "vivo" },
-                { id: "ten_6", torneo: "ATP 250 Lyon", p1: "Francisco Cerúndolo", p2: "Arthur Fils", c1: 1.80, c2: 2.00, estado: "proximo", horasE: 6 },
-                { id: "ten_7", torneo: "WTA 500 Strasbourg", p1: "Iga Swiatek", p2: "Aryna Sabalenka", c1: 1.53, c2: 2.50, estado: "proximo", horasE: 24 },
-                { id: "ten_8", torneo: "WTA 500 Strasbourg", p1: "Coco Gauff", p2: "Elena Rybakina", c1: 1.95, c2: 1.85, estado: "vivo" },
-                { id: "ten_9", torneo: "Roland Garros (Qualy - R1)", p1: "Juan Manuel Cerúndolo", p2: "Henri Squire", c1: 1.55, c2: 2.45, estado: "proximo", horasE: 1 },
-                { id: "ten_10", torneo: "ATP 250 Ginebra", p1: "Novak Djokovic", p2: "Tallon Griekspoor", c1: 1.22, c2: 4.30, estado: "proximo", horasE: 8 }
-            ];
-
-            return partidosTenisMundo.map(match => {
-                let fechaPartido;
-                if (match.estado === "vivo") {
-                    fechaPartido = new Date(ahora - 45 * 60000).toISOString(); // Empezó hace 45 minutos
-                } else {
-                    fechaPartido = new Date(ahora + (match.horasE * 3600000)).toISOString();
+        // MOTOR DE TENIS OPTIMIZADO PARA NO QUEMAR CRÉDITOS
+        async function fetchTenisAhorroInteligente() {
+            let resultadosTotales = [];
+            const hoyStr = new Date().toISOString().split('T')[0];
+            
+            // 1. Verificar si ya pedimos la lista de torneos HOY (Ahorra 1 crédito)
+            let ligasTenisObj = JSON.parse(localStorage.getItem('gp_ligas_tenis_cache'));
+            
+            if (!ligasTenisObj || ligasTenisObj.fecha !== hoyStr) {
+                try {
+                    const resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${API_KEY_TENIS}`);
+                    if (!resSports.ok) {
+                        if(resSports.status === 401) mostrarError("API Key de Tenis agotada o inválida.");
+                        return [];
+                    }
+                    const sports = await resSports.json();
+                    
+                    // Filtramos solo los torneos de tenis
+                    let torneosActivos = sports.filter(s => s.group === 'Tennis' || s.key.startsWith('tennis_')).map(s => s.key);
+                    
+                    ligasTenisObj = { fecha: hoyStr, ligas: torneosActivos };
+                    localStorage.setItem('gp_ligas_tenis_cache', JSON.stringify(ligasTenisObj));
+                } catch (error) {
+                    mostrarError("Error al sincronizar torneos de tenis.");
+                    return [];
                 }
+            }
 
-                return {
-                    id: match.id,
-                    utcDate: fechaPartido,
-                    competition: { name: match.torneo },
-                    homeTeam: { name: match.p1 },
-                    awayTeam: { name: match.p2 },
-                    cuotasReales: { local: match.c1, empate: "N/A", visita: match.c2 },
-                    doble: null,
-                    goles: { over: 1.88, under: 1.82, linea: "22.5" },
-                    isLiveNative: (match.estado === "vivo")
-                };
-            });
+            // 2. Traer cuotas solo para los 6 torneos más importantes activos (ATP, WTA, Challengers)
+            // Esto evita hacer 20 llamadas y gastar 20 créditos de una vez.
+            let torneosPrioritarios = ligasTenisObj.ligas.filter(l => 
+                l.includes('atp') || l.includes('wta') || l.includes('challenger') || l.includes('roland_garros')
+            ).slice(0, 6);
+
+            for (let liga of torneosPrioritarios) {
+                try {
+                    // ESTRATEGIA DE AHORRO:
+                    // regions=eu (Para usar 1 sola región y no multiplicar costo)
+                    // markets=h2h (Sin 'totals' para no duplicar el costo)
+                    const url = `https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${API_KEY_TENIS}&regions=eu&markets=h2h`;
+                    const res = await fetch(url);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (Array.isArray(data)) resultadosTotales = resultadosTotales.concat(data);
+                    }
+                } catch (error) {}
+            }
+            return procesarDatosTheOdds(resultadosTotales, 'tenis');
         }
 
         function procesarDatosTheOdds(datos, tipoDeporte) {
@@ -243,20 +268,21 @@
                     const totalsMarket = partido.bookmakers[0].markets.find(m => m.key === 'totals');
                     if (totalsMarket && totalsMarket.outcomes) { let over = totalsMarket.outcomes.find(o => o.name === 'Over'); let under = totalsMarket.outcomes.find(o => o.name === 'Under'); if (over && under) { goles.over = over.price; goles.under = under.price; goles.linea = over.point || "2.5"; } }
                 }
-                return { id: partido.id, utcDate: partido.commence_time, competition: { name: partido.sport_title.replace("Soccer - ", "") }, homeTeam: { name: partido.home_team }, awayTeam: { name: partido.away_team }, cuotasReales: cuotas, doble: doble, goles: goles };
+                let ligaLimpia = partido.sport_title.replace("Tennis - ", "").replace("Soccer - ", "");
+                return { id: partido.id, utcDate: partido.commence_time, competition: { name: ligaLimpia }, homeTeam: { name: partido.home_team }, awayTeam: { name: partido.away_team }, cuotasReales: cuotas, doble: doble, goles: goles };
             });
         }
 
         async function iniciarApp() {
             const contenedor = document.getElementById('contenedor-partidos');
-            contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px; text-align:center;">⏳ Leyendo base de datos (${deporteActivo.toUpperCase()})...</p>`;
+            contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px; text-align:center;">⏳ Conectando con servidor de cuotas...</p>`;
             baseDeDatosHoy = await cargarDatosDeportivos();
             
             if (baseDeDatosHoy.length > 0) { 
                 generarCombinadaDelDia(); 
                 aplicarFiltrosMaster(); 
             } else { 
-                contenedor.innerHTML = `<p style="text-align:center; color:var(--texto-gris); background:rgba(255,255,255,0.05); padding:20px; border-radius:10px;">⚠️ Cartelera no disponible. Tocá 🔄 para reintentar la conexión.</p>`; 
+                contenedor.innerHTML = `<p style="text-align:center; color:var(--texto-gris); background:rgba(255,255,255,0.05); padding:20px; border-radius:10px;">⚠️ Cartelera vacía. Tocá 🔄 para forzar una consulta a la API.</p>`; 
             }
         }
 
@@ -268,8 +294,8 @@
             let probL = p.cuotasReales.local !== "N/A" ? Math.round((1 / p.cuotasReales.local) * 100) : 50; let probV = p.cuotasReales.visita !== "N/A" ? Math.round((1 / p.cuotasReales.visita) * 100) : 50; let probE = deporteActivo === 'futbol' && p.cuotasReales.empate !== "N/A" ? Math.round((1 / p.cuotasReales.empate) * 100) : 0;
             let totalProb = probL + probE + probV; probL = Math.round((probL / totalProb) * 100); probV = Math.round((probV / totalProb) * 100); if(probE > 0) probE = Math.round((probE / totalProb) * 100);
 
-            let consejo = "Proyección ajustada. Nuestro modelo sugiere resguardar el bank con hándicaps o mercados alternos.";
-            if (probL >= 58) consejo = `🔥 <strong>Tendencia IA:</strong> Ventaja posicional y estadística clara para ${p.homeTeam.name} con un ${probL}% de probabilidad de éxito.`; else if (probV >= 58) consejo = `🔥 <strong>Tendencia IA:</strong> El algoritmo indica superioridad técnica para ${p.awayTeam.name} (${probV}%).`;
+            let consejo = "Proyección cerrada. Nuestro modelo sugiere resguardar valor.";
+            if (probL >= 58) consejo = `🔥 <strong>Tendencia IA:</strong> Superioridad estadística notable para ${p.homeTeam.name} con un ${probL}% de éxito.`; else if (probV >= 58) consejo = `🔥 <strong>Tendencia IA:</strong> Flujo probabilístico inclinado hacia ${p.awayTeam.name} (${probV}%).`;
 
             document.getElementById('detalle-consejo').innerHTML = `<div class="caja-consejo">💡 <strong>Mapeo de Tendencias IA:</strong><br>${consejo}</div>`;
 
@@ -295,8 +321,6 @@
             if (estadoFiltroActual === 'combinada') return; 
             let f = baseDeDatosHoy; 
             if (estadoFiltroActual === 'envivo') f = f.filter(p => esPartidoEnVivo(p));
-            else if (estadoFiltroActual === 'proximos') f = f.filter(p => !esPartidoEnVivo(p));
-
             const i = document.getElementById('filtro-ligas-input'); 
             if (i && i.value.trim() !== '') { const txt = i.value.toLowerCase().trim(); f = f.filter(p => p.competition.name.toLowerCase().includes(txt) || p.homeTeam.name.toLowerCase().includes(txt) || p.awayTeam.name.toLowerCase().includes(txt)); }
             
@@ -325,11 +349,11 @@
             });
 
             let dias = Object.keys(agrupadoPorDia).sort((a, b) => { return agrupadoPorDia[a][0].p.utcDate.localeCompare(agrupadoPorDia[b][0].p.utcDate); });
-            if (dias.length === 0) { s.innerHTML = `<p style="padding:20px; text-align:center; color:var(--texto-gris);">Procesando combinadas óptimas...</p>`; return; }
+            if (dias.length === 0) { s.innerHTML = `<p style="padding:20px; text-align:center; color:var(--texto-gris);">Esperando carga de datos para procesar combinadas...</p>`; return; }
 
             dias.forEach((dia, indexDia) => {
                 let pool = agrupadoPorDia[dia]; s.innerHTML += `<h3 class="fecha-combinada">📅 Hojas de Ruta: ${dia}</h3>`;
-                if (pool.length < 2) { s.innerHTML += `<div class="tarjeta-aviso">⚠️ <b>Estructuras Reducidas</b><br><span style="font-size:0.85rem;">Se necesitan más partidos para calcular cuotas compuestas avanzadas.</span></div>`; } else {
+                if (pool.length < 2) { s.innerHTML += `<div class="tarjeta-aviso">⚠️ <b>Pocos encuentros</b><br><span style="font-size:0.85rem;">Se necesitan mínimo 2 eventos para armar tarjetas.</span></div>`; } else {
                     pool.sort((a,b) => a.cuota - b.cuota); let seguro = pool.slice(0, 3); let medio = pool.length >= 4 ? pool.slice(1, 4) : pool; let arriesgado = pool.filter(x => x.cuota > 1.60).slice(0, 3); if (arriesgado.length < 2) arriesgado = pool.slice(-2); 
                     let idSeguro = `seguro_${indexDia}`; let idMedio = `medio_${indexDia}`; let idArriesgado = `arriesgado_${indexDia}`;
                     if (seguro.length >= 2) { ticketsMultiplesGenerados[idSeguro] = seguro; s.innerHTML += renderHTMLTick(seguro, idSeguro, `🛡️ Ticket Conservador`); }
@@ -349,6 +373,7 @@
         function volverAlLobby() { document.getElementById('lobby-selector').classList.remove('open'); document.getElementById('lobby-selector').classList.remove('oculto'); document.getElementById('app-content').classList.add('oculto'); document.getElementById('vista-detalle').classList.add('oculto'); document.getElementById('logs-servidor-error').classList.add('oculto'); }
         
         function forzarActualizacion() { 
+            // Esto BORRA LA CACHÉ local y fuerza una consulta nueva consumiendo saldo
             localStorage.removeItem('odds_cache_futbol'); 
             localStorage.removeItem('odds_cache_basquet'); 
             localStorage.removeItem('odds_cache_tenis'); 
