@@ -71,7 +71,7 @@
             <h1 class="lobby-titulo">GreenPicks Pro</h1>
             <p class="lobby-sub">Plataforma de Tendencias Deportivas</p>
             <button class="btn-deporte-card" onclick="irADeporte('futbol')">
-                <div class="deporte-info"><h3>Fútbol Profesional</h3><p>The Odds API Engine (7 Días)</p></div><div class="deporte-icono">⚽</div>
+                <div class="deporte-info"><h3>Fútbol Profesional</h3><p>The Odds API - Próximos 7 Días</p></div><div class="deporte-icono">⚽</div>
             </button>
             <button class="btn-deporte-card" onclick="irADeporte('basquet')">
                 <div class="deporte-info"><h3>Básquetbol Global</h3><p>Cartelera Gratuita ESPN</p></div><div class="deporte-icono">🏀</div>
@@ -108,7 +108,6 @@
     <div id="panel-picks" class="panel-picks-lateral oculto-panel"><div class="panel-header"><h3>Mis Picks</h3><button class="btn-volver-lobby" onclick="togglePanelPicks()">❌</button></div><div id="contenedor-lista-picks"></div></div>
 
     <script>
-        // CONFIGURADAS CORRECTAMENTE AMBAS CON THE ODDS API
         const API_KEY_FUTBOL = "a36999d3627d43a2a6f11c449243634e"; 
         const API_KEY_TENIS = "d3d7b6a1627d78292b24d7b2554e8c5d"; 
 
@@ -137,7 +136,7 @@
 
         function mostrarError(mensaje) {
             const logBox = document.getElementById('logs-servidor-error');
-            logBox.innerHTML = `<div class="banner-error-api" style="background: rgba(231, 76, 60, 0.15); border: 1px solid var(--alerta); color: #ff7675; padding: 15px; border-radius: 10px; margin-bottom: 15px; font-size: 0.9rem; text-align: center;"><b>⚠️ Estado del Servidor</b><br>${mensaje}</div>`;
+            logBox.innerHTML = `<div class="banner-error-api" style="background: rgba(231, 76, 60, 0.15); border: 1px solid var(--alerta); color: #ff7675; padding: 15px; border-radius: 10px; margin-bottom: 15px; font-size: 0.9rem; text-align: center;"><b>⚠️ Estado de las APIs</b><br>${mensaje}</div>`;
             logBox.classList.remove('oculto');
         }
 
@@ -165,15 +164,6 @@
             return datosProcesados;
         }
 
-        function generarMockFutbol() {
-            const ahora = new Date();
-            return [
-                { id: 'fb_m1', utcDate: ahora.toISOString(), competition: { name: "Liga Profesional (ARG)" }, homeTeam: { name: "Boca Juniors" }, awayTeam: { name: "River Plate" }, cuotasReales: { local: 2.40, empate: 3.10, visita: 2.90 }, mercadosExtra: null, isLiveNative: false },
-                { id: 'fb_m2', utcDate: new Date(ahora.getTime() + 172800000).toISOString(), competition: { name: "Premier League (ENG)" }, homeTeam: { name: "Man City" }, awayTeam: { name: "Arsenal" }, cuotasReales: { local: 1.85, empate: 3.60, visita: 4.20 }, mercadosExtra: null, isLiveNative: false },
-                { id: 'fb_m3', utcDate: new Date(ahora.getTime() + 432000000).toISOString(), competition: { name: "Champions League" }, homeTeam: { name: "Real Madrid" }, awayTeam: { name: "B. Múnich" }, cuotasReales: { local: 2.10, empate: 3.50, visita: 3.20 }, mercadosExtra: null, isLiveNative: false }
-            ];
-        }
-
         async function fetchFutbolOddsApi() {
             try {
                 const hoyStr = new Date().toISOString().split('T')[0];
@@ -181,31 +171,47 @@
                 
                 if (!ligasFutbolObj || ligasFutbolObj.fecha !== hoyStr) {
                     const resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${API_KEY_FUTBOL}`);
-                    if (!resSports.ok) return generarMockFutbol();
+                    if (!resSports.ok) {
+                        mostrarError("La API Key de Fútbol falló o superó su cuota. Revisa los accesos en tu consola de The Odds API.");
+                        return [];
+                    }
                     const sports = await resSports.json();
                     let torneosActivos = sports.filter(s => s.group === 'Soccer' || s.key.startsWith('soccer_')).map(s => s.key);
                     ligasFutbolObj = { fecha: hoyStr, ligas: torneosActivos };
                     localStorage.setItem('gp_ligas_futbol_odds_cache', JSON.stringify(ligasFutbolObj));
                 }
 
-                // Filtrar ligas de alto interés para optimizar tus consultas de golpe
                 let torneosPrioritarios = ligasFutbolObj.ligas.filter(l => 
                     l.includes('argentina') || l.includes('epl') || l.includes('spain') || 
-                    l.includes('champions') || l.includes('italy') || l.includes('brazil')
-                );
-                if (torneosPrioritarios.length === 0) torneosPrioritarios = ligasFutbolObj.ligas.slice(0, 5);
-                else torneosPrioritarios = torneosPrioritarios.slice(0, 6);
+                    l.includes('champions') || l.includes('italy') || l.includes('brazil') || l.includes('mexico')
+                ).slice(0, 4);
+
+                if (torneosPrioritarios.length === 0) torneosPrioritarios = ligasFutbolObj.ligas.slice(0, 3);
 
                 let poolResultados = [];
-                for (let liga of torneosPrioritarios) {
-                    const res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${API_KEY_FUTBOL}&regions=eu&markets=h2h`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (Array.isArray(data)) poolResultados = poolResultados.concat(data);
-                    }
+                
+                // Peticiones en paralelo optimizadas
+                const promesas = torneosPrioritarios.map(async (liga) => {
+                    try {
+                        const res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${API_KEY_FUTBOL}&regions=eu&markets=h2h`);
+                        if (res.ok) return await res.json();
+                        if (res.status === 429) mostrarError("Límite de velocidad excedido (429). Espera unos minutos antes de actualizar.");
+                    } catch (e) {}
+                    return [];
+                });
+
+                const resultadosLigas = await Promise.all(promesas);
+                resultadosLigas.forEach(data => {
+                    if (Array.isArray(data)) poolResultados = poolResultados.concat(data);
+                });
+
+                if (poolResultados.length === 0) {
+                    mostrarError("No hay partidos próximos disponibles en las ligas seleccionadas.");
+                    return [];
                 }
 
-                if (poolResultados.length === 0) return generarMockFutbol();
+                // FILTRO DE CADUCIDAD: Eliminar partidos viejos (Margen de 2 horas atrás máximo)
+                const limiteTiempoFiltro = new Date(Date.now() - 7200000);
 
                 return poolResultados.map(partido => {
                     let cuotas = { local: "N/A", empate: "N/A", visita: "N/A" };
@@ -225,9 +231,11 @@
                         homeTeam: { name: partido.home_team }, awayTeam: { name: partido.away_team },
                         cuotasReales: cuotas, mercadosExtra: null, isLiveNative: false
                     };
-                });
+                }).filter(p => new Date(p.utcDate) >= limiteTiempoFiltro);
+
             } catch (error) {
-                return generarMockFutbol();
+                mostrarError("Error crítico al procesar la cartelera de fútbol.");
+                return [];
             }
         }
 
@@ -266,7 +274,7 @@
             if (!ligasTenisObj || ligasTenisObj.fecha !== hoyStr) {
                 try {
                     const resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${API_KEY_TENIS}`);
-                    if (!resSports.ok) { return []; }
+                    if (!resSports.ok) return [];
                     const sports = await resSports.json();
                     let torneosActivos = sports.filter(s => s.group === 'Tennis' || s.key.startsWith('tennis_')).map(s => s.key);
                     ligasTenisObj = { fecha: hoyStr, ligas: torneosActivos };
@@ -274,18 +282,23 @@
                 } catch (error) { return []; }
             }
 
-            let torneosPrioritarios = ligasTenisObj.ligas.filter(l => l.includes('atp') || l.includes('wta') || l.includes('challenger')).slice(0, 6);
+            let torneosPrioritarios = ligasTenisObj.ligas.filter(l => l.includes('atp') || l.includes('wta') || l.includes('challenger')).slice(0, 4);
 
-            for (let liga of torneosPrioritarios) {
+            const promesas = torneosPrioritarios.map(async (liga) => {
                 try {
                     const res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${API_KEY_TENIS}&regions=eu&markets=h2h`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (Array.isArray(data)) resultadosTotales = resultadosTotales.concat(data);
-                    }
-                } catch (error) {}
-            }
+                    if (res.ok) return await res.json();
+                } catch (e) {}
+                return [];
+            });
+
+            const resultados = await Promise.all(promesas);
+            resultados.forEach(data => {
+                if (Array.isArray(data)) resultadosTotales = resultadosTotales.concat(data);
+            });
             
+            const limiteTiempoFiltro = new Date(Date.now() - 7200000);
+
             return resultadosTotales.map(partido => {
                 let cuotas = { local: "N/A", empate: "N/A", visita: "N/A" };
                 if (partido.bookmakers && partido.bookmakers.length > 0) {
@@ -316,18 +329,18 @@
                     homeTeam: { name: partido.home_team }, awayTeam: { name: partido.away_team }, 
                     cuotasReales: cuotas, mercadosExtra: extras, isLiveNative: false 
                 };
-            });
+            }).filter(p => new Date(p.utcDate) >= limiteTiempoFiltro);
         }
 
         async function iniciarApp() {
             const contenedor = document.getElementById('contenedor-partidos');
-            contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px; text-align:center;">⏳ Conectando con The Odds API y sincronizando 7 días...</p>`;
+            contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px; text-align:center;">⏳ Consultando servidores reales en vivo (Próximos 7 días)...</p>`;
             baseDeDatosHoy = await cargarDatosDeportivos();
             
             if (baseDeDatosHoy.length > 0) { 
                 generarCombinadaDelDia(); aplicarFiltrosMaster(); 
             } else { 
-                contenedor.innerHTML = `<p style="text-align:center; color:var(--texto-gris); background:rgba(255,255,255,0.05); padding:20px; border-radius:10px;">⚠️ Cartelera vacía. Tocá 🔄 para actualizar.</p>`; 
+                contenedor.innerHTML = `<p style="text-align:center; color:var(--texto-gris); background:rgba(255,255,255,0.05); padding:20px; border-radius:10px;">⚠️ Cartelera sin eventos vigentes. Si ves un error arriba, revisa los cupos de tus Keys.</p>`; 
             }
         }
 
@@ -384,7 +397,7 @@
             if (i && i.value.trim() !== '') { const txt = i.value.toLowerCase().trim(); f = f.filter(p => p.competition.name.toLowerCase().includes(txt) || p.homeTeam.name.toLowerCase().includes(txt) || p.awayTeam.name.toLowerCase().includes(txt)); }
             
             const c = document.getElementById('contenedor-partidos'); c.innerHTML = '';
-            if (f.length === 0) { c.innerHTML = `<p style="padding:30px; text-align:center; color:var(--texto-gris);">No hay eventos para este filtro.</p>`; return; }
+            if (f.length === 0) { c.innerHTML = `<p style="padding:30px; text-align:center; color:var(--texto-gris);">No se encontraron eventos activos para el criterio seleccionado.</p>`; return; }
             
             f.forEach(p => { 
                 let renderEstado = esPartidoEnVivo(p) ? `<span class="badge-live">EN VIVO</span>` : `🏟️ Ver Análisis`;
@@ -398,7 +411,7 @@
 
         function generarCombinadaDelDia() {
             const s = document.getElementById('seccion-combinada'); s.innerHTML = ''; ticketsMultiplesGenerados = {};
-            if (baseDeDatosHoy.length < 2) { s.innerHTML = `<p style="padding:20px; text-align:center; color:var(--texto-gris);">Se necesitan más datos para armar combinadas.</p>`; return; }
+            if (baseDeDatosHoy.length < 2) { s.innerHTML = `<p style="padding:20px; text-align:center; color:var(--texto-gris);">Se necesitan al menos 2 partidos vigentes para proyectar combinadas.</p>`; return; }
             
             let pool = baseDeDatosHoy.slice(0, 3);
             let idTicket = "cb_sports_day";
