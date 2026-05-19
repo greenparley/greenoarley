@@ -210,7 +210,6 @@
                     localStorage.setItem('gp_ligas_futbol_odds_cache', JSON.stringify(ligasFutbolObj));
                 }
 
-                // CORRECCIÓN: Filtramos para que traiga SOLAMENTE la bundesliga de Alemania
                 let torneosPrioritarios = ligasFutbolObj.ligas.filter(key => {
                     const k = key.toLowerCase();
                     return k.includes('argentina') || 
@@ -222,7 +221,7 @@
                            k.includes('epl') ||           
                            k.includes('la_liga') ||       
                            k.includes('serie_a') ||       
-                           k.includes('germany_bundesliga') || // <- Solo Alemania, chau Austria
+                           k.includes('germany_bundesliga') || 
                            k.includes('ligue_one');       
                 });
                 
@@ -495,8 +494,9 @@
                                     pickMercado = `Resultado Directo: Empate (X)`;
                                     pickCuota = analisis.cuotaEmpate;
                                 } else {
-                                    pickMercado = `Goles Totales: Más de 2.5`;
-                                    pickCuota = 1.95; 
+                                    // REEMPLAZO ACÁ: Ahora busca batacazos en vez del +2.5
+                                    pickMercado = `Batacazo / Sorpresa: Gana ${analisis.dogName}`;
+                                    pickCuota = analisis.dogOdds; 
                                 }
                             } else {
                                 pickMercado = `Batacazo / Sorpresa: Gana ${analisis.dogName}`;
