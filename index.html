@@ -27,7 +27,6 @@
         .btn-filto-main.activo { background: var(--bg-principal); color: var(--verde-principal); }
         .tarjeta-partido { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); border-radius: 12px; padding: 15px; margin-bottom: 12px; cursor: pointer; }
         
-        /* AJUSTE: Etiqueta de fecha y hora más ancha para que entre el texto nuevo */
         .encabezado-liga { font-size: 0.75rem; color: var(--texto-blanco); display: flex; align-items: center; gap: 8px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 5px; font-weight: bold; text-transform: uppercase;}
         .etiqueta-hora { color: var(--oro); background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; display: flex; align-items: center; gap: 4px; letter-spacing: 0.5px;}
         
@@ -111,7 +110,8 @@
     <div id="panel-picks" class="panel-picks-lateral oculto-panel"><div class="panel-header"><h3>Mis Picks</h3><button class="btn-volver-lobby" onclick="togglePanelPicks()">❌</button></div><div id="contenedor-lista-picks"></div></div>
 
     <script>
-        const API_KEY_FUTBOL = "b1068f561f80975166b5c1ab67a2888a"; 
+        // ACÁ INYECTÉ TU NUEVA KEY PARA EL FÚTBOL
+        const API_KEY_FUTBOL = "a36999d3627d43a2a6f11c449243634e"; 
         const API_KEY_TENIS = "d3d7b6a1627d78292b24d7b2554e8c5d"; 
 
         let baseDeDatosHoy = [];
@@ -127,7 +127,6 @@
 
         function esPartidoEnVivo(p) { return p.isLiveNative === true; }
 
-        // NUEVA FUNCIÓN: Ahora formatea Día/Mes y Hora
         function formatearFechaHoraLocal(fechaIso) {
             if (!fechaIso) return "--/-- --:--";
             const f = new Date(fechaIso);
@@ -168,11 +167,10 @@
             return datosProcesados;
         }
 
-        // FUNCIÓN DE RESCATE PARA FÚTBOL
         function generarMockFutbol() {
             const ahora = new Date();
-            const m1 = new Date(ahora.getTime() + 7200000).toISOString(); // +2 horas
-            const m2 = new Date(ahora.getTime() + 86400000).toISOString(); // mañana
+            const m1 = new Date(ahora.getTime() + 7200000).toISOString(); 
+            const m2 = new Date(ahora.getTime() + 86400000).toISOString(); 
             return [
                 { id: 'fb_m1', utcDate: ahora.toISOString(), competition: { name: "Liga Profesional (ARG)" }, homeTeam: { name: "Boca Juniors" }, awayTeam: { name: "River Plate" }, cuotasReales: { local: 2.40, empate: 3.10, visita: 2.90 }, mercadosExtra: null, isLiveNative: true },
                 { id: 'fb_m2', utcDate: m1, competition: { name: "Premier League (ENG)" }, homeTeam: { name: "Man City" }, awayTeam: { name: "Arsenal" }, cuotasReales: { local: 1.85, empate: 3.60, visita: 4.20 }, mercadosExtra: null, isLiveNative: false },
@@ -189,7 +187,6 @@
                 
                 const data = await res.json();
                 
-                // Si la API no devuelve partidos o te quedaste sin límite, inyectamos el Rescate
                 if (!data.response || data.response.length === 0 || data.errors?.requests) { 
                     mostrarError("La API oficial se quedó sin límite o no hay partidos hoy. Cargando Liga de Prueba...");
                     return generarMockFutbol();
@@ -428,7 +425,6 @@
             
             f.forEach(p => { 
                 let renderEstado = esPartidoEnVivo(p) ? `<span class="badge-live">EN VIVO</span>` : `🏟️ Mercados`;
-                // AQUÍ APLICAMOS LA FUNCIÓN DE FECHA Y HORA
                 let renderHora = p.utcDate ? `<span class="etiqueta-hora">🕒 ${formatearFechaHoraLocal(p.utcDate)}</span>` : '';
                 
                 c.innerHTML += `<div class="tarjeta-partido" onclick="abrirDetalle('${p.id}')">
