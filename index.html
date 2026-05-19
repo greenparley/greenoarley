@@ -118,7 +118,6 @@
     <div id="panel-picks" class="panel-picks-lateral oculto-panel"><div class="panel-header"><h3>Mis Picks</h3><button class="btn-volver-lobby" onclick="togglePanelPicks()">❌</button></div><div id="contenedor-lista-picks"></div></div>
 
     <script>
-        // Nueva API agregada al arreglo para mayor tolerancia a fallos
         const API_KEYS = [
             "d3d7b6a1627d78292b24d7b2554e8c5d", 
             "c7b062bf872742e25c086b5ad997ba0a",
@@ -201,7 +200,7 @@
                     if (!resSports.ok && rotarApiKey()) {
                         resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
                     }
-                    if (!resSports.ok && rotarApiKey()) { // Intento 3 si falla
+                    if (!resSports.ok && rotarApiKey()) {
                         resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
                     }
                     if (!resSports.ok) { mostrarError("Límite de API keys excedido en todas las cuentas."); return []; }
@@ -211,11 +210,26 @@
                     localStorage.setItem('gp_ligas_futbol_odds_cache', JSON.stringify(ligasFutbolObj));
                 }
 
+                // CORRECCIÓN: Filtro ampliado y exacto con Serie A, Ligue 1, Bundesliga y Conference League
                 let torneosPrioritarios = ligasFutbolObj.ligas.filter(key => {
-                    return key.includes('argentina') || key.includes('champions_league') || 
-                           key.includes('europa_league') || key.includes('epl') || key.includes('spain_la_liga');
+                    const k = key.toLowerCase();
+                    return k.includes('argentina') || 
+                           k.includes('champs_league') || // Champions League real key
+                           k.includes('europa_league') || 
+                           k.includes('conference') ||    // Conference League
+                           k.includes('libertadores') ||  // Copa Libertadores
+                           k.includes('sudamericana') ||  // Copa Sudamericana
+                           k.includes('epl') ||           // Premier League
+                           k.includes('la_liga') ||       // Liga España
+                           k.includes('serie_a') ||       // Serie A Italia
+                           k.includes('bundesliga') ||    // Bundesliga Alemania
+                           k.includes('ligue_one');       // Ligue 1 Francia
                 });
-                if (torneosPrioritarios.length === 0) torneosPrioritarios = ligasFutbolObj.ligas.slice(0, 4);
+                
+                // Si no hay ninguno de los prioritarios activos, traemos un surtido más grande para no quedar vacíos
+                if (torneosPrioritarios.length === 0) torneosPrioritarios = ligasFutbolObj.ligas.slice(0, 10);
+                // Limitamos a 10 torneos máximo para no reventar la cuota de la API
+                torneosPrioritarios = torneosPrioritarios.slice(0, 10);
 
                 let poolResultados = [];
                 const promesas = torneosPrioritarios.map(async (liga) => {
@@ -420,12 +434,10 @@
             const renderContenedor = document.getElementById('combinada-ticket-render'); 
             renderContenedor.innerHTML = ''; ticketsMultiplesGenerados = {};
             
-            // 1. Agrupar los partidos por el día específico
             const partidosPorDia = {};
             baseDeDatosHoy.forEach(p => {
                 if (!p.utcDate) return;
                 const d = new Date(p.utcDate);
-                // Extraer solo la fecha dd/mm
                 const fechaCorta = d.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit'});
                 if (!partidosPorDia[fechaCorta]) partidosPorDia[fechaCorta] = [];
                 partidosPorDia[fechaCorta].push(p);
@@ -434,16 +446,13 @@
             let combinadasTotales = 0;
             let htmlCompletoRender = '';
 
-            // 2. Iterar por cada día para crear combinadas dedicadas
             for (const dia in partidosPorDia) {
                 let carteleraDia = partidosPorDia[dia];
-                
-                if (carteleraDia.length < 3) continue; // Si ese día hay menos de 3, lo salteamos
+                if (carteleraDia.length < 3) continue;
 
                 let maxCombinadas = Math.floor(carteleraDia.length / 3); 
-                maxCombinadas = Math.min(maxCombinadas, 5); // Tope de 5 combinadas por día para no sobrecargar
+                maxCombinadas = Math.min(maxCombinadas, 5);
                 
-                // Divisor visual de fecha
                 htmlCompletoRender += `<div style="background: rgba(46, 204, 113, 0.1); border: 1px solid var(--verde-principal); color: var(--verde-principal); padding: 8px; border-radius: 6px; text-align: center; margin: 25px 0 15px 0; font-weight: bold; font-size: 0.9rem;">🗓️ CARTELERA DEL DÍA: ${dia}</div>`;
 
                 for (let i = 0; i < maxCombinadas; i++) {
@@ -488,7 +497,6 @@
                                     pickMercado = `Resultado Directo: Empate (X)`;
                                     pickCuota = analisis.cuotaEmpate;
                                 } else {
-                                    // CORRECCIÓN: SOLO UNA PREDICCIÓN SIMPLE
                                     pickMercado = `Goles Totales: Más de 2.5`;
                                     pickCuota = 1.95; 
                                 }
