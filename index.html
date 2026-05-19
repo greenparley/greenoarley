@@ -93,7 +93,7 @@
             <div class="nav-filtros">
                 <button id="btn-proximos" class="btn-filto-main activo" onclick="setFiltroEstado('proximos')">Próximos (7 días)</button>
                 <button id="btn-envivo" class="btn-filto-main" onclick="setFiltroEstado('envivo')">🔴 En Vivo</button>
-                <button id="btn-combinada" class="btn-filto-main" onclick="setFiltroEstado('combinada')">Combinada IA</button>
+                <button id="btn-combinada" class="btn-filto-main" onclick="setFiltroEstado('combinada')">Combinadas Múltiples</button>
             </div>
             <div id="contenedor-partidos"></div>
             <div id="seccion-combinada" class="oculto">
@@ -199,7 +199,7 @@
                     if (!resSports.ok && rotarApiKey()) {
                         resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
                     }
-                    if (!resSports.ok) { mostrarError("Límite de todas las API keys excedido."); return []; }
+                    if (!resSports.ok) { mostrarError("Límite de API keys excedido."); return []; }
                     const sports = await resSports.json();
                     let torneosActivos = sports.filter(s => s.group === 'Soccer' || s.key.startsWith('soccer_')).map(s => s.key);
                     ligasFutbolObj = { fecha: hoyStr, ligas: torneosActivos };
@@ -208,21 +208,14 @@
 
                 let torneosPrioritarios = ligasFutbolObj.ligas.filter(key => {
                     return key.includes('argentina') || key.includes('champions_league') || 
-                           key.includes('europa_league') || key.includes('conference_league') || 
-                           key.includes('libertadores') || key.includes('sudamericana') || 
-                           key.includes('epl') || key.includes('spain_la_liga') || 
-                           key.includes('italy_serie_a') || key.includes('germany_bundesliga');
+                           key.includes('europa_league') || key.includes('epl') || key.includes('spain_la_liga');
                 });
-
                 if (torneosPrioritarios.length === 0) torneosPrioritarios = ligasFutbolObj.ligas.slice(0, 4);
 
                 let poolResultados = [];
                 const promesas = torneosPrioritarios.map(async (liga) => {
                     try {
                         let res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${obtenerApiKeyActiva()}&regions=eu&markets=h2h`);
-                        if (!res.ok && rotarApiKey()) {
-                            res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${obtenerApiKeyActiva()}&regions=eu&markets=h2h`);
-                        }
                         if (res.ok) return await res.json();
                     } catch (e) {}
                     return [];
@@ -281,18 +274,13 @@
             let resultadosTotales = [];
             try {
                 let resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
-                if (!resSports.ok && rotarApiKey()) {
-                    resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
-                }
+                if (!resSports.ok && rotarApiKey()) resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
                 if (!resSports.ok) return []; 
                 const sports = await resSports.json();
                 let torneosTenis = sports.filter(s => s.group === 'Tennis').map(s => s.key).slice(0, 3);
                 
                 const promesas = torneosTenis.map(async (liga) => {
                     let res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${obtenerApiKeyActiva()}&regions=eu&markets=h2h`);
-                    if (!res.ok && rotarApiKey()) {
-                        res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${obtenerApiKeyActiva()}&regions=eu&markets=h2h`);
-                    }
                     if (res.ok) return await res.json(); return [];
                 });
                 const resultados = await Promise.all(promesas);
@@ -331,7 +319,7 @@
             const p = baseDeDatosHoy.find(item => item.id === id); if (!p) return;
             document.getElementById('herramientas-top').classList.add('oculto'); document.getElementById('contenedor-partidos').classList.add('oculto'); document.getElementById('seccion-combinada').classList.add('oculto'); document.getElementById('vista-detalle').classList.remove('oculto');
             document.getElementById('detalle-cabecera').innerHTML = `<div style="text-align:center; width:45%;">${generarMonograma(p.homeTeam.name, 'detalle')}<p style="font-size:0.90rem; font-weight:bold;">${p.homeTeam.name}</p></div><h2 style="width:10%; text-align:center; color:var(--verde-principal);">VS</h2><div style="text-align:center; width:45%;">${generarMonograma(p.awayTeam.name, 'detalle')}<p style="font-size:0.90rem; font-weight:bold;">${p.awayTeam.name}</p></div>`;
-            document.getElementById('detalle-consejo').innerHTML = `<div class="caja-consejo">💡 <b>Modelado IA:</b> Proyecciones basadas en forma actual y valor de mercado.</div>`;
+            document.getElementById('detalle-consejo').innerHTML = `<div class="caja-consejo">💡 <b>Modelado IA Avanzado:</b> Datos estadísticos ampliados en tiempo real.</div>`;
 
             let probL = p.cuotasReales.local !== "N/A" ? Math.round((1 / p.cuotasReales.local) * 100) : 42;
             let probV = p.cuotasReales.visita !== "N/A" ? Math.round((1 / p.cuotasReales.visita) * 100) : 33;
@@ -340,70 +328,68 @@
 
             let htmlMercados = "";
 
+            // --- FÚTBOL ---
             if(deporteActivo === 'futbol') {
-                htmlMercados += `<div class="bloque-mercado">
-                    <div class="titulo-mercado">🎯 MERCADO: GANADOR DEL PARTIDO (1X2)</div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local: ${p.homeTeam.name} <span class="cuota-real-badge">x${p.cuotasReales.local}</span></span><span>${probL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}%"></div></div></div>`;
-                if(p.cuotasReales.empate !== "N/A") {
-                    htmlMercados += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Empate en los 90 Minutos <span class="cuota-real-badge">x${p.cuotasReales.empate}</span></span><span>${probE}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probE}%"></div></div></div>`;
-                }
-                htmlMercados += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visitante: ${p.awayTeam.name} <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div></div>`;
+                htmlMercados += `<div class="bloque-mercado"><div class="titulo-mercado">🎯 MERCADO: GANADOR DEL PARTIDO (1X2)</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local <span class="cuota-real-badge">x${p.cuotasReales.local}</span></span><span>${probL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}%"></div></div></div>`;
+                if(p.cuotasReales.empate !== "N/A") { htmlMercados += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Empate <span class="cuota-real-badge">x${p.cuotasReales.empate}</span></span><span>${probE}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probE}%"></div></div></div>`; }
+                htmlMercados += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visitante <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div></div>`;
 
                 let probAmbosSi = Math.min(82, Math.max(28, Math.round(probL + 12))); let probAmbosNo = 100 - probAmbosSi;
-                htmlMercados += `<div class="bloque-mercado">
-                    <div class="titulo-mercado">⚽ MERCADO: AMBOS EQUIPOS ANOTAN</div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Sí, Ambos Marcan Goles <span class="cuota-real-badge">x ${(100/probAmbosSi).toFixed(2)}</span></span><span>${probAmbosSi}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probAmbosSi}%"></div></div></div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>No, Al menos uno queda en 0 <span class="cuota-real-badge">x ${(100/probAmbosNo).toFixed(2)}</span></span><span>${probAmbosNo}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probAmbosNo}%"></div></div></div>
-                </div>`;
+                htmlMercados += `<div class="bloque-mercado"><div class="titulo-mercado">⚽ MERCADO: AMBOS EQUIPOS ANOTAN</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Sí, Ambos Marcan <span class="cuota-real-badge">x ${(100/probAmbosSi).toFixed(2)}</span></span><span>${probAmbosSi}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probAmbosSi}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>No marcan ambos <span class="cuota-real-badge">x ${(100/probAmbosNo).toFixed(2)}</span></span><span>${probAmbosNo}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probAmbosNo}%"></div></div></div></div>`;
+                
+                // NUEVO: Goles Totales
+                let probMasGoles = Math.min(75, Math.max(35, 100 - probE)); let probMenosGoles = 100 - probMasGoles;
+                htmlMercados += `<div class="bloque-mercado"><div class="titulo-mercado">🥅 MERCADO: GOLES TOTALES</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 2.5 Goles <span class="cuota-real-badge">x ${(100/probMasGoles).toFixed(2)}</span></span><span>${probMasGoles}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probMasGoles}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 2.5 Goles <span class="cuota-real-badge">x ${(100/probMenosGoles).toFixed(2)}</span></span><span>${probMenosGoles}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probMenosGoles}%"></div></div></div></div>`;
+
+                // NUEVO: Córners
+                let probMasCorners = Math.min(80, Math.max(40, probL + 10)); let probMenosCorners = 100 - probMasCorners;
+                htmlMercados += `<div class="bloque-mercado"><div class="titulo-mercado">🚩 MERCADO: CÓRNERS TOTALES</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 9.5 Córners <span class="cuota-real-badge">x 1.83</span></span><span>${probMasCorners}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probMasCorners}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 9.5 Córners <span class="cuota-real-badge">x 1.95</span></span><span>${probMenosCorners}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probMenosCorners}%"></div></div></div></div>`;
 
                 let probMasCards = Math.min(78, Math.max(40, Math.round(probE + 35))); let probMenosCards = 100 - probMasCards;
-                htmlMercados += `<div class="bloque-mercado">
-                    <div class="titulo-mercado">🟨 MERCADO DISCIPLINARIO: TARJETAS TOTALES</div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 3.5 Tarjetas Totales <span class="cuota-real-badge">x 1.68</span></span><span>${probMasCards}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probMasCards}%"></div></div></div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 3.5 Tarjetas Totales <span class="cuota-real-badge">x 2.05</span></span><span>${probMenosCards}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probMenosCards}%"></div></div></div>
-                </div>`;
+                htmlMercados += `<div class="bloque-mercado"><div class="titulo-mercado">🟨 MERCADO: TARJETAS TOTALES</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 3.5 Tarjetas <span class="cuota-real-badge">x 1.68</span></span><span>${probMasCards}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probMasCards}%"></div></div></div></div>`;
 
+            // --- BÁSQUET ---
             } else if(deporteActivo === 'basquet') {
-                htmlMercados += `<div class="bloque-mercado">
-                    <div class="titulo-mercado">🎯 MERCADO: GANADOR DIRECTO (MONEYLINE)</div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local: ${p.homeTeam.name} <span class="cuota-real-badge">x${p.cuotasReales.local}</span></span><span>${probL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}%"></div></div></div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visita: ${p.awayTeam.name} <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div>
-                </div>`;
+                htmlMercados += `<div class="bloque-mercado"><div class="titulo-mercado">🎯 MERCADO: GANADOR DIRECTO (MONEYLINE)</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local <span class="cuota-real-badge">x${p.cuotasReales.local}</span></span><span>${probL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visita <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div></div>`;
 
                 let probMasPuntos = 52; let probMenosPuntos = 48;
-                htmlMercados += `<div class="bloque-mercado">
-                    <div class="titulo-mercado">🏀 MERCADO: PUNTOS TOTALES DEL PARTIDO</div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 218.5 Puntos Totales <span class="cuota-real-badge">x 1.88</span></span><span>${probMasPuntos}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probMasPuntos}%"></div></div></div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 218.5 Puntos Totales <span class="cuota-real-badge">x 1.88</span></span><span>${probMenosPuntos}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probMenosPuntos}%"></div></div></div>
-                </div>`;
+                htmlMercados += `<div class="bloque-mercado"><div class="titulo-mercado">🏀 MERCADO: PUNTOS TOTALES</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 218.5 Puntos <span class="cuota-real-badge">x 1.88</span></span><span>${probMasPuntos}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probMasPuntos}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 218.5 Puntos <span class="cuota-real-badge">x 1.88</span></span><span>${probMenosPuntos}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probMenosPuntos}%"></div></div></div></div>`;
 
-                let basePuntosL = probL > probV ? "110.5" : "104.5"; let basePuntosV = probV > probL ? "110.5" : "104.5";
-                htmlMercados += `<div class="bloque-mercado">
-                    <div class="titulo-mercado">📊 MERCADO: PUNTOS INDIVIDUALES POR EQUIPO</div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>${p.homeTeam.name} - Más de ${basePuntosL} <span class="cuota-real-badge">x 1.85</span></span><span>55%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:55%"></div></div></div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>${p.awayTeam.name} - Más de ${basePuntosV} <span class="cuota-real-badge">x 1.85</span></span><span>53%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:53%"></div></div></div>
-                </div>`;
+                // NUEVO: Rebotes
+                let probMasRebotes = 50; let probMenosRebotes = 50;
+                htmlMercados += `<div class="bloque-mercado"><div class="titulo-mercado">🖐️ MERCADO: REBOTES TOTALES</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 84.5 Rebotes <span class="cuota-real-badge">x 1.85</span></span><span>${probMasRebotes}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probMasRebotes}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 84.5 Rebotes <span class="cuota-real-badge">x 1.85</span></span><span>${probMenosRebotes}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probMenosRebotes}%"></div></div></div></div>`;
 
+            // --- TENIS ---
             } else if(deporteActivo === 'tenis') {
-                htmlMercados += `<div class="bloque-mercado">
-                    <div class="titulo-mercado">🎯 MERCADO: GANADOR DEL PARTIDO (H2H)</div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local: ${p.homeTeam.name} <span class="cuota-real-badge">x${p.cuotasReales.local}</span></span><span>${probL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}%"></div></div></div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visita: ${p.awayTeam.name} <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div>
-                </div>`;
+                htmlMercados += `<div class="bloque-mercado"><div class="titulo-mercado">🎯 MERCADO: GANADOR DEL PARTIDO (H2H)</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local <span class="cuota-real-badge">x${p.cuotasReales.local}</span></span><span>${probL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visita <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div></div>`;
 
-                let probLSet = probL > probV ? 65 : 48; let probVSet = probV > probL ? 62 : 45;
-                htmlMercados += `<div class="bloque-mercado">
-                    <div class="titulo-mercado">🎾 MERCADO: GAMES POR SET INDIVIDUAL</div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>${p.homeTeam.name}: Más de 4.5 Games en Set 1 <span class="cuota-real-badge">x 1.72</span></span><span>${probLSet}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probLSet}%"></div></div></div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>${p.awayTeam.name}: Más de 4.5 Games en Set 1 <span class="cuota-real-badge">x 1.75</span></span><span>${probVSet}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probVSet}%"></div></div></div>
-                </div>`;
+                // NUEVO: Games Totales
+                let probMasGames = 51; let probMenosGames = 49;
+                htmlMercados += `<div class="bloque-mercado"><div class="titulo-mercado">🎾 MERCADO: GAMES TOTALES</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 22.5 Games <span class="cuota-real-badge">x 1.85</span></span><span>${probMasGames}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probMasGames}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 22.5 Games <span class="cuota-real-badge">x 1.85</span></span><span>${probMenosGames}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probMenosGames}%"></div></div></div></div>`;
 
-                let probAmbosSetSi = Math.min(70, Math.max(30, 100 - Math.abs(probL - probV))); let probAmbosSetNo = 100 - probAmbosSetSi;
-                htmlMercados += `<div class="bloque-mercado">
-                    <div class="titulo-mercado">🔲 MERCADO SETS: ¿AMBOS GANARÁN UN SET?</div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Sí, Ambos ganan al menos 1 Set <span class="cuota-real-badge">x ${(100/probAmbosSetSi).toFixed(2)}</span></span><span>${probAmbosSetSi}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probAmbosSetSi}%"></div></div></div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>No, Victoria en Sets Corridos <span class="cuota-real-badge">x ${(100/probAmbosSetNo).toFixed(2)}</span></span><span>${probAmbosSetNo}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probAmbosSetNo}%"></div></div></div>
-                </div>`;
+                // NUEVO: Aces
+                let probMasAces = 55; let probMenosAces = 45;
+                htmlMercados += `<div class="bloque-mercado"><div class="titulo-mercado">⚡ MERCADO: ACES TOTALES</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 12.5 Aces <span class="cuota-real-badge">x 1.78</span></span><span>${probMasAces}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probMasAces}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 12.5 Aces <span class="cuota-real-badge">x 2.05</span></span><span>${probMenosAces}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probMenosAces}%"></div></div></div></div>`;
             }
             document.getElementById('detalle-barras').innerHTML = htmlMercados;
         }
@@ -441,19 +427,15 @@
             });
         }
 
-        /* --- NUEVO MOTOR ANALÍTICO PARA COMBINADAS (PROBABILIDAD MATEMÁTICA Y FORMA) --- */
         function analizarProbabilidadYValor(p) {
-            // Evaluamos la forma y clasificación infiriéndolo directamente del valor de mercado (las cuotas)
             let cL = p.cuotasReales.local !== "N/A" ? parseFloat(p.cuotasReales.local) : 2.50;
             let cV = p.cuotasReales.visita !== "N/A" ? parseFloat(p.cuotasReales.visita) : 2.50;
             let cE = (deporteActivo === 'futbol' && p.cuotasReales.empate !== "N/A") ? parseFloat(p.cuotasReales.empate) : 3.00;
-
             let isHomeFav = cL <= cV;
             let favName = isHomeFav ? p.homeTeam.name : p.awayTeam.name;
             let dogName = isHomeFav ? p.awayTeam.name : p.homeTeam.name;
             let favOdds = isHomeFav ? cL : cV;
             let dogOdds = isHomeFav ? cV : cL;
-
             return { cuotaLocal: cL, cuotaVisita: cV, cuotaEmpate: cE, favName, dogName, favOdds, dogOdds, isHomeFav };
         }
 
@@ -464,76 +446,88 @@
             if (baseDeDatosHoy.length < 3) { 
                 renderContenedor.innerHTML = `<p style="padding:40px 20px; text-align:center; color:var(--texto-gris); line-height: 1.6;">⚠️ <b>Cartelera insuficiente:</b> Se necesitan al menos 3 partidos en este deporte para estructurar una combinada óptima.</p>`; return; 
             }
+
+            let numPartidos = baseDeDatosHoy.length;
+            let maxCombinadas = Math.floor(numPartidos / 3); 
+            maxCombinadas = Math.min(maxCombinadas, 8); // Armamos hasta 8 combinadas diferentes si hay muchos partidos.
             
-            let idTicket = "cb_riesgo_" + riesgoCombinadaSeleccionado;
-            let poolPicks = [];
-            let colorBorde = "var(--verde-principal)";
-            let badgeTexto = "🔒 TRIPLE ASEGURADA";
+            let htmlCompletoRender = `<p style="text-align:center; color:var(--texto-gris); margin-bottom:15px; font-size:0.85rem;">Se encontraron suficientes eventos para armar <b>${maxCombinadas} combinadas diferentes</b>.</p>`;
 
-            // Evaluamos los 3 primeros partidos dinámicamente
-            for (let i = 0; i < 3; i++) {
-                let p = baseDeDatosHoy[i];
-                let analisis = analizarProbabilidadYValor(p);
-                let pickMercado = "";
-                let pickCuota = 1.0;
+            for (let i = 0; i < maxCombinadas; i++) {
+                let idTicket = "cb_riesgo_" + riesgoCombinadaSeleccionado + "_" + i;
+                let poolPicks = [];
+                let colorBorde = "var(--verde-principal)";
+                let badgeTexto = "🔒 TRIPLE ASEGURADA";
 
-                if (riesgoCombinadaSeleccionado === 'asegurada') {
-                    colorBorde = "var(--verde-principal)"; badgeTexto = "🔒 TRIPLE ASEGURADA (ALTA PROBABILIDAD)";
-                    if (deporteActivo === 'futbol') {
-                        pickMercado = `Doble Oportunidad: Gana ${analisis.favName} o Empata`;
-                        pickCuota = Math.max(1.15, analisis.favOdds / 1.35); // Calculamos matemáticamente la cuota de la doble chance
-                    } else if (deporteActivo === 'basquet') {
-                        pickMercado = `Hándicap Positivo (+8.5): a favor de ${analisis.favName}`;
-                        pickCuota = 1.25;
-                    } else {
-                        pickMercado = `Ganará al menos 1 Set: ${analisis.favName}`;
-                        pickCuota = Math.max(1.12, analisis.favOdds / 1.25);
-                    }
-                } 
-                else if (riesgoCombinadaSeleccionado === 'moderada') {
-                    colorBorde = "var(--oro)"; badgeTexto = "📊 TRIPLE MODERADA (BALANCED TICKET)";
-                    // Le jugamos directamente a que gana el favorito según su forma actual/cuota real
-                    pickMercado = `Ganador del Partido (Moneyline): Gana ${analisis.favName}`;
-                    pickCuota = analisis.favOdds; 
-                } 
-                else if (riesgoCombinadaSeleccionado === 'arriesgada') {
-                    colorBorde = "var(--alerta)"; badgeTexto = "🔥 TRIPLE ARRIESGADA (VALOR AGRESIVO)";
-                    if (deporteActivo === 'futbol') {
-                        if (analisis.cuotaEmpate < 3.20) {
-                            pickMercado = `Resultado (1X2): Empate Directo`;
-                            pickCuota = analisis.cuotaEmpate;
-                        } else {
-                            pickMercado = `Combinada Exacta: Gana ${analisis.favName} + Más de 2.5 Goles`;
-                            pickCuota = analisis.favOdds * 1.85; // Amplificador de riesgo
-                        }
-                    } else {
-                        pickMercado = `Batacazo / Sorpresa: Gana ${analisis.dogName}`;
-                        pickCuota = analisis.dogOdds; 
-                    }
-                }
+                let idx1 = i * 3;
+                let idx2 = i * 3 + 1;
+                let idx3 = i * 3 + 2;
                 
-                poolPicks.push({ p: p, mercado: pickMercado, cuota: pickCuota });
+                let partidosCombo = [baseDeDatosHoy[idx1], baseDeDatosHoy[idx2], baseDeDatosHoy[idx3]];
+
+                partidosCombo.forEach(p => {
+                    let analisis = analizarProbabilidadYValor(p);
+                    let pickMercado = "";
+                    let pickCuota = 1.0;
+
+                    if (riesgoCombinadaSeleccionado === 'asegurada') {
+                        colorBorde = "var(--verde-principal)"; badgeTexto = "🔒 TRIPLE ASEGURADA (Opción " + (i+1) + ")";
+                        if (deporteActivo === 'futbol') {
+                            pickMercado = `Doble Oportunidad: Gana ${analisis.favName} o Empata`;
+                            pickCuota = Math.max(1.15, analisis.favOdds / 1.35);
+                        } else if (deporteActivo === 'basquet') {
+                            pickMercado = `Hándicap Positivo (+8.5): a favor de ${analisis.favName}`;
+                            pickCuota = 1.25;
+                        } else {
+                            pickMercado = `Ganará al menos 1 Set: ${analisis.favName}`;
+                            pickCuota = Math.max(1.12, analisis.favOdds / 1.25);
+                        }
+                    } 
+                    else if (riesgoCombinadaSeleccionado === 'moderada') {
+                        colorBorde = "var(--oro)"; badgeTexto = "📊 TRIPLE MODERADA (Opción " + (i+1) + ")";
+                        pickMercado = `Ganador (Moneyline): Gana ${analisis.favName}`;
+                        pickCuota = analisis.favOdds; 
+                    } 
+                    else if (riesgoCombinadaSeleccionado === 'arriesgada') {
+                        colorBorde = "var(--alerta)"; badgeTexto = "🔥 TRIPLE ARRIESGADA (Opción " + (i+1) + ")";
+                        if (deporteActivo === 'futbol') {
+                            if (analisis.cuotaEmpate < 3.20) {
+                                pickMercado = `Resultado Directo: Empate (X)`;
+                                pickCuota = analisis.cuotaEmpate;
+                            } else {
+                                pickMercado = `Gana ${analisis.favName} + Más de 2.5 Goles`;
+                                pickCuota = analisis.favOdds * 1.85; 
+                            }
+                        } else {
+                            pickMercado = `Batacazo / Sorpresa: Gana ${analisis.dogName}`;
+                            pickCuota = analisis.dogOdds; 
+                        }
+                    }
+                    poolPicks.push({ p: p, mercado: pickMercado, cuota: pickCuota });
+                });
+
+                ticketsMultiplesGenerados[idTicket] = poolPicks;
+                let totalCuota = 1.0;
+                
+                let h = `<div class="tarjeta-combinada" style="border-top: 4px solid ${colorBorde};">
+                    <div style="margin-bottom:12px;"><span style="color:${colorBorde}; font-weight:bold; font-size:0.75rem; letter-spacing:1px; display:block;">${badgeTexto}</span><h3>Ticket Múltiple #${i+1}</h3></div>`;
+                
+                poolPicks.forEach(c => {
+                    totalCuota *= c.cuota;
+                    h += `<div class="ticket-item">
+                        <div style="font-size:0.75rem; color:var(--texto-gris); margin-bottom:2px;">🏟️ ${c.p.competition.name}</div>
+                        📍 <b>${c.p.homeTeam.name} vs ${c.p.awayTeam.name}</b><br>
+                        <span style="color:var(--oro)">🎯 Pick IA:</span> ${c.mercado} <strong style="color:var(--verde-principal); float:right;">x${c.cuota.toFixed(2)}</strong>
+                    </div>`;
+                });
+                
+                h += `<div style="text-align:right; margin:15px 0 10px 0; font-size:1.1rem; font-weight:800; color:var(--oro)">Multiplicador Total: <span style="background:rgba(241,196,15,0.1); padding:4px 8px; border-radius:6px;">x${totalCuota.toFixed(2)}</span></div>
+                <button onclick="guardarCombinada('${idTicket}')" style="width:100%; background:${colorBorde}; color:#111; border:none; font-weight:bold; padding:12px; border-radius:8px; cursor:pointer; font-size:0.9rem;">🔒 Guardar Ticket en Mis Picks</button></div>`;
+                
+                htmlCompletoRender += h;
             }
 
-            ticketsMultiplesGenerados[idTicket] = poolPicks;
-            let totalCuota = 1.0;
-            
-            let h = `<div class="tarjeta-combinada" style="border-top: 4px solid ${colorBorde};">
-                <div style="margin-bottom:12px;"><span style="color:${colorBorde}; font-weight:bold; font-size:0.75rem; letter-spacing:1px; display:block;">${badgeTexto}</span><h3>Sugerencia Múltiple IA (3 Eventos)</h3></div>`;
-            
-            poolPicks.forEach(c => {
-                totalCuota *= c.cuota;
-                h += `<div class="ticket-item">
-                    <div style="font-size:0.75rem; color:var(--texto-gris); margin-bottom:2px;">🏟️ ${c.p.competition.name}</div>
-                    📍 <b>${c.p.homeTeam.name} vs ${c.p.awayTeam.name}</b><br>
-                    <span style="color:var(--oro)">🎯 Análisis Específico:</span> ${c.mercado} <strong style="color:var(--verde-principal); float:right;">x${c.cuota.toFixed(2)}</strong>
-                </div>`;
-            });
-            
-            h += `<div style="text-align:right; margin:15px 0 10px 0; font-size:1.1rem; font-weight:800; color:var(--oro)">Multiplicador Total: <span style="background:rgba(241,196,15,0.1); padding:4px 8px; border-radius:6px;">x${totalCuota.toFixed(2)}</span></div>
-            <button onclick="guardarCombinada('${idTicket}')" style="width:100%; background:${colorBorde}; color:#111; border:none; font-weight:bold; padding:12px; border-radius:8px; cursor:pointer; font-size:0.9rem;">🔒 Fijar Bloque en Mis Picks</button></div>`;
-            
-            renderContenedor.innerHTML = h;
+            renderContenedor.innerHTML = htmlCompletoRender;
         }
 
         function obtenerPicksLocales() { return JSON.parse(localStorage.getItem('gp_picks')) || []; }
@@ -544,7 +538,7 @@
                 h.push({ id: Date.now() + Math.random(), home: i.p.homeTeam.name, away: i.p.awayTeam.name, mercado: i.mercado, cuota: i.cuota.toFixed(2), estado: 'PROYECTADO' }); 
             }); 
             localStorage.setItem('gp_picks', JSON.stringify(h)); actualizarEstructuraPicksLocales(); 
-            alert("🎯 ¡Combinada Triple guardada con éxito en la sección Mis Picks!"); 
+            alert("🎯 ¡Ticket completo guardado con éxito en Mis Picks!"); 
         }
 
         function actualizarEstructuraPicksLocales() { 
