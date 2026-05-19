@@ -121,22 +121,20 @@
     <script>
         // Sistema de Rotación y Respaldo de API Keys
         const API_KEYS = [
-            "d3d7b6a1627d78292b24d7b2554e8c5d", // Llave Principal
-            "c7b062bf872742e25c086b5ad997ba0a"  // Llave de Respaldo Nueva
+            "d3d7b6a1627d78292b24d7b2554e8c5d", 
+            "c7b062bf872742e25c086b5ad997ba0a"  
         ];
         let indiceApiKeyActual = 0;
 
-        function obtenerApiKeyActiva() {
-            return API_KEYS[indiceApiKeyActual];
-        }
+        function obtenerApiKeyActiva() { return API_KEYS[indiceApiKeyActual]; }
 
         function rotarApiKey() {
             if (indiceApiKeyActual < API_KEYS.length - 1) {
                 indiceApiKeyActual++;
-                console.warn(`⚠️ Límite alcanzado. Rotando a la API Key de respaldo: Módulo ${indiceApiKeyActual}`);
-                return true; // Se pudo rotar con éxito
+                console.warn(`⚠️ Rotando a API Key de respaldo: Módulo ${indiceApiKeyActual}`);
+                return true; 
             }
-            return false; // Ya no quedan llaves disponibles
+            return false; 
         }
 
         let baseDeDatosHoy = [];
@@ -200,12 +198,9 @@
                 
                 if (!ligasFutbolObj || ligasFutbolObj.fecha !== hoyStr) {
                     let resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
-                    
-                    // Si falla por cuota/límite, intentamos rotar la llave inmediatamente
                     if (!resSports.ok && rotarApiKey()) {
                         resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
                     }
-                    
                     if (!resSports.ok) { mostrarError("Límite de todas las API keys excedido."); return []; }
                     const sports = await resSports.json();
                     let torneosActivos = sports.filter(s => s.group === 'Soccer' || s.key.startsWith('soccer_')).map(s => s.key);
@@ -356,7 +351,6 @@
 
             // EXTENSIONES DE MERCADOS POR DEPORTE
             if(deporteActivo === 'futbol') {
-                // Ambos Anotan
                 let probAmbosSi = Math.min(82, Math.max(28, Math.round(probL + 12))); let probAmbosNo = 100 - probAmbosSi;
                 htmlMercados += `<div class="bloque-mercado">
                     <div class="titulo-mercado">⚽ MERCADO: AMBOS EQUIPOS ANOTAN</div>
@@ -364,19 +358,11 @@
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>No Anotan <span class="cuota-real-badge">x ${(100/probAmbosNo).toFixed(2)}</span></span><span>${probAmbosNo}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probAmbosNo}%"></div></div></div>
                 </div>`;
 
-                // Corners
                 let probMasCorners = Math.min(78, Math.max(35, Math.round(probL + 20))); let probMenosCorners = 100 - probMasCorners;
                 htmlMercados += `<div class="bloque-mercado">
                     <div class="titulo-mercado">🚩 MERCADO: TIROS DE ESQUINA (MÁS/MENOS DE 9.5)</div>
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 9.5 Corners <span class="cuota-real-badge">x 1.85</span></span><span>${probMasCorners}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probMasCorners}%"></div></div></div>
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 9.5 Corners <span class="cuota-real-badge">x 1.95</span></span><span>${probMenosCorners}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probMenosCorners}%"></div></div></div>
-                </div>`;
-
-                // Tarjetas
-                let probMasTarjetas = Math.min(80, Math.max(30, Math.round(probV + 22)));
-                htmlMercados += `<div class="bloque-mercado">
-                    <div class="titulo-mercado">🟨 MERCADO: TARJETAS TOTALES (MÁS/MENOS DE 4.5)</div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 4.5 Tarjetas <span class="cuota-real-badge">x 1.75</span></span><span>${probMasTarjetas}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probMasTarjetas}%"></div></div></div>
                 </div>`;
             } else if(deporteActivo === 'basquet') {
                 let handicapLinea = probL > probV ? `-${Math.round((probL-probV)/4)}.5` : `+${Math.round((probV-probL)/4)}.5`;
@@ -385,7 +371,6 @@
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Hándicap Local (${handicapLinea}) <span class="cuota-real-badge">x1.90</span></span><span>50%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:50%"></div></div></div>
                 </div>`;
             } else if(deporteActivo === 'tenis') {
-                // Mercado de Games
                 let probMasGames = Math.min(75, Math.max(30, Math.round(probV + 18))); let probMenosGames = 100 - probMasGames;
                 htmlMercados += `<div class="bloque-mercado">
                     <div class="titulo-mercado">🎾 MERCADO: TOTAL DE GAMES (MÁS/MENOS 22.5)</div>
@@ -436,34 +421,54 @@
             const renderContenedor = document.getElementById('combinada-ticket-render'); 
             renderContenedor.innerHTML = ''; ticketsMultiplesGenerados = {};
             
-            // VALIDACIÓN: MÍNIMO 3 PARTIDOS OBLIGATORIOS
             if (baseDeDatosHoy.length < 3) { 
-                renderContenedor.innerHTML = `<p style="padding:40px 20px; text-align:center; color:var(--texto-gris); line-height: 1.6;">⚠️ <b>Cartelera insuficiente:</b> Se necesitan al menos 3 partidos cargados en la cartelera de este deporte para estructurar una Combinada Triple IA de forma óptima.</p>`; return; 
+                renderContenedor.innerHTML = `<p style="padding:40px 20px; text-align:center; color:var(--texto-gris); line-height: 1.6;">⚠️ <b>Cartelera insuficiente:</b> Se necesitan al menos 3 partidos cargados en la cartelera de este deporte para estructurar una Combinada Triple de forma óptima.</p>`; return; 
             }
             
             let idTicket = "cb_riesgo_" + riesgoCombinadaSeleccionado;
             let poolPicks = [];
             let colorBorde = "var(--verde-principal)";
-            let badgeTexto = "🔒 TRIPLE ASEGURADA (SHIELD)";
+            let badgeTexto = "🔒 TRIPLE ASEGURADA";
 
-            // CONFIGURADOR DE PERFILES DE RIESGO DE LAS COMBINADAS (MINIMO 3 PARTIDOS)
+            // Estructura de mercados específicos por deporte para evitar mezclas
+            let mercadosPorDeporte = {
+                futbol: {
+                    asegurada: ["Doble Oportunidad (Local o Empate)", "Más de 1.5 Goles Totales", "Menos de 4.5 Goles Totales"],
+                    moderada: ["Ganador del Partido (1X2)", "Ambos Equipos Anotan: SÍ", "Más de 2.5 Goles Totales"],
+                    arriesgada: ["Ganador Local + Ambos Anotan", "Resultado Exacto Multi-Opción", "Total Corners Más de 10.5"]
+                },
+                basquet: {
+                    asegurada: ["Hándicap Local +7.5 puntos", "Total Puntos: Menos de 230.5", "Hándicap Visitante +9.5 puntos"],
+                    moderada: ["Ganador Directo (Moneyline)", "Total Puntos: Más de 215.5", "Hándicap del Partido (-3.5)"],
+                    arriesgada: ["Ganador Mitad / Final", "Total Puntos Equipo Más de 112.5", "Victoria por margen de 1-5 puntos"]
+                },
+                tenis: {
+                    asegurada: ["Gana al menos 1 Set (Local)", "Total Games: Más de 18.5", "Hándicap de Juegos (+5.5)"],
+                    moderada: ["Ganador del Partido (H2H)", "Total Games: Más de 21.5", "Resultado del 1er Set (Ganador)"],
+                    arriesgada: ["Resultado Exacto en Sets (2-1)", "Menos de 19.5 Games Totales", "Gana ganando el primer set"]
+                }
+            };
+
+            // Obtener el set de mercados correcto según el deporte activo
+            let mercadosDeporteActual = mercadosPorDeporte[deporteActivo] || mercadosPorDeporte['futbol'];
+
             if (riesgoCombinadaSeleccionado === 'asegurada') {
                 colorBorde = "var(--verde-principal)"; badgeTexto = "🔒 TRIPLE ASEGURADA (ALTA PROBABILIDAD)";
-                poolPicks.push({ p: baseDeDatosHoy[0], mercado: "Hándicap/Doble Oportunidad Local", cuota: 1.28 });
-                poolPicks.push({ p: baseDeDatosHoy[1], mercado: "Más de 1.5 goles totales / Más de 18.5 Games", cuota: 1.22 });
-                poolPicks.push({ p: baseDeDatosHoy[2], mercado: "Menos de 4.5 goles / Hándicap Juegos (+5.5)", cuota: 1.25 });
+                poolPicks.push({ p: baseDeDatosHoy[0], mercado: mercadosDeporteActual.asegurada[0], cuota: 1.28 });
+                poolPicks.push({ p: baseDeDatosHoy[1], mercado: mercadosDeporteActual.asegurada[1], cuota: 1.22 });
+                poolPicks.push({ p: baseDeDatosHoy[2], mercado: mercadosDeporteActual.asegurada[2], cuota: 1.25 });
                 
             } else if (riesgoCombinadaSeleccionado === 'arriesgada') {
                 colorBorde = "var(--alerta)"; badgeTexto = "🔥 TRIPLE ARRIESGADA (VALOR AGRESIVO)";
-                poolPicks.push({ p: baseDeDatosHoy[baseDeDatosHoy.length - 1], mercado: "Ganador Directo / Ambos Anotan", cuota: 2.60 });
-                poolPicks.push({ p: baseDeDatosHoy[0], mercado: "Línea de Goles Alta o Triunfo Visitante", cuota: 2.05 });
-                poolPicks.push({ p: baseDeDatosHoy[1], mercado: "Margen de Victoria Ajustado / Total Corners Más 10.5", cuota: 1.95 });
+                poolPicks.push({ p: baseDeDatosHoy[baseDeDatosHoy.length - 1], mercado: mercadosDeporteActual.arriesgada[0], cuota: 2.60 });
+                poolPicks.push({ p: baseDeDatosHoy[0], mercado: mercadosDeporteActual.arriesgada[1], cuota: 2.05 });
+                poolPicks.push({ p: baseDeDatosHoy[1], mercado: mercadosDeporteActual.arriesgada[2], cuota: 1.95 });
                 
-            } else { // Moderada por defecto
+            } else { 
                 colorBorde = "var(--oro)"; badgeTexto = "📊 TRIPLE MODERADA (BALANCED TICKET)";
-                poolPicks.push({ p: baseDeDatosHoy[0], mercado: "Ganador del Partido (Resultado Fijo)", cuota: 1.62 });
-                poolPicks.push({ p: baseDeDatosHoy[1], mercado: "Ambos Equipos Anotan: SÍ / Más 21.5 Games", cuota: 1.68 });
-                poolPicks.push({ p: baseDeDatosHoy[2], mercado: "Línea de Goles Estándar o Más de 8.5 Corners", cuota: 1.55 });
+                poolPicks.push({ p: baseDeDatosHoy[0], mercado: mercadosDeporteActual.moderada[0], cuota: 1.62 });
+                poolPicks.push({ p: baseDeDatosHoy[1], mercado: mercadosDeporteActual.moderada[1], cuota: 1.68 });
+                poolPicks.push({ p: baseDeDatosHoy[2], mercado: mercadosDeporteActual.moderada[2], cuota: 1.55 });
             }
 
             ticketsMultiplesGenerados[idTicket] = poolPicks;
