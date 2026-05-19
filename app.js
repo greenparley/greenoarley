@@ -3,21 +3,20 @@ function generarCombinadaDelDia() {
     if (!contenedor) return;
     contenedor.innerHTML = '';
 
-    // Filtrar partidos del deporte activo que tengan cuotas válidas
+    // Filtrar partidos del deporte activo con cuotas válidas
     let partidosValidos = partidosDisponibles.filter(p => {
         if (deporteActivo === 'futbol' || deporteActivo === 'tenis') {
             return p.cuotasReales && p.cuotasReales.local && p.cuotasReales.visita;
         }
-        return true; // Básquet usa simulación
+        return true; 
     });
 
     if (partidosValidos.length < 3) {
-        contenedor.innerHTML = `<div class="alerta-error">Se necesitan al menos 3 partidos de ${deporteActivo.toUpperCase()} para armar las combinadas.</div>`;
+        contenedor.innerHTML = `<div class="alerta-error">Se necesitan al menos 3 partidos para armar las combinadas.</div>`;
         return;
     }
 
-    // Los 3 niveles de la app: Todos basados en lógica viable y realista
-    const nivelesRiesgo = ['asegurada', 'moderada', 'arriesgada'];
+    const nivelesRiesgo = ['asegurada', 'moderada', 'premium'];
 
     nivelesRiesgo.forEach((riesgo, index) => {
         let partidosMezclados = [...partidosValidos].sort(() => 0.5 - Math.random());
@@ -28,7 +27,6 @@ function generarCombinadaDelDia() {
         let colorBorde = '';
         let badgeTexto = '';
 
-        // Configuración visual de las tarjetas
         if (riesgo === 'asegurada') {
             colorBorde = "var(--verde-principal)";
             badgeTexto = `🛡️ TRIPLE ULTRA ASEGURADA (Opción ${index + 1})`;
@@ -36,8 +34,8 @@ function generarCombinadaDelDia() {
             colorBorde = "var(--oro)";
             badgeTexto = `📊 TRIPLE ESTÁNDAR / PROBABLE (Opción ${index + 1})`;
         } else {
-            colorBorde = "#00b4d8"; // Azul premium para despegarlo de la palabra "peligro"
-            badgeTexto = `💎 TRIPLE PREMIUM / ALTO RENDIMIENTO (Opción ${index + 1})`;
+            colorBorde = "#00b4d8"; 
+            badgeTexto = `💎 TRIPLE PREMIUM / VALOR LÓGICO (Opción ${index + 1})`;
         }
 
         seleccionados.forEach(p => {
@@ -47,91 +45,86 @@ function generarCombinadaDelDia() {
             let cLocal = p.cuotasReales?.local ? parseFloat(p.cuotasReales.local) : 1.85;
             let cVisita = p.cuotasReales?.visita ? parseFloat(p.cuotasReales.visita) : 1.85;
             
-            // IDENTIFICACIÓN ESTRICTA DEL FAVORITO REAL
+            // IDENTIFICACIÓN DEL FAVORITO REAL
             let esFavLocal = cLocal <= cVisita;
             let cuotaFav = esFavLocal ? cLocal : cVisita;
             let nameFav = esFavLocal ? nombreLocal : nombreVisita;
+
+            // REGLA DE ORO: Si paga más de 1.65, NO es un favorito seguro, es un partido parejo.
+            let hayFavoritoClaro = cuotaFav <= 1.65;
 
             let pickMercado = '';
             let pickCuota = 1.30;
 
             // =================================================================
-            // ALGORITMO ANTI-BATACAZOS: FILTRADO POR CLASIFICACIÓN DE RIESGO
+            // ALGORITMO 100% ANTI-BATACAZOS
             // =================================================================
             
             if (riesgo === 'asegurada') {
-                // Nivel 1: Opciones lógicas de piso (Cuotas objetivo: 1.18 a 1.32)
                 if (deporteActivo === 'futbol') {
-                    // Doble oportunidad matemática adaptada al favorito real
-                    pickMercado = `Doble Oportunidad: Gana o Empata ${nameFav}`;
-                    let calculoDO = 1 + (cuotaFav - 1) * 0.35;
-                    pickCuota = parseFloat(Math.max(1.18, Math.min(1.32, calculoDO)).toFixed(2));
+                    pickMercado = `Doble Oportunidad: Gana/Empata ${nameFav}`;
+                    pickCuota = parseFloat(Math.max(1.15, Math.min(1.28, 1 + (cuotaFav - 1) * 0.35)).toFixed(2));
                 } else if (deporteActivo === 'tenis') {
-                    // En tenis, el favorito lógicamente ganará al menos un set de tres
-                    pickMercado = `Hándicap: ${nameFav} gana 1+ Set en el partido`;
-                    let calculoSet = 1 + (cuotaFav - 1) * 0.20;
-                    pickCuota = parseFloat(Math.max(1.15, Math.min(1.28, calculoSet)).toFixed(2));
+                    pickMercado = `Hándicap: ${nameFav} gana 1+ Set`;
+                    pickCuota = 1.18;
                 } else {
-                    pickMercado = `Total Puntos: Más de 204.5 Puntos Totales`; 
-                    pickCuota = 1.26;
+                    pickMercado = `Total Puntos: Más de 204.5 Puntos`; pickCuota = 1.22;
                 }
             } 
             
             else if (riesgo === 'moderada') {
-                // Nivel 2: Favoritos estables o mercados consolidados (Cuotas objetivo: 1.35 a 1.65)
                 if (deporteActivo === 'futbol') {
-                    // Solo arriesga ganador directo si el favorito es sumamente claro en los papeles
-                    if (cuotaFav <= 1.70) {
+                    if (hayFavoritoClaro) {
                         pickMercado = `Ganador Directo: Gana ${nameFav}`; 
                         pickCuota = cuotaFav;
                     } else {
-                        // Si el partido tiende a la paridad, se refugia en una línea de goles muy factible
-                        pickMercado = `Total de Goles: Más de 1.5 Goles en el Partido`; 
-                        pickCuota = 1.36;
+                        pickMercado = `Total de Goles: Más de 1.5 Goles`; 
+                        pickCuota = 1.35; // Mercado ultra probable
                     }
                 } else if (deporteActivo === 'tenis') {
-                    if (cuotaFav <= 1.60) {
-                        pickMercado = `Ganador del Partido: Gana ${nameFav}`; 
+                    if (hayFavoritoClaro) {
+                        pickMercado = `Gana el Partido: ${nameFav}`; 
                         pickCuota = cuotaFav;
                     } else {
-                        pickMercado = `Hándicap de Sets: ${nameFav} +1.5 Sets`; 
-                        pickCuota = 1.42;
+                        pickMercado = `Games Totales: Más de 19.5 Games`; 
+                        pickCuota = 1.38;
                     }
                 } else {
-                    pickMercado = `Total Puntos: Más de 211.5 Puntos Totales`; 
-                    pickCuota = 1.52;
+                    pickMercado = `Total Puntos: Más de 211.5 Puntos`; pickCuota = 1.45;
                 }
             } 
             
-            else if (riesgo === 'arriesgada') {
-                // Nivel 3: Valor Premium Inteligente (Cuotas objetivo: 1.50 a 1.95 MÁXIMO por selección)
+            else if (riesgo === 'premium') {
+                // Acá levantamos la cuota combinando mercados lógicos, NUNCA eligiendo ganadores inciertos.
                 if (deporteActivo === 'futbol') {
-                    if (cuotaFav <= 1.95) {
-                        // Sigue siendo una cuota que favorece al candidato lógico
-                        pickMercado = `Ganador Directo: Gana ${nameFav}`; 
-                        pickCuota = cuotaFav;
+                    if (hayFavoritoClaro) {
+                        // El equipo es muy bueno, le sumamos la condición de que haya al menos 2 goles en el partido
+                        pickMercado = `Gana ${nameFav} y Más de 1.5 Goles en el partido`; 
+                        pickCuota = parseFloat((cuotaFav * 1.25).toFixed(2)); 
                     } else {
-                        // Mismatch absoluto o empate técnico: Se protege con una Doble Oportunidad bien paga del leve favorito
-                        pickMercado = `Doble Oportunidad: Gana o Empata ${nameFav}`;
-                        let calculoDOPremium = 1 + (cuotaFav - 1) * 0.45;
-                        pickCuota = parseFloat(Math.max(1.42, Math.min(1.65, calculoDOPremium)).toFixed(2));
+                        // Partido parejo. Huimos del ganador y vamos a una Doble Oportunidad sólida con goles.
+                        pickMercado = `Doble Oportunidad: Gana/Empata ${nameFav} y Más de 1.5 Goles`;
+                        pickCuota = 1.65;
                     }
                 } 
                 else if (deporteActivo === 'tenis') {
-                    if (cuotaFav <= 1.85) {
-                        pickMercado = `Ganador del Partido: Gana ${nameFav}`; 
-                        pickCuota = cuotaFav;
+                    if (hayFavoritoClaro) {
+                        pickMercado = `Gana ${nameFav} y Menos de 24.5 Games Totales`; 
+                        pickCuota = parseFloat((cuotaFav * 1.20).toFixed(2));
                     } else {
-                        // Si el partido de tenis es extremadamente parejo, garantizan un desarrollo largo de puntos
-                        pickMercado = `Games Totales: Más de 20.5 Games Totales`; 
-                        pickCuota = 1.68;
+                        // Partido peleado: Vamos a que hay un desarrollo estándar
+                        pickMercado = `Games Totales: Más de 21.5 Games Totales`; 
+                        pickCuota = 1.70;
                     }
                 } 
                 else {
                     pickMercado = `Total Puntos: Más de 217.5 Puntos Totales`; 
-                    pickCuota = 1.78;
+                    pickCuota = 1.75;
                 }
             }
+
+            // Tope de seguridad: Ninguna selección individual superará jamás cuota 1.85
+            if (pickCuota > 1.85) pickCuota = 1.75;
 
             cuotaTotalCombinada *= pickCuota;
 
@@ -148,7 +141,6 @@ function generarCombinadaDelDia() {
             `;
         });
 
-        // Crear y montar el componente visual del ticket
         const tarjetaTicket = document.createElement('div');
         tarjetaTicket.className = 'tarjeta-combinada-completa';
         tarjetaTicket.style.borderTop = `4px solid ${colorBorde}`;
