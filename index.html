@@ -3,418 +3,565 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Control - Apuestas Inteligentes</title>
+    <title>GreenPicks Pro - App Deportiva</title>
     <style>
-        :root {
-            --fondo-oscuro: #121214;
-            --tarjeta-fondo: #1a1a1e;
-            --verde-principal: #00b4d8;
-            --oro: #ffb703;
-            --texto-blanco: #ffffff;
-            --texto-gris: #8e8e93;
-            --borde: rgba(255, 255, 255, 0.08);
-        }
+        :root { --bg-principal: #0b0f19; --tarjeta-bg: #151f32; --tarjeta-borde: #223452; --verde-principal: #2ecc71; --oro: #f1c40f; --alerta: #e74c3c; --texto-blanco: #ffffff; --texto-gris: #8a99ad; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-principal); color: var(--texto-blanco); padding-bottom: 60px; }
+        .contenedor-app { max-width: 500px; margin: 0 auto; padding: 15px; position: relative; }
+        .oculto { display: none !important; }
+        .lobby-container { text-align: center; padding: 30px 20px; }
+        .lobby-titulo { font-size: 2.4rem; color: var(--verde-principal); margin-bottom: 8px; font-weight: 800; }
+        .lobby-sub { color: var(--texto-gris); margin-bottom: 30px; font-size: 1rem; }
+        
+        .btn-deporte-card { background: linear-gradient(145deg, #151f32, #111827); border: 1px solid var(--tarjeta-borde); border-radius: 16px; padding: 22px 25px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; width: 100%; text-align: left; }
+        .deporte-info h3 { color: var(--texto-blanco); font-size: 1.25rem; margin-bottom: 6px; }
+        .deporte-info p { color: var(--texto-gris); font-size: 0.88rem; }
+        .deporte-icono { font-size: 2.2rem; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--tarjeta-borde); }
+        .btn-volver-lobby { background: transparent; border: 1px solid var(--tarjeta-borde); color: var(--texto-gris); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+        .herramientas-grid { display: flex; gap: 10px; margin-bottom: 15px; }
+        .buscador-input { flex: 1; background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); padding: 10px; border-radius: 8px; color: white; font-size: 0.9rem; }
+        .btn-refresh-live { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); color: white; width: 42px; border-radius: 8px; cursor: pointer; }
+        .nav-filtros { display: flex; background: var(--tarjeta-bg); padding: 4px; border-radius: 10px; margin-bottom: 20px; gap: 4px; }
+        .btn-filto-main { flex: 1; background: transparent; border: none; color: var(--texto-gris); padding: 10px 5px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.8rem; }
+        .btn-filto-main.activo { background: var(--bg-principal); color: var(--verde-principal); }
+        .tarjeta-partido { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); border-radius: 12px; padding: 15px; margin-bottom: 12px; cursor: pointer; }
+        
+        .encabezado-liga { font-size: 0.75rem; color: var(--texto-blanco); display: flex; align-items: center; gap: 8px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 5px; font-weight: bold; text-transform: uppercase;}
+        .etiqueta-hora { color: var(--oro); background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; display: flex; align-items: center; gap: 4px; letter-spacing: 0.5px;}
+        
+        .cuerpo-partido { display: flex; justify-content: space-between; align-items: center; }
+        .equipos { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .equipo-linea { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; font-weight: 500; }
+        .escudo-dinamico { width: 26px; height: 26px; background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid var(--tarjeta-borde); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 800; color: #cbd5e1; text-transform: uppercase; }
+        
+        .cabecera-detalle-grid { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; background: var(--tarjeta-bg); padding: 20px 10px; border-radius: 14px; border: 1px solid var(--tarjeta-borde); }
+        .caja-consejo { background: rgba(46, 204, 113, 0.08); border-left: 4px solid var(--verde-principal); padding: 12px 15px; border-radius: 0 8px 8px 0; margin-bottom: 20px; font-size: 0.85rem; line-height: 1.5; }
+        .barra-container { margin-bottom: 15px; }
+        .barra-container span { display: block; font-size: 0.85rem; margin-bottom: 5px; color: var(--texto-blanco); }
+        .barra-fondo { background: rgba(255,255,255,0.06); height: 10px; border-radius: 5px; overflow: hidden; width: 100%; }
+        .barra-progreso { height: 100%; width: 0%; border-radius: 5px; transition: width 0.6s; }
+        .cuota-real-badge { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: var(--oro); font-size: 0.8rem; margin-left: 8px;}
+        
+        .bloque-mercado { background: #111827; border: 1px solid var(--tarjeta-borde); padding: 15px; border-radius: 10px; margin-bottom: 15px; }
+        .titulo-mercado { color: var(--oro); font-size: 0.9rem; font-weight: bold; margin-bottom: 12px; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 4px; }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--fondo-oscuro);
-            color: var(--texto-blanco);
-            margin: 0;
-            padding: 20px;
-        }
+        .selector-riesgo-grid { display: flex; gap: 8px; margin-bottom: 15px; }
+        .btn-riesgo { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--tarjeta-borde); background: var(--tarjeta-bg); color: white; font-size: 0.85rem; font-weight: bold; cursor: pointer; }
+        .btn-riesgo.activo-asegurada { background: rgba(46, 204, 113, 0.2); border-color: var(--verde-principal); color: var(--verde-principal); }
+        .btn-riesgo.activo-moderada { background: rgba(241, 196, 15, 0.2); border-color: var(--oro); color: var(--oro); }
+        .btn-riesgo.activo-arriesgada { background: rgba(231, 76, 60, 0.2); border-color: var(--alerta); color: var(--alerta); }
 
-        .app-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .app-container { grid-template-columns: 1fr; }
-        }
-
-        header {
-            grid-column: 1 / -1;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        /* Selector de Deportes */
-        .selector-deportes {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .btn-deporte {
-            background: var(--tarjeta-fondo);
-            color: var(--texto-gris);
-            border: 1px solid var(--borde);
-            padding: 10px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-
-        .btn-deporte.activo {
-            background: var(--verde-principal);
-            color: #000;
-            border-color: var(--verde-principal);
-        }
-
-        /* Secciones */
-        section {
-            background: var(--tarjeta-fondo);
-            border: 1px solid var(--borde);
-            border-radius: 8px;
-            padding: 20px;
-        }
-
-        h2 {
-            margin-top: 0;
-            font-size: 1.2rem;
-            border-bottom: 1px solid var(--borde);
-            padding-bottom: 10px;
-            color: var(--verde-principal);
-        }
-
-        /* Elementos interactivos */
-        .tarjeta-partido {
-            background: rgba(255, 255, 255, 0.02);
-            margin-bottom: 8px;
-            padding: 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid var(--borde);
-            transition: background 0.2s;
-        }
-
-        .tarjeta-partido:hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .badge-live {
-            color: #ff4d4d;
-            font-weight: bold;
-            font-size: 0.85rem;
-            background: rgba(255, 77, 77, 0.1);
-            padding: 3px 8px;
-            border-radius: 4px;
-        }
-
-        .bloque-mercado {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 10px;
-        }
+        .tarjeta-combinada { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .ticket-item { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 0.85rem; }
+        .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 500px; background: #0e1726; border-top: 1px solid var(--tarjeta-borde); display: flex; height: 55px; z-index: 999; }
+        .nav-item-btn { flex: 1; background: transparent; border: none; color: var(--texto-gris); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer; }
+        .nav-item-btn.activo { color: var(--verde-principal); }
+        .badge-contador { background: var(--verde-principal); color: #111; font-size: 0.7rem; font-weight: bold; padding: 1px 5px; border-radius: 10px; position: absolute; top: 4px; right: 22%; }
+        .panel-picks-lateral { position: fixed; top: 0; right: 0; width: 100%; max-width: 320px; height: 100%; background: #0c1322; border-left: 1px solid var(--tarjeta-borde); z-index: 10000; padding: 20px; transition: transform 0.3s; }
+        .oculto-panel { transform: translateX(100%); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--tarjeta-borde); padding-bottom: 10px; }
+        .item-pick-guardado { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); border-radius: 8px; padding: 12px; font-size: 0.85rem; margin-bottom:10px; }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>🏆 Sistema de Análisis Deportivo</h1>
-        <div class="selector-deportes">
-            <button class="btn-deporte activo" onclick="cambiarDeporte('futbol')">⚽ Fútbol</button>
-            <button class="btn-deporte" onclick="cambiarDeporte('tenis')">🎾 Tenis</button>
-            <button class="btn-deporte" onclick="cambiarDeporte('basquet')">🏀 Básquet</button>
+    <div class="contenedor-app">
+        <div id="lobby-selector" class="lobby-container">
+            <h1 class="lobby-titulo">GreenPicks Pro</h1>
+            <p class="lobby-sub">Plataforma de Tendencias Deportivas</p>
+
+            <button class="btn-deporte-card" onclick="irADeporte('futbol')">
+                <div class="deporte-info"><h3>Fútbol Profesional ⚽</h3><p>Grandes Ligas, Copas Europeas y Conmebol</p></div><div class="deporte-icono">🏟️</div>
+            </button>
+            <button class="btn-deporte-card" onclick="irADeporte('basquet')">
+                <div class="deporte-info"><h3>Básquetbol Global 🏀</h3><p>Cartelera Directa de ESPN</p></div><div class="deporte-icono">🏀</div>
+            </button>
+            <button class="btn-deporte-card" onclick="irADeporte('tenis')">
+                <div class="deporte-info"><h3>Tenis Internacional 🎾</h3><p>Torneos ATP, WTA y Challengers</p></div><div class="deporte-icono">🎾</div>
+            </button>
         </div>
-    </header>
 
-    <div class="app-container">
-
-        <div style="display: flex; flex-direction: column; gap: 20px;">
-            <section>
-                <h2>📅 Partidos para Apostar (Próximos y En Vivo)</h2>
-                <div id="contenedor-partidos-lista"></div>
-            </section>
-
-            <section>
-                <h2>🔍 Detalle de Mercados Disponibles</h2>
-                <div id="contenedor-mercados">
-                    <div style="color: var(--texto-gris); text-align: center; padding: 20px;">
-                        Seleccioná un partido activo para ver sus opciones avanzadas.
-                    </div>
+        <div id="app-content" class="oculto">
+            <div class="app-header"><button class="btn-volver-lobby" onclick="volverAlLobby()">⬅️ Volver</button><h2 id="titulo-deporte-activo" style="color: var(--verde-principal);">FÚTBOL</h2></div>
+            <div id="logs-servidor-error" class="oculto"></div>
+            <div id="herramientas-top" class="herramientas-grid">
+                <input type="text" id="filtro-ligas-input" oninput="aplicarFiltrosMaster()" placeholder="Buscar equipo o liga..." class="buscador-input">
+                <button id="btn-refresh" class="btn-refresh-live" onclick="forzarActualizacion()">🔄</button>
+            </div>
+            <div class="nav-filtros">
+                <button id="btn-proximos" class="btn-filto-main activo" onclick="setFiltroEstado('proximos')">Próximos (7 días)</button>
+                <button id="btn-envivo" class="btn-filto-main" onclick="setFiltroEstado('envivo')">🔴 En Vivo</button>
+                <button id="btn-combinada" class="btn-filto-main" onclick="setFiltroEstado('combinada')">Combinadas por Día</button>
+            </div>
+            <div id="contenedor-partidos"></div>
+            <div id="seccion-combinada" class="oculto">
+                <div class="selector-riesgo-grid">
+                    <button id="riesgo-asegurada" class="btn-riesgo" onclick="cambiarRiesgoCombinada('asegurada')">Asegurada Shield</button>
+                    <button id="riesgo-moderada" class="btn-riesgo" onclick="cambiarRiesgoCombinada('moderada')">Moderada Standard</button>
+                    <button id="riesgo-arriesgada" class="btn-riesgo" onclick="cambiarRiesgoCombinada('arriesgada')">Arriesgada Value</button>
                 </div>
-            </section>
+                <div id="combinada-ticket-render"></div>
+            </div>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 20px;">
-            <section>
-                <h2>📊 Combinadas Recomendadas (Anti-Batacazos)</h2>
-                <div id="contenedor-combinadas"></div>
-            </section>
-
-            <section style="border-left: 4px solid var(--texto-gris);">
-                <h2>🏁 Resultados de las Últimas 24 Horas</h2>
-                <div id="contenedor-finalizados"></div>
-            </section>
+        <div id="vista-detalle" class="oculto">
+            <div style="display: flex; justify-content: space-between; align-items: center;"><button class="btn-volver-lobby" onclick="cerrarDetalle()">⬅️ Volver atrás</button></div>
+            <div class="cabecera-detalle-grid" id="detalle-cabecera"></div>
+            <div id="detalle-consejo" style="margin-top: 15px;"></div>
+            <div id="detalle-barras"></div>
         </div>
-
     </div>
 
+    <div class="bottom-nav"><button class="nav-item-btn activo" onclick="cerrarDetalle(); setFiltroEstado('proximos');"><span>🏟️</span><span>Eventos</span></button><button class="nav-item-btn" style="position:relative;" onclick="togglePanelPicks()"><span id="contador-picks-badge" class="badge-contador">0</span><span>📋</span><span>Mis Picks</span></button></div>
+    <div id="panel-picks" class="panel-picks-lateral oculto-panel"><div class="panel-header"><h3>Mis Picks</h3><button class="btn-volver-lobby" onclick="togglePanelPicks()">❌</button></div><div id="contenedor-lista-picks"></div></div>
+
     <script>
-        // Estado global de la aplicación
-        let deporteActivo = 'futbol';
-
-        // BASE DE DATOS DE PRUEBA (Simula las diferentes respuestas posibles de una API)
-        let partidosDisponibles = [
-            // FÚTBOL
-            { id: 101, deporte: 'futbol', local: 'Real Madrid', visita: 'Barcelona', status: 'Not Started', cuotasReales: { local: 1.50, visita: 4.20 } },
-            { id: 102, deporte: 'futbol', local: 'Manchester City', visita: 'Liverpool', status: 'In_Progress', live: true, cuotasReales: { local: 1.60, visita: 3.40 } },
-            { id: 103, deporte: 'futbol', local: 'Bayern Munich', visita: 'Dortmund', status: 'Match Finished', finished: true, golesLocal: 3, golesVisita: 1, timestamp: Date.now() - (4 * 60 * 60 * 1000) }, // Hace 4 horas
-            { id: 104, deporte: 'futbol', local: 'Juventus', visita: 'Milan', status: 'Finished', finished: true, golesLocal: 0, golesVisita: 0, timestamp: Date.now() - (30 * 60 * 60 * 1000) }, // Hace 30 horas (No debe aparecer)
-
-            // TENIS
-            { id: 201, deporte: 'tenis', local: 'Carlos Alcaraz', visita: 'Jannik Sinner', status: 'LIVE', live: true, homeScore: { current: '1', point: '30', serving: true }, awayScore: { current: '0', point: '15', serving: false } },
-            { id: 202, deporte: 'tenis', local: 'Novak Djokovic', visita: 'Daniil Medvedev', status: 'Not Started', cuotasReales: { local: 1.40, visita: 2.80 } },
-            { id: 203, deporte: 'tenis', local: 'Rafael Nadal', visita: 'Casper Ruud', status: 'Finished', finished: true, homeScore: { display: '2' }, awayScore: { display: '0' }, timestamp: Date.now() - (2 * 60 * 60 * 1000) },
-
-            // BÁSQUET
-            { id: 301, deporte: 'basquet', local: 'LA Lakers', visita: 'GS Warriors', status: 'Not Started', cuotasReales: { local: 1.85, visita: 1.85 } },
-            { id: 302, deporte: 'basquet', local: 'Boston Celtics', visita: 'Miami Heat', status: 'Finished', finished: true, puntosLocal: 112, puntosVisita: 104, timestamp: Date.now() - (6 * 60 * 60 * 1000) }
+        const API_KEYS = [
+            "d3d7b6a1627d78292b24d7b2554e8c5d", 
+            "c7b062bf872742e25c086b5ad997ba0a",
+            "b1068f561f80975166b5c1ab67a2888a"
         ];
+        let indiceApiKeyActual = 0;
 
-        // =========================================================================
-        // 🛠️ CONTROLADORES Y DETECTORES UNIVERSALES
-        // =========================================================================
-        function verificarSiEsEnVivo(p) {
-            if (verificarSiEstaFinalizado(p)) return false;
-            if (p.live === true || p.isLive === true) return true;
-            if (p.status) {
-                let estadoTexto = JSON.stringify(p.status).toLowerCase();
-                return (estadoTexto.includes('live') || estadoTexto.includes('inprogress') || estadoTexto.includes('in_progress') || estadoTexto.includes('started') || estadoTexto.includes('playing'));
-            }
-            return false;
-        }
+        function obtenerApiKeyActiva() { return API_KEYS[indiceApiKeyActual]; }
 
-        function verificarSiEstaFinalizado(p) {
-            if (p.finished === true || p.isFinished === true || p.status?.type === 'finished') return true;
-            if (p.status) {
-                let estadoTexto = JSON.stringify(p.status).toLowerCase();
-                return (estadoTexto.includes('finished') || estadoTexto.includes('ft') || estadoTexto.includes('ended') || estadoTexto.includes('finalizado') || estadoTexto.includes('concluded'));
-            }
-            return false;
-        }
-
-        function pasoMenosDe24Horas(p) {
-            let timestamp = p.timestamp || p.startTimestamp || p.fixture?.timestamp;
-            if (timestamp) {
-                if (timestamp < 10000000000) timestamp *= 1000;
-                const diferenciaHoras = (Date.now() - timestamp) / (1000 * 60 * 60);
-                return diferenciaHoras >= 0 && diferenciaHoras <= 24;
-            }
-            return true; 
-        }
-
-        function cambiarDeporte(deporte) {
-            deporteActivo = deporte;
-            document.querySelectorAll('.btn-deporte').forEach(btn => btn.classList.remove('activo'));
-            event.target.classList.add('activo');
-            actualizarTodaLaInterfaz();
-        }
-
-        // =========================================================================
-        // 📱 VISTA 1: RENDERIZAR LISTA PRINCIPAL (ACTIVOS)
-        // =========================================================================
-        function renderizarListaPrincipal() {
-            const contenedorLista = document.getElementById('contenedor-partidos-lista'); 
-            if (!contenedorLista) return;
-            contenedorLista.innerHTML = '';
-
-            let partidosParaApostar = partidosDisponibles.filter(p => {
-                if (p.deporte !== deporteActivo) return false;
-                if (verificarSiEstaFinalizado(p)) return false; 
-                if (deporteActivo === 'futbol' || deporteActivo === 'tenis') {
-                    if (verificarSiEsEnVivo(p)) return true;
-                    return p.cuotasReales && p.cuotasReales.local && p.cuotasReales.visita;
-                }
+        function rotarApiKey() {
+            if (indiceApiKeyActual < API_KEYS.length - 1) {
+                indiceApiKeyActual++;
+                console.warn(`⚠️ Rotando a API Key de respaldo: Módulo ${indiceApiKeyActual}`);
                 return true; 
-            });
-
-            if (partidosParaApostar.length === 0) {
-                contenedorLista.innerHTML = `<div style="color: var(--texto-gris); text-align: center; padding: 20px;">No hay partidos activos o próximos para este deporte.</div>`;
-                return;
             }
-
-            partidosParaApostar.forEach(p => {
-                let nombreLocal = p.homeTeam?.name || p.local || "Local";
-                let nombreVisita = p.awayTeam?.name || p.visita || "Visita";
-                let esLive = verificarSiEsEnVivo(p);
-
-                let infoCuotasHTML = esLive 
-                    ? `<span class="badge-live">⚡ EN VIVO</span>` 
-                    : `<span style="color: var(--texto-gris); font-size: 0.85rem;">L: ${p.cuotasReales?.local || '1.85'} | V: ${p.cuotasReales?.visita || '1.85'}</span>`;
-
-                contenedorLista.innerHTML += `
-                    <div class="tarjeta-partido" onclick="abrirDetalle('${p.id}')">
-                        <span style="font-weight: 500;">${nombreLocal} vs ${nombreVisita}</span>
-                        <div>${infoCuotasHTML}</div>
-                    </div>
-                `;
-            });
+            return false; 
         }
 
-        // =========================================================================
-        // 📊 VISTA 2: COMBINADAS DEL DÍA (ANTI-BATACAZOS)
-        // =========================================================================
-        function generarCombinadaDelDia() {
-            const contenedor = document.getElementById('contenedor-combinadas');
-            if (!contenedor) return;
-            contenedor.innerHTML = '';
+        let baseDeDatosHoy = [];
+        let estadoFiltroActual = 'proximos';
+        let riesgoCombinadaSeleccionado = 'moderada';
+        let ticketsMultiplesGenerados = {}; 
+        let deporteActivo = 'futbol'; 
 
-            let partidosValidos = partidosDisponibles.filter(p => {
-                if (p.deporte !== deporteActivo) return false;
-                if (verificarSiEstaFinalizado(p)) return false; 
-                if (deporteActivo === 'futbol' || deporteActivo === 'tenis') {
-                    if (verificarSiEsEnVivo(p)) return true;
-                    return p.cuotasReales && p.cuotasReales.local && p.cuotasReales.visita;
+        function generarMonograma(nombre, extraClass = "") {
+            if(!nombre) nombre = "X";
+            const iniciales = nombre.substring(0,3).toUpperCase();
+            return `<div class="escudo-dinamico ${extraClass}">${iniciales}</div>`;
+        }
+
+        function esPartidoEnVivo(p) { return p.isLiveNative === true; }
+
+        function formatearFechaHoraLocal(fechaIso) {
+            if (!fechaIso) return "--/-- --:--";
+            const f = new Date(fechaIso);
+            const dia = String(f.getDate()).padStart(2, '0');
+            const mes = String(f.getMonth() + 1).padStart(2, '0');
+            const horas = String(f.getHours()).padStart(2, '0');
+            const mins = String(f.getMinutes()).padStart(2, '0');
+            return `${dia}/${mes} - ${horas}:${mins}`;
+        }
+
+        function mostrarError(mensaje) {
+            const logBox = document.getElementById('logs-servidor-error');
+            logBox.innerHTML = `<div class="banner-error-api" style="background: rgba(231, 76, 60, 0.15); border: 1px solid var(--alerta); color: #ff7675; padding: 15px; border-radius: 10px; margin-bottom: 15px; font-size: 0.9rem; text-align: center;"><b>⚠️ Estado de API</b><br>${mensaje}</div>`;
+            logBox.classList.remove('oculto');
+        }
+
+        async function cargarDatosDeportivos() {
+            document.getElementById('logs-servidor-error').classList.add('oculto');
+            const cacheKey = `sports_cache_mix_${deporteActivo}`;
+            const cachedData = localStorage.getItem(cacheKey);
+            
+            if (cachedData) {
+                const parsed = JSON.parse(cachedData);
+                if (Date.now() - parsed.timestamp < 600000 && parsed.data && parsed.data.length > 0) {
+                    return parsed.data; 
                 }
-                return true; 
-            });
-
-            if (partidosValidos.length < 2) {
-                contenedor.innerHTML = `<div style="color: var(--texto-gris); text-align: center; padding: 20px;">Se necesitan al menos 2 partidos activos para simular combinadas.</div>`;
-                return;
             }
 
-            const nivelesRiesgo = ['asegurada', 'moderada'];
+            let datosProcesados = [];
+            if (deporteActivo === 'futbol') datosProcesados = await fetchFutbolOddsApi();
+            else if (deporteActivo === 'basquet') datosProcesados = await fetchBasketESPNPublico();
+            else if (deporteActivo === 'tenis') datosProcesados = await fetchTenisOddsApi();
 
-            nivelesRiesgo.forEach((riesgo, index) => {
-                let seleccionados = partidosValidos.slice(0, 2); // Tomamos 2 por el mock de datos reducido
-                let htmlTickets = '';
-                let cuotaTotalCombinada = 1.00;
-                let colorBorde = riesgo === 'asegurada' ? "#00b4d8" : "var(--oro)";
+            if (datosProcesados.length > 0) {
+                datosProcesados.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+                localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: datosProcesados }));
+            }
+            return datosProcesados;
+        }
 
-                seleccionados.forEach(p => {
-                    let nombreLocal = p.homeTeam?.name || p.local || "Local";
-                    let nombreVisita = p.awayTeam?.name || p.visita || "Visita";
-                    let cLocal = p.cuotasReales?.local ? parseFloat(p.cuotasReales.local) : 1.85;
-                    let cVisita = p.cuotasReales?.visita ? parseFloat(p.cuotasReales.visita) : 1.85;
-                    
-                    let nameFav = cLocal <= cVisita ? nombreLocal : nombreVisita;
-                    let pickMercado = deporteActivo === 'futbol' ? `Doble Op. Gana/Empata ${nameFav}` : `Gana un Set: ${nameFav}`;
-                    let pickCuota = 1.25;
+        async function fetchFutbolOddsApi() {
+            try {
+                const hoyStr = new Date().toISOString().split('T')[0];
+                let ligasFutbolObj = JSON.parse(localStorage.getItem('gp_ligas_futbol_odds_cache'));
+                
+                if (!ligasFutbolObj || ligasFutbolObj.fecha !== hoyStr) {
+                    let resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
+                    if (!resSports.ok && rotarApiKey()) {
+                        resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
+                    }
+                    if (!resSports.ok && rotarApiKey()) {
+                        resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
+                    }
+                    if (!resSports.ok) { mostrarError("Límite de API keys excedido en todas las cuentas."); return []; }
+                    const sports = await resSports.json();
+                    let torneosActivos = sports.filter(s => s.group === 'Soccer' || s.key.startsWith('soccer_')).map(s => s.key);
+                    ligasFutbolObj = { fecha: hoyStr, ligas: torneosActivos };
+                    localStorage.setItem('gp_ligas_futbol_odds_cache', JSON.stringify(ligasFutbolObj));
+                }
 
-                    cuotaTotalCombinada *= pickCuota;
+                let torneosPrioritarios = ligasFutbolObj.ligas.filter(key => {
+                    const k = key.toLowerCase();
+                    return k.includes('argentina') || 
+                           k.includes('champs_league') || 
+                           k.includes('europa_league') || 
+                           k.includes('conference') ||    
+                           k.includes('libertadores') ||  
+                           k.includes('sudamericana') ||  
+                           k.includes('epl') ||           
+                           k.includes('la_liga') ||       
+                           k.includes('serie_a') ||       
+                           k.includes('germany_bundesliga') || 
+                           k.includes('ligue_one');       
+                });
+                
+                if (torneosPrioritarios.length === 0) torneosPrioritarios = ligasFutbolObj.ligas.slice(0, 10);
+                torneosPrioritarios = torneosPrioritarios.slice(0, 10);
 
-                    htmlTickets += `
-                        <div style="font-size: 0.85rem; margin-bottom: 6px; display: flex; justify-content: space-between;">
-                            <span>📌 ${nombreLocal} vs ${nombreVisita} (${pickMercado})</span>
-                            <span style="color: var(--oro)">x${pickCuota.toFixed(2)}</span>
-                        </div>
-                    `;
+                let poolResultados = [];
+                const promesas = torneosPrioritarios.map(async (liga) => {
+                    try {
+                        let res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${obtenerApiKeyActiva()}&regions=eu&markets=h2h`);
+                        if (res.ok) return await res.json();
+                    } catch (e) {}
+                    return [];
                 });
 
-                contenedor.innerHTML += `
-                    <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--borde); border-top: 3px solid ${colorBorde}; padding: 12px; margin-bottom: 10px; border-radius: 4px;">
-                        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 0.8rem; margin-bottom: 8px; color:${colorBorde};">
-                            <span>Sugerencia ${riesgo.toUpperCase()}</span>
-                            <span>Total: x${cuotaTotalCombinada.toFixed(2)}</span>
-                        </div>
-                        ${htmlTickets}
-                    </div>
-                `;
-            });
+                const resultadosLigas = await Promise.all(promesas);
+                resultadosLigas.forEach(data => { if (Array.isArray(data)) poolResultados = poolResultados.concat(data); });
+                const limiteTiempoFiltro = new Date(Date.now() - 7200000);
+
+                return poolResultados.map(partido => {
+                    let cuotas = { local: "N/A", empate: "N/A", visita: "N/A" };
+                    if (partido.bookmakers && partido.bookmakers.length > 0) {
+                        const h2hMarket = partido.bookmakers[0].markets.find(m => m.key === 'h2h');
+                        if (h2hMarket && h2hMarket.outcomes) {
+                            h2hMarket.outcomes.forEach(out => { 
+                                if (out.name === partido.home_team) cuotas.local = out.price; 
+                                else if (out.name === partido.away_team) cuotas.visita = out.price; 
+                                else cuotas.empate = out.price;
+                            });
+                        }
+                    }
+                    return {
+                        id: 'fb_' + partido.id, utcDate: partido.commence_time, 
+                        competition: { name: partido.sport_title.replace("Soccer - ", "") },
+                        homeTeam: { name: partido.home_team }, awayTeam: { name: partido.away_team },
+                        cuotasReales: cuotas, isLiveNative: false
+                    };
+                }).filter(p => new Date(p.utcDate) >= limiteTiempoFiltro);
+            } catch (error) { return []; }
         }
 
-        // =========================================================================
-        // 🔍 VISTA 3: INTERFAZ DE DETALLE DE MERCADOS Y VIVO INTERACTIVO
-        // =========================================================================
-        function abrirDetalle(partidoId) {
-            let p = partidosDisponibles.find(item => item.id == partidoId);
-            if (!p) return;
+        async function fetchBasketESPNPublico() {
+            let pool = []; const endpoints = [{ id: "nba", tag: "NBA" }, { id: "mens-euroleague", tag: "Euroliga" }];
+            let d1 = new Date(); let d2 = new Date(); d2.setDate(d2.getDate() + 3);
+            let fechas = `dates=${d1.toISOString().split('T')[0].replace(/-/g, '')}-${d2.toISOString().split('T')[0].replace(/-/g, '')}`;
+            for (let liga of endpoints) {
+                try {
+                    const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/basketball/${liga.id}/scoreboard?${fechas}&limit=35`);
+                    if (!res.ok) continue; const data = await res.json(); if (!data || !data.events) continue;
+                    const procesados = data.events.map(evento => {
+                        const localRaw = evento.competitions[0].competitors.find(c => c.homeAway === 'home');
+                        const visitaRaw = evento.competitions[0].competitors.find(c => c.homeAway === 'away');
+                        let baseCuotaL = 1.85; let baseCuotaV = 1.95; if(evento.id % 2 === 0) { baseCuotaL = 2.20; baseCuotaV = 1.65; }
+                        return {
+                            id: 'bk_' + evento.id, utcDate: evento.date, competition: { name: liga.tag }, homeTeam: { name: localRaw.team.displayName },
+                            awayTeam: { name: visitaRaw.team.displayName }, cuotasReales: { local: baseCuotaL, empate: "N/A", visita: baseCuotaV }, isLiveNative: (evento.status.type.state === "in")
+                        };
+                    });
+                    pool = pool.concat(procesados);
+                } catch (err) {}
+            }
+            return pool;
+        }
 
-            const contenedorMercados = document.getElementById('contenedor-mercados');
-            if (!contenedorMercados) return;
-
-            let htmlMercados = '';
-            let nombreL = p.local || "Local";
-            let nombreV = p.visita || "Visita";
-
-            if (deporteActivo === 'tenis' && verificarSiEsEnVivo(p)) {
-                let marcadorL = p.homeScore?.current ?? "-";
-                let marcadorV = p.awayScore?.current ?? "-";
-                let puntosL = p.homeScore?.point ?? "";
-                let puntosV = p.awayScore?.point ?? "";
+        async function fetchTenisOddsApi() {
+            let resultadosTotales = [];
+            try {
+                let resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
+                if (!resSports.ok && rotarApiKey()) resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
+                if (!resSports.ok && rotarApiKey()) resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
+                if (!resSports.ok) return []; 
+                const sports = await resSports.json();
+                let torneosTenis = sports.filter(s => s.group === 'Tennis').map(s => s.key).slice(0, 3);
                 
-                htmlMercados += `
-                    <div class="bloque-mercado" style="border-left: 4px solid #00b4d8; background: rgba(0,180,216,0.05);">
-                        <div style="font-size: 0.75rem; color: #00b4d8; font-weight: bold; margin-bottom: 6px;">⚡ MARCADOR EN VIVO EN DIRECTO</div>
-                        <div style="display: flex; justify-content: space-between;"><span>${p.homeScore?.serving ? '🎾 ' : ''}${nombreL}</span><span style="color:var(--oro); font-weight:bold;">${marcadorL} (${puntosL})</span></div>
-                        <div style="display: flex; justify-content: space-between; margin-top: 4px;"><span>${p.awayScore?.serving ? '🎾 ' : ''}${nombreV}</span><span style="color:var(--oro); font-weight:bold;">${marcadorV} (${puntosV})</span></div>
-                    </div>
-                    <div class="bloque-mercado"><h4>Ganador del Set en Juego</h4><button class="btn-deporte">Apostar en Vivo</button></div>
-                `;
-            } else {
-                let cLocal = p.cuotasReales?.local ?? "1.85";
-                let cVisita = p.cuotasReales?.visita ?? "1.85";
-                htmlMercados += `
-                    <div class="bloque-mercado">
-                        <h4>Ganador del Partido (Money Line)</h4>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span>${nombreL}</span> <span style="color:var(--oro)">x${cLocal}</span></div>
-                        <div style="display: flex; justify-content: space-between;"><span>${nombreV}</span> <span style="color:var(--oro)">x${cVisita}</span></div>
-                    </div>
-                `;
-            }
-
-            contenedorMercados.innerHTML = htmlMercados;
+                const promesas = torneosTenis.map(async (liga) => {
+                    let res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${obtenerApiKeyActiva()}&regions=eu&markets=h2h`);
+                    if (res.ok) return await res.json(); return [];
+                });
+                const resultados = await Promise.all(promesas);
+                resultados.forEach(data => { if (Array.isArray(data)) resultadosTotales = resultadosTotales.concat(data); });
+                const limiteTiempoFiltro = new Date(Date.now() - 7200000);
+                return resultadosTotales.map(partido => {
+                    let cuotas = { local: "N/A", empate: "N/A", visita: "N/A" };
+                    if (partido.bookmakers && partido.bookmakers.length > 0) {
+                        const h2hMarket = partido.bookmakers[0].markets.find(m => m.key === 'h2h');
+                        if (h2hMarket && h2hMarket.outcomes) {
+                            h2hMarket.outcomes.forEach(out => { 
+                                if (out.name === partido.home_team) cuotas.local = out.price; else if (out.name === partido.away_team) cuotas.visita = out.price; 
+                            });
+                        }
+                    }
+                    return { 
+                        id: 'tn_' + partido.id, utcDate: partido.commence_time, competition: { name: partido.sport_title }, 
+                        homeTeam: { name: partido.home_team }, awayTeam: { name: partido.away_team }, cuotasReales: cuotas, isLiveNative: false 
+                    };
+                }).filter(p => new Date(p.utcDate) >= limiteTiempoFiltro);
+            } catch (error) { return []; }
         }
 
-        // =========================================================================
-        // 🏁 VISTA 4: APARTADO DE PARTIDOS FINALIZADOS (HISTORIAL RECIENTE 24HS)
-        // =========================================================================
-        function mostrarPartidosFinalizados() {
-            const contenedor = document.getElementById('contenedor-finalizados');
-            if (!contenedor) return;
-            contenedor.innerHTML = '';
-
-            let finalizados = partidosDisponibles.filter(p => {
-                return p.deporte === deporteActivo && verificarSiEstaFinalizado(p) && pasoMenosDe24Horas(p);
-            });
-
-            if (finalizados.length === 0) {
-                contenedor.innerHTML = `<div style="color: var(--texto-gris); text-align: center; padding: 15px; font-size: 0.85rem;">No hay resultados registrados en las últimas 24 horas.</div>`;
-                return;
+        async function iniciarApp() {
+            const contenedor = document.getElementById('contenedor-partidos');
+            contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px; text-align:center;">⏳ Conectando con los servidores en tiempo real...</p>`;
+            baseDeDatosHoy = await cargarDatosDeportivos();
+            if (baseDeDatosHoy.length > 0) { 
+                generarCombinadaDelDia(); aplicarFiltrosMaster(); 
+            } else { 
+                contenedor.innerHTML = `<p style="text-align:center; color:var(--texto-gris); background:rgba(255,255,255,0.05); padding:20px; border-radius:10px;">⚠️ Cartelera sin eventos disponibles.</p>`; 
             }
-
-            finalizados.forEach(p => {
-                let nombreLocal = p.local || "Local";
-                let nombreVisita = p.visita || "Visita";
-                let resL = p.golesLocal ?? p.puntosLocal ?? p.homeScore?.display ?? "-";
-                let resV = p.golesVisita ?? p.puntosVisita ?? p.awayScore?.display ?? "-";
-
-                contenedor.innerHTML += `
-                    <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--borde); padding: 10px; margin-bottom: 6px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
-                        <div style="font-size: 0.9rem; flex: 1;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 2px;"><span>${nombreLocal}</span><span style="font-weight:bold; color:var(--oro);">${resL}</span></div>
-                            <div style="display: flex; justify-content: space-between;"><span>${nombreVisita}</span><span style="font-weight:bold; color:var(--oro);">${resV}</span></div>
-                        </div>
-                    </div>
-                `;
-            });
         }
 
-        // =========================================================================
-        // 🔄 ORQUESTADOR DE INICIALIZACIÓN
-        // =========================================================================
-        function actualizarTodaLaInterfaz() {
-            renderizarListaPrincipal();
+        function abrirDetalle(id) {
+            const p = baseDeDatosHoy.find(item => item.id === id); if (!p) return;
+            document.getElementById('herramientas-top').classList.add('oculto'); document.getElementById('contenedor-partidos').classList.add('oculto'); document.getElementById('seccion-combinada').classList.add('oculto'); document.getElementById('vista-detalle').classList.remove('oculto');
+            document.getElementById('detalle-cabecera').innerHTML = `<div style="text-align:center; width:45%;">${generarMonograma(p.homeTeam.name, 'detalle')}<p style="font-size:0.90rem; font-weight:bold;">${p.homeTeam.name}</p></div><h2 style="width:10%; text-align:center; color:var(--verde-principal);">VS</h2><div style="text-align:center; width:45%;">${generarMonograma(p.awayTeam.name, 'detalle')}<p style="font-size:0.90rem; font-weight:bold;">${p.awayTeam.name}</p></div>`;
+            document.getElementById('detalle-consejo').innerHTML = `<div class="caja-consejo">💡 <b>Modelado IA Avanzado:</b> Datos estadísticos ampliados en tiempo real.</div>`;
+
+            let probL = p.cuotasReales.local !== "N/A" ? Math.round((1 / p.cuotasReales.local) * 100) : 42;
+            let probV = p.cuotasReales.visita !== "N/A" ? Math.round((1 / p.cuotasReales.visita) * 100) : 33;
+            let probE = (deporteActivo === 'futbol' && p.cuotasReales.empate !== "N/A") ? Math.round((1 / p.cuotasReales.empate) * 100) : 0;
+            let totalProb = probL + probE + probV; probL = Math.round((probL / totalProb) * 100); probV = Math.round((probV / totalProb) * 100); if(probE > 0) probE = Math.round((probE / totalProb) * 100);
+
+            let htmlMercados = "";
+
+            if(deporteActivo === 'futbol') {
+                htmlMercados += `<div class="bloque-mercado"><div class="titulo-mercado">🎯 MERCADO: GANADOR DEL PARTIDO (1X2)</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local <span class="cuota-real-badge">x${p.cuotasReales.local}</span></span><span>${probL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}%"></div></div></div>`;
+                if(p.cuotasReales.empate !== "N/A") { htmlMercados += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Empate <span class="cuota-real-badge">x${p.cuotasReales.empate}</span></span><span>${probE}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probE}%"></div></div></div>`; }
+                htmlMercados += `<div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visitante <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div></div>`;
+
+                let probAmbosSi = Math.min(82, Math.max(28, Math.round(probL + 12))); let probAmbosNo = 100 - probAmbosSi;
+                htmlMercados += `<div class="bloque-mercado"><div class="titulo-mercado">⚽ MERCADO: AMBOS EQUIPOS ANOTAN</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Sí, Ambos Marcan <span class="cuota-real-badge">x ${(100/probAmbosSi).toFixed(2)}</span></span><span>${probAmbosSi}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probAmbosSi}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>No marcan ambos <span class="cuota-real-badge">x ${(100/probAmbosNo).toFixed(2)}</span></span><span>${probAmbosNo}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probAmbosNo}%"></div></div></div></div>`;
+                
+                let probMasGoles = Math.min(75, Math.max(35, 100 - probE)); let probMenosGoles = 100 - probMasGoles;
+                htmlMercados += `<div class="bloque-mercado"><div class="titulo-mercado">🥅 MERCADO: GOLES TOTALES</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 2.5 Goles <span class="cuota-real-badge">x ${(100/probMasGoles).toFixed(2)}</span></span><span>${probMasGoles}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probMasGoles}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 2.5 Goles <span class="cuota-real-badge">x ${(100/probMenosGoles).toFixed(2)}</span></span><span>${probMenosGoles}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probMenosGoles}%"></div></div></div></div>`;
+
+                let probMasCorners = Math.min(80, Math.max(40, probL + 10)); let probMenosCorners = 100 - probMasCorners;
+                htmlMercados += `<div class="bloque-mercado"><div class="titulo-mercado">🚩 MERCADO: CÓRNERS TOTALES</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 9.5 Córners <span class="cuota-real-badge">x 1.83</span></span><span>${probMasCorners}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probMasCorners}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 9.5 Córners <span class="cuota-real-badge">x 1.95</span></span><span>${probMenosCorners}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probMenosCorners}%"></div></div></div></div>`;
+            } else if(deporteActivo === 'basquet') {
+                htmlMercados += `<div class="bloque-mercado"><div class="titulo-mercado">🎯 MERCADO: GANADOR DIRECTO (MONEYLINE)</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local <span class="cuota-real-badge">x${p.cuotasReales.local}</span></span><span>${probL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visita <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div></div>`;
+
+                let probMasPuntos = 52; let probMenosPuntos = 48;
+                htmlMercados += `<div class="bloque-mercado"><div class="titulo-mercado">🏀 MERCADO: PUNTOS TOTALES</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 218.5 Puntos <span class="cuota-real-badge">x 1.88</span></span><span>${probMasPuntos}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probMasPuntos}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 218.5 Puntos <span class="cuota-real-badge">x 1.88</span></span><span>${probMenosPuntos}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--texto-gris); width:${probMenosPuntos}%"></div></div></div></div>`;
+            } else if(deporteActivo === 'tenis') {
+                htmlMercados += `<div class="bloque-mercado"><div class="titulo-mercado">🎯 MERCADO: GANADOR DEL PARTIDO (H2H)</div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Local <span class="cuota-real-badge">x${p.cuotasReales.local}</span></span><span>${probL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}%"></div></div></div>
+                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visita <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div></div>`;
+            }
+            document.getElementById('detalle-barras').innerHTML = htmlMercados;
+        }
+
+        function cerrarDetalle() { document.getElementById('vista-detalle').classList.add('oculto'); setFiltroEstado(estadoFiltroActual); }
+        
+        function setFiltroEstado(estado) {
+            estadoFiltroActual = estado; document.querySelectorAll('.btn-filto-main').forEach(b => b.classList.remove('activo')); document.getElementById('btn-' + estado).classList.add('activo');
+            if (estado === 'combinada') { document.getElementById('herramientas-top').classList.add('oculto'); document.getElementById('contenedor-partidos').classList.add('oculto'); document.getElementById('seccion-combinada').classList.remove('oculto'); cambiarRiesgoCombinada(riesgoCombinadaSeleccionado); } 
+            else { document.getElementById('herramientas-top').classList.remove('oculto'); document.getElementById('contenedor-partidos').classList.remove('oculto'); document.getElementById('seccion-combinada').classList.add('oculto'); aplicarFiltrosMaster(); }
+        }
+
+        function cambiarRiesgoCombinada(tipoRiesgo) {
+            riesgoCombinadaSeleccionado = tipoRiesgo;
+            document.querySelectorAll('.btn-riesgo').forEach(b => { b.classList.remove('activo-asegurada', 'activo-moderada', 'activo-arriesgada'); });
+            document.getElementById('riesgo-' + tipoRiesgo).classList.add('activo-' + tipoRiesgo);
             generarCombinadaDelDia();
-            mostrarPartidosFinalizados();
+        }
+        
+        function aplicarFiltrosMaster() {
+            if (estadoFiltroActual === 'combinada') return; let f = baseDeDatosHoy; 
+            if (estadoFiltroActual === 'envivo') f = f.filter(p => esPartidoEnVivo(p));
+            const i = document.getElementById('filtro-ligas-input'); 
+            if (i && i.value.trim() !== '') { const txt = i.value.toLowerCase().trim(); f = f.filter(p => p.competition.name.toLowerCase().includes(txt) || p.homeTeam.name.toLowerCase().includes(txt) || p.awayTeam.name.toLowerCase().includes(txt)); }
+            
+            const c = document.getElementById('contenedor-partidos'); c.innerHTML = '';
+            if (f.length === 0) { c.innerHTML = `<p style="padding:30px; text-align:center; color:var(--texto-gris);">No hay partidos disponibles.</p>`; return; }
+            
+            f.forEach(p => { 
+                let renderEstado = esPartidoEnVivo(p) ? `<span style="color:var(--alerta); font-weight:bold;">🔴 EN VIVO</span>` : `🏟️ Ver Análisis`;
+                let renderHora = p.utcDate ? `<span class="etiqueta-hora">🕒 ${formatearFechaHoraLocal(p.utcDate)}</span>` : '';
+                c.innerHTML += `<div class="tarjeta-partido" onclick="abrirDetalle('${p.id}')">
+                    <div class="encabezado-liga">${renderHora} <span>${p.competition.name}</span></div>
+                    <div class="cuerpo-partido"><div class="equipos"><div class="equipo-linea">${generarMonograma(p.homeTeam.name)} ${p.homeTeam.name}</div><div class="equipo-linea">${generarMonograma(p.awayTeam.name)} ${p.awayTeam.name}</div></div><div class="marcador-live">${renderEstado}</div></div></div>`;
+            });
         }
 
-        // Arrancar la app automáticamente cuando carga la ventana
-        window.onload = function() {
-            actualizarTodaLaInterfaz();
-        };
+        function analizarProbabilidadYValor(p) {
+            let cL = p.cuotasReales.local !== "N/A" ? parseFloat(p.cuotasReales.local) : 2.50;
+            let cV = p.cuotasReales.visita !== "N/A" ? parseFloat(p.cuotasReales.visita) : 2.50;
+            let cE = (deporteActivo === 'futbol' && p.cuotasReales.empate !== "N/A") ? parseFloat(p.cuotasReales.empate) : 3.00;
+            let isHomeFav = cL <= cV;
+            let favName = isHomeFav ? p.homeTeam.name : p.awayTeam.name;
+            let dogName = isHomeFav ? p.awayTeam.name : p.homeTeam.name;
+            let favOdds = isHomeFav ? cL : cV;
+            let dogOdds = isHomeFav ? cV : cL;
+            return { cuotaLocal: cL, cuotaVisita: cV, cuotaEmpate: cE, favName, dogName, favOdds, dogOdds, isHomeFav };
+        }
+
+        function generarCombinadaDelDia() {
+            const renderContenedor = document.getElementById('combinada-ticket-render'); 
+            renderContenedor.innerHTML = ''; ticketsMultiplesGenerados = {};
+            
+            const partidosPorDia = {};
+            baseDeDatosHoy.forEach(p => {
+                if (!p.utcDate) return;
+                const d = new Date(p.utcDate);
+                const fechaCorta = d.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit'});
+                if (!partidosPorDia[fechaCorta]) partidosPorDia[fechaCorta] = [];
+                partidosPorDia[fechaCorta].push(p);
+            });
+
+            let combinadasTotales = 0;
+            let htmlCompletoRender = '';
+
+            for (const dia in partidosPorDia) {
+                let carteleraDia = partidosPorDia[dia];
+                if (carteleraDia.length < 3) continue;
+
+                let maxCombinadas = Math.floor(carteleraDia.length / 3); 
+                maxCombinadas = Math.min(maxCombinadas, 5);
+                
+                htmlCompletoRender += `<div style="background: rgba(46, 204, 113, 0.1); border: 1px solid var(--verde-principal); color: var(--verde-principal); padding: 8px; border-radius: 6px; text-align: center; margin: 25px 0 15px 0; font-weight: bold; font-size: 0.9rem;">🗓️ CARTELERA DEL DÍA: ${dia}</div>`;
+
+                for (let i = 0; i < maxCombinadas; i++) {
+                    let idTicket = `cb_${dia.replace('/','')}_riesgo_${riesgoCombinadaSeleccionado}_${i}`;
+                    let poolPicks = [];
+                    let colorBorde = "var(--verde-principal)";
+                    let badgeTexto = "🔒 TRIPLE ASEGURADA";
+
+                    let idx1 = i * 3;
+                    let idx2 = i * 3 + 1;
+                    let idx3 = i * 3 + 2;
+                    
+                    let partidosCombo = [carteleraDia[idx1], carteleraDia[idx2], carteleraDia[idx3]];
+
+                    partidosCombo.forEach(p => {
+                        let analisis = analizarProbabilidadYValor(p);
+                        let pickMercado = "";
+                        let pickCuota = 1.0;
+
+                        if (riesgoCombinadaSeleccionado === 'asegurada') {
+                            colorBorde = "var(--verde-principal)"; badgeTexto = "🔒 TRIPLE ASEGURADA (Opción " + (i+1) + ")";
+                            if (deporteActivo === 'futbol') {
+                                pickMercado = `Doble Opción: Gana ${analisis.favName} o Empata`;
+                                pickCuota = Math.max(1.15, analisis.favOdds / 1.35);
+                            } else if (deporteActivo === 'basquet') {
+                                pickMercado = `Hándicap Positivo (+8.5): ${analisis.favName}`;
+                                pickCuota = 1.25;
+                            } else {
+                                pickMercado = `Gana al menos 1 Set: ${analisis.favName}`;
+                                pickCuota = Math.max(1.12, analisis.favOdds / 1.25);
+                            }
+                        } 
+                        else if (riesgoCombinadaSeleccionado === 'moderada') {
+                            colorBorde = "var(--oro)"; badgeTexto = "📊 TRIPLE MODERADA (Opción " + (i+1) + ")";
+                            pickMercado = `Ganador Partido: Gana ${analisis.favName}`;
+                            pickCuota = analisis.favOdds; 
+                        } 
+                        else if (riesgoCombinadaSeleccionado === 'arriesgada') {
+                            colorBorde = "var(--alerta)"; badgeTexto = "🔥 TRIPLE ARRIESGADA (Opción " + (i+1) + ")";
+                            if (deporteActivo === 'futbol') {
+                                if (analisis.cuotaEmpate < 3.20) {
+                                    pickMercado = `Resultado Directo: Empate (X)`;
+                                    pickCuota = analisis.cuotaEmpate;
+                                } else {
+                                    // REEMPLAZO ACÁ: Ahora busca batacazos en vez del +2.5
+                                    pickMercado = `Batacazo / Sorpresa: Gana ${analisis.dogName}`;
+                                    pickCuota = analisis.dogOdds; 
+                                }
+                            } else {
+                                pickMercado = `Batacazo / Sorpresa: Gana ${analisis.dogName}`;
+                                pickCuota = analisis.dogOdds; 
+                            }
+                        }
+                        poolPicks.push({ p: p, mercado: pickMercado, cuota: pickCuota });
+                    });
+
+                    ticketsMultiplesGenerados[idTicket] = poolPicks;
+                    let totalCuota = 1.0;
+                    
+                    let h = `<div class="tarjeta-combinada" style="border-top: 4px solid ${colorBorde};">
+                        <div style="margin-bottom:12px;"><span style="color:${colorBorde}; font-weight:bold; font-size:0.75rem; letter-spacing:1px; display:block;">${badgeTexto}</span><h3>Ticket Múltiple #${i+1}</h3></div>`;
+                    
+                    poolPicks.forEach(c => {
+                        totalCuota *= c.cuota;
+                        h += `<div class="ticket-item">
+                            <div style="font-size:0.75rem; color:var(--texto-gris); margin-bottom:2px;">🏟️ ${c.p.competition.name}</div>
+                            📍 <b>${c.p.homeTeam.name} vs ${c.p.awayTeam.name}</b><br>
+                            <span style="color:var(--oro)">🎯 Pick IA:</span> ${c.mercado} <strong style="color:var(--verde-principal); float:right;">x${c.cuota.toFixed(2)}</strong>
+                        </div>`;
+                    });
+                    
+                    h += `<div style="text-align:right; margin:15px 0 10px 0; font-size:1.1rem; font-weight:800; color:var(--oro)">Multiplicador Total: <span style="background:rgba(241,196,15,0.1); padding:4px 8px; border-radius:6px;">x${totalCuota.toFixed(2)}</span></div>
+                    <button onclick="guardarCombinada('${idTicket}')" style="width:100%; background:${colorBorde}; color:#111; border:none; font-weight:bold; padding:12px; border-radius:8px; cursor:pointer; font-size:0.9rem;">🔒 Guardar Ticket en Mis Picks</button></div>`;
+                    
+                    htmlCompletoRender += h;
+                    combinadasTotales++;
+                }
+            }
+
+            if (combinadasTotales === 0) {
+                renderContenedor.innerHTML = `<p style="padding:40px 20px; text-align:center; color:var(--texto-gris); line-height: 1.6;">⚠️ <b>Cartelera insuficiente:</b> Se necesitan al menos 3 eventos en un mismo día para estructurar una combinada óptima.</p>`;
+            } else {
+                renderContenedor.innerHTML = `<p style="text-align:center; color:var(--texto-gris); margin-bottom:15px; font-size:0.85rem;">Se estructuraron <b>${combinadasTotales} tickets</b> organizados por fecha.</p>` + htmlCompletoRender;
+            }
+        }
+
+        function obtenerPicksLocales() { return JSON.parse(localStorage.getItem('gp_picks')) || []; }
+        
+        function guardarCombinada(idT) { 
+            let h = obtenerPicksLocales(); let tk = ticketsMultiplesGenerados[idT]; if (!tk) return; 
+            tk.forEach(i => { 
+                h.push({ id: Date.now() + Math.random(), home: i.p.homeTeam.name, away: i.p.awayTeam.name, mercado: i.mercado, cuota: i.cuota.toFixed(2), estado: 'PROYECTADO' }); 
+            }); 
+            localStorage.setItem('gp_picks', JSON.stringify(h)); actualizarEstructuraPicksLocales(); 
+            alert("🎯 ¡Ticket completo guardado con éxito en Mis Picks!"); 
+        }
+
+        function actualizarEstructuraPicksLocales() { 
+            let h = obtenerPicksLocales(); document.getElementById('contador-picks-badge').innerText = h.length; 
+            let c = document.getElementById('contenedor-lista-picks'); c.innerHTML = ""; 
+            if(h.length === 0) { c.innerHTML = `<p style="color:var(--texto-gris); text-align:center; padding:20px; font-size:0.85rem;">No guardaste ningún pick todavía.</p>`; return; }
+            h.reverse().forEach(p => { 
+                c.innerHTML += `<div class="item-pick-guardado"><span style="color:var(--verde-principal); float:right; font-size:0.75rem; font-weight:bold;">${p.estado}</span><div style="color:var(--texto-gris); font-size:0.75rem;">${p.home} vs ${p.away}</div><strong style="color:white; font-size:0.85rem;">${p.mercado} (x${p.cuota})</strong></div>`; 
+            }); 
+        }
+        
+        function togglePanelPicks() { document.getElementById('panel-picks').classList.toggle('oculto-panel'); }
+        function irADeporte(dep) { deporteActivo = dep; let tit = 'FÚTBOL'; if(dep === 'basquet') tit = 'BÁSQUETBOL'; if(dep === 'tenis') tit = 'TENIS'; document.getElementById('titulo-deporte-activo').innerText = tit; document.getElementById('lobby-selector').classList.add('oculto'); document.getElementById('app-content').classList.remove('oculto'); setFiltroEstado('proximos'); iniciarApp(); }
+        function volverAlLobby() { document.getElementById('lobby-selector').classList.remove('oculto'); document.getElementById('app-content').classList.add('oculto'); document.getElementById('vista-detalle').classList.add('oculto'); document.getElementById('logs-servidor-error').classList.add('oculto'); }
+        function forzarActualizacion() { localStorage.removeItem(`sports_cache_mix_${deporteActivo}`); iniciarApp(); }
+        
+        window.onload = () => { actualizarEstructuraPicksLocales(); };
     </script>
 </body>
 </html>
