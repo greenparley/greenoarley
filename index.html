@@ -396,7 +396,7 @@
             const p = baseDeDatosHoy.find(item => item.id === id); if (!p) return;
             document.getElementById('herramientas-top').classList.add('oculto'); document.getElementById('contenedor-partidos').classList.add('oculto'); document.getElementById('seccion-combinada').classList.add('oculto'); document.getElementById('seccion-sonadora').classList.add('oculto'); document.getElementById('vista-detalle').classList.remove('oculto');
             document.getElementById('detalle-cabecera').innerHTML = `<div style="text-align:center; width:45%;">${generarMonograma(p.homeTeam.name, 'detalle')}<p style="font-size:0.90rem; font-weight:bold;">${p.homeTeam.name}</p></div><h2 style="width:10%; text-align:center; color:var(--verde-principal);">VS</h2><div style="text-align:center; width:45%;">${generarMonograma(p.awayTeam.name, 'detalle')}<p style="font-size:0.90rem; font-weight:bold;">${p.awayTeam.name}</p></div>`;
-            document.getElementById('detalle-consejo').innerHTML = `<div class="caja-consejo">💡 <b>Modelado IA Avanzado:</b> Mercados alternativos calculados mediante simulaciones H2H continuas de forma automática.</div>`;
+            document.getElementById('detalle-consejo').innerHTML = `<div class="caja-consejo">💡 <b>Modelado IA Advanced:</b> Mercados alternativos calculados mediante simulaciones H2H continuas de forma automática.</div>`;
 
             let probL = p.cuotasReales.local !== "N/A" ? Math.round((1 / p.cuotasReales.local) * 100) : 50;
             let probV = p.cuotasReales.visita !== "N/A" ? Math.round((1 / p.cuotasReales.visita) * 100) : 50;
@@ -536,7 +536,6 @@
             const botonActivo = document.getElementById('btn-' + estado);
             if (botonActivo) botonActivo.classList.add('activo');
             
-            // Ocultar todos los flujos especiales por defecto
             document.getElementById('herramientas-top').classList.remove('oculto'); 
             document.getElementById('contenedor-partidos').classList.remove('oculto'); 
             document.getElementById('seccion-combinada').classList.add('oculto'); 
@@ -559,7 +558,6 @@
             }
         }
 
-        /* Controladores de Riesgo independientes */
         function cambiarRiesgoCombinada(tipoRiesgo) {
             riesgoCombinadaSeleccionado = tipoRiesgo;
             document.querySelectorAll('#seccion-combinada .btn-riesgo').forEach(b => { 
@@ -625,7 +623,6 @@
             };
         }
 
-        /* FILTRAR CARTELERA FUTURA AGRUPADA POR DÍA */
         function obtenerCarteleraAgrupada() {
             const carteleraFiltro = baseDeDatosHoy.filter(p => !p.isFinished && !p.isLiveNative);
             const partidosPorDia = {};
@@ -711,7 +708,7 @@
             renderContenedor.innerHTML = combinadasTotales === 0 ? `<p style="padding:40px 20px; text-align:center; color:var(--texto-gris);">⚠️ Se necesitan al menos 3 partidos futuros para estructurar tripletas.</p>` : htmlCompletoRender;
         }
 
-        /* SECCIÓN SOÑADORAS (Nuevo módulo: Incluye absolutamente todos los partidos del día) */
+        /* SECCIÓN SOÑADORAS NUEVA: Usa todos los mercados disponibles (1 pick limpio por partido) */
         function generarSonadoraDelDia() {
             const renderContenedor = document.getElementById('sonadora-ticket-render');
             renderContenedor.innerHTML = '';
@@ -722,53 +719,104 @@
 
             for (const dia in partidosPorDia) {
                 let carteleraDia = partidosPorDia[dia];
-                if (carteleraDia.length < 2) continue; // Al menos 2 partidos para armar un boleto múltiple
+                if (carteleraDia.length < 2) continue; 
 
                 let idTicket = `sn_${dia.replace('/','')}_r_${riesgoSonadoraSeleccionado}`;
                 let poolPicks = [];
                 
                 let colorBorde = "var(--sonadora-color)";
-                let badgeTexto = "🔮 BOLETO SOÑADOR ASEGURADO (80-100% por partido)";
-                if (riesgoSonadoraSeleccionado === 'moderada') badgeTexto = "🔮 BOLETO SOÑADOR MODERADO (60-80% por partido)";
-                if (riesgoSonadoraSeleccionado === 'arriesgada') badgeTexto = "🔮 BOLETO SOÑADOR ARRIESGADO (40-60% por partido)";
+                let badgeTexto = "🔮 MEGATICKET SOÑADOR: ASEGURADO (Variedad de Mercados)";
+                if (riesgoSonadoraSeleccionado === 'moderada') badgeTexto = "🔮 MEGATICKET SOÑADOR: MODERADO (Variedad de Mercados)";
+                if (riesgoSonadoraSeleccionado === 'arriesgada') badgeTexto = "🔮 MEGATICKET SOÑADOR: ARRIESGADO (¡Picks de Cuota Alta!)";
 
                 htmlCompletoRender += `<div style="background: rgba(155, 89, 182, 0.12); border: 1px solid var(--sonadora-color); color: var(--sonadora-color); padding: 8px; border-radius: 6px; text-align: center; margin: 20px 0 12px 0; font-weight: bold; font-size: 0.85rem;">✨ CARTELERA COMPLETA DE LA FECHA: ${dia}</div>`;
 
-                carteleraDia.forEach(p => {
+                // Iteramos todos los partidos uno por uno (1 pick estricto por cada uno)
+                carteleraDia.forEach((p, index) => {
                     let analisis = analizarProbabilidadYValor(p);
                     let pickMercado = ""; let pickCuota = 1.0;
+                    
+                    // Rotación automática para usar todos los mercados de la app (0, 1, 2, 3)
+                    let mercadoElegido = index % 4; 
 
-                    if (riesgoSonadoraSeleccionado === 'asegurada') {
-                        if (deporteActivo === 'futbol') {
-                            pickMercado = `Menos de 4.5 Goles Totales`;
-                            pickCuota = 1.15;
-                        } else if (deporteActivo === 'basquet') {
-                            pickMercado = `${analisis.favName} Hándicap +12.5`;
-                            pickCuota = 1.18;
-                        } else {
-                            pickMercado = `${analisis.favName} Gana al menos 1 Set`;
-                            pickCuota = 1.14;
+                    if (deporteActivo === 'futbol') {
+                        if (riesgoSonadoraSeleccionado === 'asegurada') {
+                            if (mercadoElegido === 0) {
+                                pickMercado = `Doble Oportunidad: ${analisis.favName} o Empate`;
+                                pickCuota = 1.18;
+                            } else if (mercadoElegido === 1) {
+                                pickMercado = `Goles: Menos de 4.5 Goles Totales`;
+                                pickCuota = 1.15;
+                            } else if (mercadoElegido === 2) {
+                                pickMercado = `Corners: Más de 7.5 Corners Totales`;
+                                pickCuota = 1.22;
+                            } else {
+                                pickMercado = `Tarjetas: Más de 2.5 Tarjetas Totales`;
+                                pickCuota = 1.20;
+                            }
+                        } 
+                        else if (riesgoSonadoraSeleccionado === 'moderada') {
+                            if (mercadoElegido === 0) {
+                                pickMercado = `Ganador Directo: ${analisis.favName}`;
+                                pickCuota = Math.max(1.35, minCuota = 1.65, analisis.favOdds);
+                            } else if (mercadoElegido === 1) {
+                                pickMercado = `Goles: Más de 1.5 Goles Totales`;
+                                pickCuota = 1.30;
+                            } else if (mercadoElegido === 2) {
+                                pickMercado = `Corners: Más de 8.5 Corners Totales`;
+                                pickCuota = 1.45;
+                            } else {
+                                pickMercado = `Tarjetas: Más de 3.5 Tarjetas Totales`;
+                                pickCuota = 1.40;
+                            }
+                        } 
+                        else if (riesgoSonadoraSeleccionado === 'arriesgada') {
+                            // UN SOLO PICK LIMPIO DE CUOTA ALTA (Sin combos)
+                            if (mercadoElegido === 0) {
+                                pickMercado = `Resultado Exacto: Empate Directo (X)`;
+                                pickCuota = 3.20;
+                            } else if (mercadoElegido === 1) {
+                                pickMercado = `Goles Especiales: Más de 3.5 Goles Totales`;
+                                pickCuota = 2.50;
+                            } else if (mercadoElegido === 2) {
+                                pickMercado = `Corners Pro: Más de 10.5 Corners Totales`;
+                                pickCuota = 2.15;
+                            } else {
+                                pickMercado = `Disciplina: Más de 5.5 Tarjetas Totales`;
+                                pickCuota = 2.30;
+                            }
                         }
                     } 
-                    else if (riesgoSonadoraSeleccionado === 'moderada') {
-                        if (deporteActivo === 'futbol') {
-                            pickMercado = `Más de 1.5 Goles Totales`;
-                            pickCuota = 1.32;
-                        } else {
-                            pickMercado = `Ganador Directo: ${analisis.favName}`;
-                            pickCuota = Math.max(1.35, Math.min(1.65, analisis.favOdds));
+                    else if (deporteActivo === 'tenis') {
+                        let mercadoTenis = index % 3;
+                        if (riesgoSonadoraSeleccionado === 'asegurada') {
+                            if (mercadoTenis === 0) { pickMercado = `${analisis.favName} Gana al menos 1 Set`; pickCuota = 1.15; }
+                            else if (mercadoTenis === 1) { pickMercado = `Más de 17.5 Games Totales`; pickCuota = 1.18; }
+                            else { pickMercado = `Aces Proyectados: Más de 3.5 Aces`; pickCuota = 1.12; }
+                        } else if (riesgoSonadoraSeleccionado === 'moderada') {
+                            if (mercadoTenis === 0) { pickMercado = `Ganador Partido: ${analisis.favName}`; pickCuota = 1.45; }
+                            else if (mercadoTenis === 1) { pickMercado = `Más de 21.5 Games Totales`; pickCuota = 1.65; }
+                            else { pickMercado = `Aces Proyectados: Más de 6.5 Aces`; pickCuota = 1.50; }
+                        } else { // Arriesgada (1 pick limpio)
+                            if (mercadoTenis === 0) { pickMercado = `Ganador 1er Set: ${p.homeTeam.name === analisis.favName ? p.awayTeam.name : p.homeTeam.name} (Sorpresa)`; pickCuota = 2.40; }
+                            else if (mercadoTenis === 1) { pickMercado = `Duración Corta: Menos de 19.5 Games Totales`; pickCuota = 2.30; }
+                            else { pickMercado = `Especiales IA: Habrá Tie-Break en el match (SÍ)`; pickCuota = 2.65; }
                         }
                     } 
-                    else if (riesgoSonadoraSeleccionado === 'arriesgada') {
-                        if (deporteActivo === 'futbol') {
-                            pickMercado = `Gana ${analisis.favName} y Más de 2.5 Goles`;
-                            pickCuota = Math.max(2.10, Math.min(3.10, analisis.favOdds * 1.4));
-                        } else if (deporteActivo === 'basquet') {
-                            pickMercado = `Hándicap Alternativo (-5.5) ${analisis.favName}`;
-                            pickCuota = 1.95;
-                        } else {
-                            pickMercado = `Marcador de Sets Exacto: 2-0 ${analisis.favName}`;
-                            pickCuota = 2.10;
+                    else if (deporteActivo === 'basquet') {
+                        let mercadoBasket = index % 3;
+                        if (riesgoSonadoraSeleccionado === 'asegurada') {
+                            if (mercadoBasket === 0) { pickMercado = `Ganador (Inc Prórroga): ${analisis.favName}`; pickCuota = 1.25; }
+                            else if (mercadoBasket === 1) { pickMercado = `Puntos: Más de 202.5 Puntos Totales`; pickCuota = 1.18; }
+                            else { pickMercado = `Hándicap Seguro: ${analisis.favName} +9.5`; pickCuota = 1.20; }
+                        } else if (riesgoSonadoraSeleccionado === 'moderada') {
+                            if (mercadoBasket === 0) { pickMercado = `Hándicap Ajustado: ${analisis.favName} -4.5`; pickCuota = 1.80; }
+                            else if (mercadoBasket === 1) { pickMercado = `Puntos: Más de 218.5 Puntos Totales`; pickCuota = 1.70; }
+                            else { pickMercado = `Ganador Mitad: Gana ${analisis.favName} al descanso`; pickCuota = 1.55; }
+                        } else { // Arriesgada (1 pick limpio)
+                            if (mercadoBasket === 0) { pickMercado = `Ganador Directo: Sorpresa / No Favorito`; pickCuota = 2.60; }
+                            else if (mercadoBasket === 1) { pickMercado = `Puntos Explosivos: Más de 234.5 Puntos Totales`; pickCuota = 2.25; }
+                            else { pickMercado = `Hándicap Extremo: ${analisis.favName} -11.5`; pickCuota = 2.40; }
                         }
                     }
 
@@ -783,7 +831,7 @@
                     totalCuota *= c.cuota;
                     h += `<div class="ticket-item"><div style="font-size:0.75rem; color:var(--texto-gris);">🏟️ ${c.p.competition.name}</div>
                         📍 <b>${c.p.homeTeam.name} vs ${c.p.awayTeam.name}</b><br>
-                        <span style="color:var(--oro)">🎯 Pick Único:</span> ${c.mercado} <strong style="color:var(--verde-principal); float:right;">x${c.cuota.toFixed(2)}</strong></div>`;
+                        <span style="color:var(--oro)">🎯 Pick Técnico:</span> ${c.mercado} <strong style="color:var(--verde-principal); float:right;">x${c.cuota.toFixed(2)}</strong></div>`;
                 });
 
                 h += `<div style="text-align:right; margin:15px 0 10px 0; font-size:1.1rem; font-weight:800; color:var(--oro)">Cuota Megaticket: <span style="background:rgba(241,196,15,0.1); padding:4px 8px; border-radius:6px;">x${totalCuota.toFixed(2)}</span></div>
