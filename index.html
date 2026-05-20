@@ -51,7 +51,12 @@
         .barra-progreso { height: 100%; width: 0%; border-radius: 5px; transition: width 0.6s; }
         .cuota-real-badge { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: var(--oro); font-size: 0.8rem; margin-left: 8px;}
         .bloque-mercado { background: #111827; border: 1px solid var(--tarjeta-borde); padding: 15px; border-radius: 10px; margin-bottom: 15px; }
-        .titulo-mercado { color: var(--oro); font-size: 0.9rem; font-weight: bold; margin-bottom: 12px; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 4px; }
+        .titulo-mercado { color: var(--oro); font-size: 0.9rem; font-weight: bold; margin-bottom: 12px; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 6px; }
+
+        /* Selectores de Más/Menos interactivos */
+        .btn-toggle-group { display: flex; background: rgba(0,0,0,0.4); padding: 2px; border-radius: 6px; border: 1px solid var(--tarjeta-borde); }
+        .btn-toggle-item { background: transparent; border: none; color: var(--texto-gris); padding: 4px 10px; font-size: 0.72rem; font-weight: bold; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+        .btn-toggle-item.activo { background: var(--verde-principal); color: #0b0f19; }
 
         /* Sección de Combinadas */
         .selector-riesgo-grid { display: flex; gap: 8px; margin-bottom: 15px; }
@@ -228,7 +233,7 @@
                     "soccer_conmebol_copa_sudamericana",
                     "soccer_conmebol_copa_america",
                     "soccer_argentina_primera_division",
-                    "soccer_saudi_prof_league",          // Arabia Saudita
+                    "soccer_saudi_prof_league",
                     "soccer_epl",
                     "soccer_spain_la_liga",
                     "soccer_italy_serie_a",
@@ -302,7 +307,6 @@
             
             for (let liga of endpoints) {
                 try {
-                    // SE CORRIGIÓ EL AWAIT FALTANTE AQUÍ:
                     const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/basketball/${liga.id}/scoreboard?${fechas}&limit=40`);
                     if (!res.ok) continue; const data = await res.json(); if (!data || !data.events) continue;
                     const procesados = data.events.map(evento => {
@@ -368,6 +372,26 @@
             else { contenedor.innerHTML = `<p style="text-align:center; color:var(--texto-gris); padding:20px;">⚠️ Cartelera sin eventos disponibles.</p>`; }
         }
 
+        // Nueva función global para controlar los botones Más / Menos individuales
+        function toggleMercado(mercadoId, opcion) {
+            const masContenedor = document.getElementById(`${mercadoId}-mas-content`);
+            const menosContenedor = document.getElementById(`${mercadoId}-menos-content`);
+            const btnMas = document.getElementById(`btn-${mercadoId}-mas`);
+            const btnMenos = document.getElementById(`btn-${mercadoId}-menos`);
+
+            if (opcion === 'mas') {
+                masContenedor.classList.remove('oculto');
+                menosContenedor.classList.add('oculto');
+                btnMas.classList.add('activo');
+                btnMenos.classList.remove('activo');
+            } else {
+                masContenedor.classList.add('oculto');
+                menosContenedor.classList.remove('oculto');
+                btnMas.classList.remove('activo');
+                btnMenos.classList.add('activo');
+            }
+        }
+
         function abrirDetalle(id) {
             const p = baseDeDatosHoy.find(item => item.id === id); if (!p) return;
             document.getElementById('herramientas-top').classList.add('oculto'); document.getElementById('contenedor-partidos').classList.add('oculto'); document.getElementById('seccion-combinada').classList.add('oculto'); document.getElementById('vista-detalle').classList.remove('oculto');
@@ -381,15 +405,20 @@
             let htmlMercados = "";
 
             if (deporteActivo === 'futbol') {
-                // Cálculo de Goles Dinámicos basados en la fuerza de los equipos
+                // Algoritmo de Goles
                 let gol15 = Math.min(94, Math.max(70, 85 + (probE % 10)));
                 let gol25 = Math.min(82, Math.max(40, 55 + (probL % 15) - (probE % 8)));
                 let gol35 = Math.min(55, Math.max(18, 28 + (probV % 12)));
                 
-                // Cálculo de Corners y Tarjetas
+                // Algoritmo de Corners (Líneas 8.5, 9.5 y 10.5)
                 let corner85 = Math.min(92, Math.max(75, 83 + (probL % 8)));
                 let corner95 = Math.min(78, Math.max(50, 62 + (probV % 9)));
+                let corner105 = Math.min(58, Math.max(25, 41 + (probE % 7)));
+
+                // Algoritmo de Tarjetas (Líneas 3.5, 4.5 y 5.5)
                 let tarjeta35 = Math.min(89, Math.max(65, 74 + (probE % 12)));
+                let tarjeta45 = Math.min(72, Math.max(40, 53 + (probL % 10)));
+                let tarjeta55 = Math.min(48, Math.max(15, 29 + (probV % 8)));
 
                 htmlMercados += `
                     <div class="bloque-mercado"><div class="titulo-mercado">🎯 GANADOR DEL PARTIDO (1X2)</div>
@@ -397,28 +426,74 @@
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Empate <span class="cuota-real-badge">x${p.cuotasReales.empate}</span></span><span>${probE}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${probE}%"></div></div></div>
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana Visita <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div></div>
                     
-                    <div class="bloque-mercado"><div class="titulo-mercado">⚽ MERCADO DE GOLES (PROB. OVER / MÁS DE)</div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 1.5 Goles</span><span>${gol15}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${gol15}%"></div></div></div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 2.5 Goles</span><span>${gol25}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${gol25}%"></div></div></div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 3.5 Goles</span><span>${gol35}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${gol35}%"></div></div></div></div>
+                    <div class="bloque-mercado">
+                        <div class="titulo-mercado" style="display:flex; justify-content:space-between; align-items:center;">
+                            <span>⚽ MERCADO DE GOLES</span>
+                            <div class="btn-toggle-group">
+                                <button id="btn-goles-mas" class="btn-toggle-item activo" onclick="toggleMercado('goles', 'mas')">MÁS DE</button>
+                                <button id="btn-goles-menos" class="btn-toggle-item" onclick="toggleMercado('goles', 'menos')">MENOS DE</button>
+                            </div>
+                        </div>
+                        <div id="goles-mas-content">
+                            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 1.5 Goles</span><span>${gol15}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${gol15}%"></div></div></div>
+                            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 2.5 Goles</span><span>${gol25}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${gol25}%"></div></div></div>
+                            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 3.5 Goles</span><span>${gol35}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${gol35}%"></div></div></div>
+                        </div>
+                        <div id="goles-menos-content" class="oculto">
+                            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 1.5 Goles</span><span>${100 - gol15}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${100 - gol15}%"></div></div></div>
+                            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 2.5 Goles</span><span>${100 - gol25}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${100 - gol25}%"></div></div></div>
+                            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 3.5 Goles</span><span>${100 - gol35}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${100 - gol35}%"></div></div></div>
+                        </div>
+                    </div>
                     
-                    <div class="bloque-mercado"><div class="titulo-mercado">🚩 CORNERS Y TARJETAS</div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 8.5 Corners Totales</span><span>${corner85}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${corner85}%"></div></div></div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 9.5 Corners Totales</span><span>${corner95}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${corner95}%"></div></div></div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 3.5 Tarjetas Totales</span><span>${tarjeta35}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${tarjeta35}%"></div></div></div></div>`;
+                    <div class="bloque-mercado">
+                        <div class="titulo-mercado" style="display:flex; justify-content:space-between; align-items:center;">
+                            <span>🚩 TIROS DE ESQUINA (CORNERS)</span>
+                            <div class="btn-toggle-group">
+                                <button id="btn-corners-mas" class="btn-toggle-item activo" onclick="toggleMercado('corners', 'mas')">MÁS DE</button>
+                                <button id="btn-corners-menos" class="btn-toggle-item" onclick="toggleMercado('corners', 'menos')">MENOS DE</button>
+                            </div>
+                        </div>
+                        <div id="corners-mas-content">
+                            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 8.5 Corners Totales</span><span>${corner85}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${corner85}%"></div></div></div>
+                            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 9.5 Corners Totales</span><span>${corner95}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${corner95}%"></div></div></div>
+                            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 10.5 Corners Totales</span><span>${corner105}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${corner105}%"></div></div></div>
+                        </div>
+                        <div id="corners-menos-content" class="oculto">
+                            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 8.5 Corners Totales</span><span>${100 - corner85}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${100 - corner85}%"></div></div></div>
+                            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 9.5 Corners Totales</span><span>${100 - corner95}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${100 - corner95}%"></div></div></div>
+                            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 10.5 Corners Totales</span><span>${100 - corner105}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${100 - corner105}%"></div></div></div>
+                        </div>
+                    </div>
+
+                    <div class="bloque-mercado">
+                        <div class="titulo-mercado" style="display:flex; justify-content:space-between; align-items:center;">
+                            <span>🟨 TARJETAS TOTALES</span>
+                            <div class="btn-toggle-group">
+                                <button id="btn-tarjetas-mas" class="btn-toggle-item activo" onclick="toggleMercado('tarjetas', 'mas')">MÁS DE</button>
+                                <button id="btn-tarjetas-menos" class="btn-toggle-item" onclick="toggleMercado('tarjetas', 'menos')">MENOS DE</button>
+                            </div>
+                        </div>
+                        <div id="tarjetas-mas-content">
+                            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 3.5 Tarjetas</span><span>${tarjeta35}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${tarjeta35}%"></div></div></div>
+                            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 4.5 Tarjetas</span><span>${tarjeta45}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${tarjeta45}%"></div></div></div>
+                            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Más de 5.5 Tarjetas</span><span>${tarjeta55}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${tarjeta55}%"></div></div></div>
+                        </div>
+                        <div id="tarjetas-menos-content" class="oculto">
+                            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 3.5 Tarjetas</span><span>${100 - tarjeta35}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${100 - tarjeta35}%"></div></div></div>
+                            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 4.5 Tarjetas</span><span>${100 - tarjeta45}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${100 - tarjeta45}%"></div></div></div>
+                            <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Menos de 5.5 Tarjetas</span><span>${100 - tarjeta55}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${100 - tarjeta55}%"></div></div></div>
+                        </div>
+                    </div>`;
             } 
             else if (deporteActivo === 'tenis') {
-                // Algoritmos de sets y games dinámicos basados en cuotas de tenis
                 let setL = Math.min(88, Math.max(15, probL + 4));
                 let setV = 100 - setL;
-                
                 let gamesSetL = Math.min(85, Math.max(30, 45 + (probL % 20)));
                 let gamesSetV = Math.min(85, Math.max(30, 45 + (probV % 20)));
-                
                 let totalGamesGeneral = Math.min(79, Math.max(45, 62 + (probE % 10)));
                 let indGamesL = Math.min(82, Math.max(35, 52 + (probL % 15)));
                 let indGamesV = Math.min(82, Math.max(35, 52 + (probV % 15)));
-                
                 let acesL = Math.min(15, Math.max(2, 6 + (probL % 7)));
                 let acesV = Math.min(15, Math.max(2, 5 + (probV % 6)));
 
@@ -426,20 +501,16 @@
                     <div class="bloque-mercado"><div class="titulo-mercado">🎾 GANADOR DEL PARTIDO</div>
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana ${p.homeTeam.name} <span class="cuota-real-badge">x${p.cuotasReales.local}</span></span><span>${probL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${probL}%"></div></div></div>
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Gana ${p.awayTeam.name} <span class="cuota-real-badge">x${p.cuotasReales.visita}</span></span><span>${probV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${probV}%"></div></div></div></div>
-                    
                     <div class="bloque-mercado"><div class="titulo-mercado">🥇 PROBABILIDAD DE GANAR EL 1ER SET</div>
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Set 1: ${p.homeTeam.name}</span><span>${setL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${setL}%"></div></div></div>
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Set 1: ${p.awayTeam.name}</span><span>${setV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${setV}%"></div></div></div></div>
-                    
                     <div class="bloque-mercado"><div class="titulo-mercado">📊 GAMES DENTRO DEL SET</div>
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>${p.homeTeam.name}: Más de 4.5 Games en Set 1</span><span>${gamesSetL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${gamesSetL}%"></div></div></div>
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>${p.awayTeam.name}: Más de 4.5 Games en Set 1</span><span>${gamesSetV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${gamesSetV}%"></div></div></div></div>
-                    
                     <div class="bloque-mercado"><div class="titulo-mercado">📈 TOTAL DE GAMES (PARTIDO COMPLETO)</div>
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>General: Más de 21.5 Games Totales</span><span>${totalGamesGeneral}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${totalGamesGeneral}%"></div></div></div>
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Individual: ${p.homeTeam.name} Más de 11.5 Games</span><span>${indGamesL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${indGamesL}%"></div></div></div>
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Individual: ${p.awayTeam.name} Más de 11.5 Games</span><span>${indGamesV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${indGamesV}%"></div></div></div></div>
-                    
                     <div class="bloque-mercado"><div class="titulo-mercado">⚡ ACES PROYECTADOS POR IA</div>
                     <div style="display:flex; justify-content:space-between; font-size:0.85rem; padding:5px 0;">
                         <span>🚀 Proyección ${p.homeTeam.name}: <b>${acesL} Aces</b></span>
@@ -626,7 +697,6 @@
 
         function togglePanelPicks() { document.getElementById('panel-picks').classList.toggle('oculto-panel'); }
         
-        // Se cambió el caché interno para forzar la actualización directa con las nuevas ligas y correcciones
         function irADeporte(dep) { 
             deporteActivo = dep; 
             let tit = dep === 'futbol' ? 'FÚTBOL' : (dep === 'basquet' ? 'BÁSQUETBOL' : 'TENIS'); 
