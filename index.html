@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GreenPicks Pro</title>
     <style>
-        :root { --bg-principal: #0b0f19; --tarjeta-bg: #151f32; --tarjeta-borde: #223452; --verde-principal: #2ecc71; --oro: #f1c40f; --alerta: #e74c3c; --texto-blanco: #ffffff; --texto-gris: #8a99ad; }
+        :root { --bg-principal: #0b0f19; --tarjeta-bg: #151f32; --tarjeta-borde: #223452; --verde-principal: #2ecc71; --oro: #f1c40f; --alerta: #e74c3c; --sonadora-color: #9b59b6; --texto-blanco: #ffffff; --texto-gris: #8a99ad; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: var(--bg-principal); color: var(--texto-blanco); padding-bottom: 60px; }
         .contenedor-app { max-width: 500px; margin: 0 auto; padding: 15px; position: relative; }
@@ -27,7 +27,7 @@
         .buscador-input { flex: 1; background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); padding: 10px; border-radius: 8px; color: white; font-size: 0.9rem; }
         .btn-refresh-live { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); color: white; width: 42px; border-radius: 8px; cursor: pointer; }
         .nav-filtros { display: flex; flex-wrap: wrap; background: var(--tarjeta-bg); padding: 4px; border-radius: 10px; margin-bottom: 20px; gap: 4px; }
-        .btn-filto-main { flex: 1; min-width: 80px; background: transparent; border: none; color: var(--texto-gris); padding: 10px 5px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.8rem; text-align: center; }
+        .btn-filto-main { flex: 1; min-width: 75px; background: transparent; border: none; color: var(--texto-gris); padding: 10px 2px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.75rem; text-align: center; }
         .btn-filto-main.activo { background: var(--bg-principal); color: var(--verde-principal); }
 
         /* Tarjetas de Eventos / Partidos */
@@ -58,9 +58,9 @@
         .btn-toggle-item { background: transparent; border: none; color: var(--texto-gris); padding: 4px 10px; font-size: 0.72rem; font-weight: bold; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
         .btn-toggle-item.activo { background: var(--verde-principal); color: #0b0f19; }
 
-        /* Sección de Combinadas */
-        .selector-riesgo-grid { display: flex; gap: 8px; margin-bottom: 15px; }
-        .btn-riesgo { flex: 1; padding: 8px 4px; border-radius: 8px; border: 1px solid var(--tarjeta-borde); background: var(--tarjeta-bg); color: white; font-size: 0.75rem; font-weight: bold; cursor: pointer; text-align: center; }
+        /* Secciones de Tickets (Combinadas y Soñadoras) */
+        .selector-riesgo-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 15px; }
+        .btn-riesgo { padding: 10px 2px; border-radius: 8px; border: 1px solid var(--tarjeta-borde); background: var(--tarjeta-bg); color: white; font-size: 0.72rem; font-weight: bold; cursor: pointer; text-align: center; }
         .btn-riesgo.activo-asegurada { background: rgba(46, 204, 113, 0.2); border-color: var(--verde-principal); color: var(--verde-principal); }
         .btn-riesgo.activo-moderada { background: rgba(241, 196, 15, 0.2); border-color: var(--oro); color: var(--oro); }
         .btn-riesgo.activo-arriesgada { background: rgba(231, 76, 60, 0.2); border-color: var(--alerta); color: var(--alerta); }
@@ -116,17 +116,27 @@
                 <button id="btn-envivo" class="btn-filto-main" onclick="setFiltroEstado('envivo')">🔴 En Vivo</button>
                 <button id="btn-finalizados" class="btn-filto-main" onclick="setFiltroEstado('finalizados')">🏁 Finalizados</button>
                 <button id="btn-combinada" class="btn-filto-main" onclick="setFiltroEstado('combinada')">Combinadas</button>
+                <button id="btn-sonadora" class="btn-filto-main" onclick="setFiltroEstado('sonadora')">✨ Soñadoras</button>
             </div>
             
             <div id="contenedor-partidos"></div>
             
             <div id="seccion-combinada" class="oculto">
                 <div class="selector-riesgo-grid">
-                    <button id="riesgo-asegurada" class="btn-riesgo activo-asegurada" onclick="cambiarRiesgoCombinada('asegurada')">Asegurada (&gt;80%)</button>
-                    <button id="riesgo-moderada" class="btn-riesgo" onclick="cambiarRiesgoCombinada('moderada')">Moderada (60-80%)</button>
-                    <button id="riesgo-arriesgada" class="btn-riesgo" onclick="cambiarRiesgoCombinada('arriesgada')">Arriesgada (45-60%)</button>
+                    <button id="riesgo-cb-asegurada" class="btn-riesgo activo-asegurada" onclick="cambiarRiesgoCombinada('asegurada')">Asegurada (80-100%)</button>
+                    <button id="riesgo-cb-moderada" class="btn-riesgo" onclick="cambiarRiesgoCombinada('moderada')">Moderada (60-80%)</button>
+                    <button id="riesgo-cb-arriesgada" class="btn-riesgo" onclick="cambiarRiesgoCombinada('arriesgada')">Arriesgada (40-60%)</button>
                 </div>
                 <div id="combinada-ticket-render"></div>
+            </div>
+
+            <div id="seccion-sonadora" class="oculto">
+                <div class="selector-riesgo-grid">
+                    <button id="riesgo-sn-asegurada" class="btn-riesgo activo-asegurada" onclick="cambiarRiesgoSonadora('asegurada')">Asegurada (80-100%)</button>
+                    <button id="riesgo-sn-moderada" class="btn-riesgo" onclick="cambiarRiesgoSonadora('moderada')">Moderada (60-80%)</button>
+                    <button id="riesgo-sn-arriesgada" class="btn-riesgo" onclick="cambiarRiesgoSonadora('arriesgada')">Arriesgada (40-60%)</button>
+                </div>
+                <div id="sonadora-ticket-render"></div>
             </div>
         </div>
 
@@ -164,6 +174,7 @@
         let baseDeDatosHoy = [];
         let estadoFiltroActual = 'proximos';
         let riesgoCombinadaSeleccionado = 'asegurada';
+        let riesgoSonadoraSeleccionado = 'asegurada';
         let ticketsMultiplesGenerados = {}; 
         let deporteActivo = 'futbol'; 
 
@@ -226,26 +237,12 @@
                 let ligasFutbolObj = JSON.parse(localStorage.getItem('gp_ligas_futbol_odds_cache_v3'));
                 
                 const ligasPrioridad = [
-                    "soccer_uefa_europa_league",
-                    "soccer_uefa_champs_league",
-                    "soccer_fifa_world_cup",
-                    "soccer_conmebol_copa_libertadores",
-                    "soccer_conmebol_copa_sudamericana",
-                    "soccer_conmebol_copa_america",
-                    "soccer_argentina_primera_division",
-                    "soccer_saudi_prof_league",
-                    "soccer_epl",
-                    "soccer_spain_la_liga",
-                    "soccer_italy_serie_a",
-                    "soccer_germany_bundesliga",
-                    "soccer_france_ligue_one",
-                    "soccer_netherlands_eredivisie",
-                    "soccer_portugal_primeira_liga",
-                    "soccer_turkey_super_league",
-                    "soccer_england_championship",
-                    "soccer_scotland_premiership",
-                    "soccer_norway_eliteserien",
-                    "soccer_sweden_allsvenskan"
+                    "soccer_uefa_europa_league", "soccer_uefa_champs_league", "soccer_fifa_world_cup",
+                    "soccer_conmebol_copa_libertadores", "soccer_conmebol_copa_sudamericana", "soccer_conmebol_copa_america",
+                    "soccer_argentina_primera_division", "soccer_saudi_prof_league", "soccer_epl", "soccer_spain_la_liga",
+                    "soccer_italy_serie_a", "soccer_germany_bundesliga", "soccer_france_ligue_one", "soccer_netherlands_eredivisie",
+                    "soccer_portugal_primeira_liga", "soccer_turkey_super_league", "soccer_england_championship",
+                    "soccer_scotland_premiership", "soccer_norway_eliteserien", "soccer_sweden_allsvenskan"
                 ];
 
                 if (!ligasFutbolObj || ligasFutbolObj.fecha !== hoyStr) {
@@ -368,11 +365,14 @@
             const contenedor = document.getElementById('contenedor-partidos');
             contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px; text-align:center;">⏳ Conectando con los servidores...</p>`;
             baseDeDatosHoy = await cargarDatosDeportivos();
-            if (baseDeDatosHoy.length > 0) { generarCombinadaDelDia(); aplicarFiltrosMaster(); } 
+            if (baseDeDatosHoy.length > 0) { 
+                generarCombinadaDelDia(); 
+                generarSonadoraDelDia();
+                aplicarFiltrosMaster(); 
+            } 
             else { contenedor.innerHTML = `<p style="text-align:center; color:var(--texto-gris); padding:20px;">⚠️ Cartelera sin eventos disponibles.</p>`; }
         }
 
-        // Nueva función global para controlar los botones Más / Menos individuales
         function toggleMercado(mercadoId, opcion) {
             const masContenedor = document.getElementById(`${mercadoId}-mas-content`);
             const menosContenedor = document.getElementById(`${mercadoId}-menos-content`);
@@ -394,7 +394,7 @@
 
         function abrirDetalle(id) {
             const p = baseDeDatosHoy.find(item => item.id === id); if (!p) return;
-            document.getElementById('herramientas-top').classList.add('oculto'); document.getElementById('contenedor-partidos').classList.add('oculto'); document.getElementById('seccion-combinada').classList.add('oculto'); document.getElementById('vista-detalle').classList.remove('oculto');
+            document.getElementById('herramientas-top').classList.add('oculto'); document.getElementById('contenedor-partidos').classList.add('oculto'); document.getElementById('seccion-combinada').classList.add('oculto'); document.getElementById('seccion-sonadora').classList.add('oculto'); document.getElementById('vista-detalle').classList.remove('oculto');
             document.getElementById('detalle-cabecera').innerHTML = `<div style="text-align:center; width:45%;">${generarMonograma(p.homeTeam.name, 'detalle')}<p style="font-size:0.90rem; font-weight:bold;">${p.homeTeam.name}</p></div><h2 style="width:10%; text-align:center; color:var(--verde-principal);">VS</h2><div style="text-align:center; width:45%;">${generarMonograma(p.awayTeam.name, 'detalle')}<p style="font-size:0.90rem; font-weight:bold;">${p.awayTeam.name}</p></div>`;
             document.getElementById('detalle-consejo').innerHTML = `<div class="caja-consejo">💡 <b>Modelado IA Avanzado:</b> Mercados alternativos calculados mediante simulaciones H2H continuas de forma automática.</div>`;
 
@@ -405,17 +405,14 @@
             let htmlMercados = "";
 
             if (deporteActivo === 'futbol') {
-                // Algoritmo de Goles
                 let gol15 = Math.min(94, Math.max(70, 85 + (probE % 10)));
                 let gol25 = Math.min(82, Math.max(40, 55 + (probL % 15) - (probE % 8)));
                 let gol35 = Math.min(55, Math.max(18, 28 + (probV % 12)));
                 
-                // Algoritmo de Corners (Líneas 8.5, 9.5 y 10.5)
                 let corner85 = Math.min(92, Math.max(75, 83 + (probL % 8)));
                 let corner95 = Math.min(78, Math.max(50, 62 + (probV % 9)));
                 let corner105 = Math.min(58, Math.max(25, 41 + (probE % 7)));
 
-                // Algoritmo de Tarjetas (Líneas 3.5, 4.5 y 5.5)
                 let tarjeta35 = Math.min(89, Math.max(65, 74 + (probE % 12)));
                 let tarjeta45 = Math.min(72, Math.max(40, 53 + (probL % 10)));
                 let tarjeta55 = Math.min(48, Math.max(15, 29 + (probV % 8)));
@@ -539,28 +536,50 @@
             const botonActivo = document.getElementById('btn-' + estado);
             if (botonActivo) botonActivo.classList.add('activo');
             
+            // Ocultar todos los flujos especiales por defecto
+            document.getElementById('herramientas-top').classList.remove('oculto'); 
+            document.getElementById('contenedor-partidos').classList.remove('oculto'); 
+            document.getElementById('seccion-combinada').classList.add('oculto'); 
+            document.getElementById('seccion-sonadora').classList.add('oculto');
+
             if (estado === 'combinada') { 
                 document.getElementById('herramientas-top').classList.add('oculto'); 
                 document.getElementById('contenedor-partidos').classList.add('oculto'); 
                 document.getElementById('seccion-combinada').classList.remove('oculto'); 
                 cambiarRiesgoCombinada(riesgoCombinadaSeleccionado); 
-            } else { 
-                document.getElementById('herramientas-top').classList.remove('oculto'); 
-                document.getElementById('contenedor-partidos').classList.remove('oculto'); 
-                document.getElementById('seccion-combinada').classList.add('oculto'); 
+            } 
+            else if (estado === 'sonadora') {
+                document.getElementById('herramientas-top').classList.add('oculto'); 
+                document.getElementById('contenedor-partidos').classList.add('oculto'); 
+                document.getElementById('seccion-sonadora').classList.remove('oculto'); 
+                cambiarRiesgoSonadora(riesgoSonadoraSeleccionado);
+            }
+            else { 
                 aplicarFiltrosMaster(); 
             }
         }
 
+        /* Controladores de Riesgo independientes */
         function cambiarRiesgoCombinada(tipoRiesgo) {
             riesgoCombinadaSeleccionado = tipoRiesgo;
-            document.querySelectorAll('.btn-riesgo').forEach(b => { b.classList.remove('activo-asegurada', 'activo-moderada', 'activo-arriesgada'); });
-            document.getElementById('riesgo-' + tipoRiesgo).classList.add('activo-' + tipoRiesgo);
+            document.querySelectorAll('#seccion-combinada .btn-riesgo').forEach(b => { 
+                b.classList.remove('activo-asegurada', 'activo-moderada', 'activo-arriesgada'); 
+            });
+            document.getElementById('riesgo-cb-' + tipoRiesgo).classList.add('activo-' + tipoRiesgo);
             generarCombinadaDelDia();
         }
 
+        function cambiarRiesgoSonadora(tipoRiesgo) {
+            riesgoSonadoraSeleccionado = tipoRiesgo;
+            document.querySelectorAll('#seccion-sonadora .btn-riesgo').forEach(b => { 
+                b.classList.remove('activo-asegurada', 'activo-moderada', 'activo-arriesgada'); 
+            });
+            document.getElementById('riesgo-sn-' + tipoRiesgo).classList.add('activo-' + tipoRiesgo);
+            generarSonadoraDelDia();
+        }
+
         function aplicarFiltrosMaster() {
-            if (estadoFiltroActual === 'combinada') return; 
+            if (estadoFiltroActual === 'combinada' || estadoFiltroActual === 'sonadora') return; 
             let f = baseDeDatosHoy; 
             
             if (estadoFiltroActual === 'envivo') f = f.filter(p => p.isLiveNative && !p.isFinished);
@@ -606,13 +625,10 @@
             };
         }
 
-        function generarCombinadaDelDia() {
-            const renderContenedor = document.getElementById('combinada-ticket-render'); 
-            renderContenedor.innerHTML = ''; ticketsMultiplesGenerados = {};
-            
+        /* FILTRAR CARTELERA FUTURA AGRUPADA POR DÍA */
+        function obtenerCarteleraAgrupada() {
             const carteleraFiltro = baseDeDatosHoy.filter(p => !p.isFinished && !p.isLiveNative);
             const partidosPorDia = {};
-            
             carteleraFiltro.forEach(p => {
                 if (!p.utcDate) return;
                 const d = new Date(p.utcDate);
@@ -620,6 +636,14 @@
                 if (!partidosPorDia[fechaCorta]) partidosPorDia[fechaCorta] = [];
                 partidosPorDia[fechaCorta].push(p);
             });
+            return partidosPorDia;
+        }
+
+        /* SECCIÓN COMBINADAS (Mantiene formato original de Tripletas) */
+        function generarCombinadaDelDia() {
+            const renderContenedor = document.getElementById('combinada-ticket-render'); 
+            renderContenedor.innerHTML = '';
+            const partidosPorDia = obtenerCarteleraAgrupada();
 
             let combinadasTotales = 0;
             let htmlCompletoRender = '';
@@ -627,9 +651,15 @@
             for (const dia in partidosPorDia) {
                 let carteleraDia = partidosPorDia[dia];
                 if (carteleraDia.length < 3) continue;
-
+                
                 let maxCombinadas = Math.min(Math.floor(carteleraDia.length / 3), 5);
-                htmlCompletoRender += `<div style="background: rgba(46, 204, 113, 0.1); border: 1px solid var(--verde-principal); color: var(--verde-principal); padding: 8px; border-radius: 6px; text-align: center; margin: 25px 0 15px 0; font-weight: bold; font-size: 0.9rem;">🗓️ CARTELERA: ${dia}</div>`;
+                
+                let tituloColor = "var(--verde-principal)";
+                let tituloBg = "rgba(46, 204, 113, 0.1)";
+                if (riesgoCombinadaSeleccionado === 'moderada') { tituloColor = "var(--oro)"; tituloBg = "rgba(241, 196, 15, 0.1)"; }
+                if (riesgoCombinadaSeleccionado === 'arriesgada') { tituloColor = "var(--alerta)"; tituloBg = "rgba(231, 76, 60, 0.1)"; }
+
+                htmlCompletoRender += `<div style="background: ${tituloBg}; border: 1px solid ${tituloColor}; color: ${tituloColor}; padding: 8px; border-radius: 6px; text-align: center; margin: 20px 0 12px 0; font-weight: bold; font-size: 0.85rem;">🗓️ COMBINADAS DE LA FECHA: ${dia}</div>`;
 
                 for (let i = 0; i < maxCombinadas; i++) {
                     let idTicket = `cb_${dia.replace('/','')}_r_${riesgoCombinadaSeleccionado}_${i}`;
@@ -642,19 +672,19 @@
                         let pickMercado = ""; let pickCuota = 1.0;
 
                         if (riesgoCombinadaSeleccionado === 'asegurada') {
-                            colorBorde = "var(--verde-principal)"; badgeTexto = "🔒 TRIPLE ASEGURADA (80%+)";
+                            colorBorde = "var(--verde-principal)"; badgeTexto = "🔒 TRIPLE ASEGURADA (80%-100%)";
                             pickMercado = (deporteActivo === 'futbol') ? `Doble Oportunidad: ${analisis.favName} o Empate` : `Hándicap Positivo: ${analisis.favName}`;
-                            pickCuota = Math.max(1.10, Math.min(1.25, analisis.favOdds / 1.4)); 
+                            pickCuota = Math.max(1.12, Math.min(1.28, analisis.favOdds / 1.3)); 
                         } 
                         else if (riesgoCombinadaSeleccionado === 'moderada') {
                             colorBorde = "var(--oro)"; badgeTexto = "📊 TRIPLE MODERADA (60%-80%)";
                             pickMercado = `Ganador Directo: ${analisis.favName}`;
-                            pickCuota = Math.max(1.25, Math.min(1.66, analisis.favOdds)); 
+                            pickCuota = Math.max(1.30, Math.min(1.70, analisis.favOdds)); 
                         } 
                         else if (riesgoCombinadaSeleccionado === 'arriesgada') {
-                            colorBorde = "var(--alerta)"; badgeTexto = "🔥 TRIPLE ARRIESGADA (45%-60%)";
+                            colorBorde = "var(--alerta)"; badgeTexto = "🔥 TRIPLE ARRIESGADA (40%-60%)";
                             pickMercado = (deporteActivo === 'futbol') ? `Gana ${analisis.favName} y Más de 1.5 Goles` : `Gana ${analisis.favName} (Margen Ajustado)`;
-                            pickCuota = Math.max(1.66, Math.min(2.22, analisis.favOdds * 1.3)); 
+                            pickCuota = Math.max(1.70, Math.min(2.30, analisis.favOdds * 1.25)); 
                         }
                         poolPicks.push({ p: p, mercado: pickMercado, cuota: pickCuota });
                     });
@@ -667,17 +697,103 @@
                         totalCuota *= c.cuota;
                         h += `<div class="ticket-item"><div style="font-size:0.75rem; color:var(--texto-gris);">🏟️ ${c.p.competition.name}</div>
                             📍 <b>${c.p.homeTeam.name} vs ${c.p.awayTeam.name}</b><br>
-                            <span style="color:var(--oro)">🎯 Pick IA:</span> ${c.mercado} <strong style="color:var(--verde-principal); float:right;">x${c.cuota.toFixed(2)}</strong></div>`;
+                            <span style="color:var(--oro)">🎯 Pick:</span> ${c.mercado} <strong style="color:var(--verde-principal); float:right;">x${c.cuota.toFixed(2)}</strong></div>`;
                     });
                     
+                    let textColorBtn = (colorBorde === "var(--alerta)") ? "#fff" : "#111";
                     h += `<div style="text-align:right; margin:15px 0 10px 0; font-size:1.1rem; font-weight:800; color:var(--oro)">Cuota Total: <span style="background:rgba(241,196,15,0.1); padding:4px 8px; border-radius:6px;">x${totalCuota.toFixed(2)}</span></div>
-                    <button onclick="guardarCombinada('${idTicket}')" style="width:100%; background:${colorBorde}; color:#111; border:none; font-weight:bold; padding:12px; border-radius:8px; cursor:pointer;">🔒 Guardar en Mis Picks</button></div>`;
+                    <button onclick="guardarCombinada('${idTicket}')" style="width:100%; background:${colorBorde}; color:${textColorBtn}; border:none; font-weight:bold; padding:12px; border-radius:8px; cursor:pointer;">🔒 Guardar en Mis Picks</button></div>`;
                     
                     htmlCompletoRender += h;
                     combinadasTotales++;
                 }
             }
-            renderContenedor.innerHTML = combinadasTotales === 0 ? `<p style="padding:40px 20px; text-align:center; color:var(--texto-gris);">⚠️ Se necesitan al menos 3 eventos futuros para armar combinadas.</p>` : htmlCompletoRender;
+            renderContenedor.innerHTML = combinadasTotales === 0 ? `<p style="padding:40px 20px; text-align:center; color:var(--texto-gris);">⚠️ Se necesitan al menos 3 partidos futuros para estructurar tripletas.</p>` : htmlCompletoRender;
+        }
+
+        /* SECCIÓN SOÑADORAS (Nuevo módulo: Incluye absolutamente todos los partidos del día) */
+        function generarSonadoraDelDia() {
+            const renderContenedor = document.getElementById('sonadora-ticket-render');
+            renderContenedor.innerHTML = '';
+            const partidosPorDia = obtenerCarteleraAgrupada();
+
+            let ticketsSonadoresTotales = 0;
+            let htmlCompletoRender = '';
+
+            for (const dia in partidosPorDia) {
+                let carteleraDia = partidosPorDia[dia];
+                if (carteleraDia.length < 2) continue; // Al menos 2 partidos para armar un boleto múltiple
+
+                let idTicket = `sn_${dia.replace('/','')}_r_${riesgoSonadoraSeleccionado}`;
+                let poolPicks = [];
+                
+                let colorBorde = "var(--sonadora-color)";
+                let badgeTexto = "🔮 BOLETO SOÑADOR ASEGURADO (80-100% por partido)";
+                if (riesgoSonadoraSeleccionado === 'moderada') badgeTexto = "🔮 BOLETO SOÑADOR MODERADO (60-80% por partido)";
+                if (riesgoSonadoraSeleccionado === 'arriesgada') badgeTexto = "🔮 BOLETO SOÑADOR ARRIESGADO (40-60% por partido)";
+
+                htmlCompletoRender += `<div style="background: rgba(155, 89, 182, 0.12); border: 1px solid var(--sonadora-color); color: var(--sonadora-color); padding: 8px; border-radius: 6px; text-align: center; margin: 20px 0 12px 0; font-weight: bold; font-size: 0.85rem;">✨ CARTELERA COMPLETA DE LA FECHA: ${dia}</div>`;
+
+                carteleraDia.forEach(p => {
+                    let analisis = analizarProbabilidadYValor(p);
+                    let pickMercado = ""; let pickCuota = 1.0;
+
+                    if (riesgoSonadoraSeleccionado === 'asegurada') {
+                        if (deporteActivo === 'futbol') {
+                            pickMercado = `Menos de 4.5 Goles Totales`;
+                            pickCuota = 1.15;
+                        } else if (deporteActivo === 'basquet') {
+                            pickMercado = `${analisis.favName} Hándicap +12.5`;
+                            pickCuota = 1.18;
+                        } else {
+                            pickMercado = `${analisis.favName} Gana al menos 1 Set`;
+                            pickCuota = 1.14;
+                        }
+                    } 
+                    else if (riesgoSonadoraSeleccionado === 'moderada') {
+                        if (deporteActivo === 'futbol') {
+                            pickMercado = `Más de 1.5 Goles Totales`;
+                            pickCuota = 1.32;
+                        } else {
+                            pickMercado = `Ganador Directo: ${analisis.favName}`;
+                            pickCuota = Math.max(1.35, Math.min(1.65, analisis.favOdds));
+                        }
+                    } 
+                    else if (riesgoSonadoraSeleccionado === 'arriesgada') {
+                        if (deporteActivo === 'futbol') {
+                            pickMercado = `Gana ${analisis.favName} y Más de 2.5 Goles`;
+                            pickCuota = Math.max(2.10, Math.min(3.10, analisis.favOdds * 1.4));
+                        } else if (deporteActivo === 'basquet') {
+                            pickMercado = `Hándicap Alternativo (-5.5) ${analisis.favName}`;
+                            pickCuota = 1.95;
+                        } else {
+                            pickMercado = `Marcador de Sets Exacto: 2-0 ${analisis.favName}`;
+                            pickCuota = 2.10;
+                        }
+                    }
+
+                    poolPicks.push({ p: p, mercado: pickMercado, cuota: pickCuota });
+                });
+
+                ticketsMultiplesGenerados[idTicket] = poolPicks;
+                let totalCuota = 1.0;
+                let h = `<div class="tarjeta-combinada" style="border-top: 4px solid ${colorBorde};"><div style="margin-bottom:12px;"><span style="color:var(--sonadora-color); font-weight:bold; font-size:0.75rem; display:block;">${badgeTexto}</span></div>`;
+
+                poolPicks.forEach(c => {
+                    totalCuota *= c.cuota;
+                    h += `<div class="ticket-item"><div style="font-size:0.75rem; color:var(--texto-gris);">🏟️ ${c.p.competition.name}</div>
+                        📍 <b>${c.p.homeTeam.name} vs ${c.p.awayTeam.name}</b><br>
+                        <span style="color:var(--oro)">🎯 Pick Único:</span> ${c.mercado} <strong style="color:var(--verde-principal); float:right;">x${c.cuota.toFixed(2)}</strong></div>`;
+                });
+
+                h += `<div style="text-align:right; margin:15px 0 10px 0; font-size:1.1rem; font-weight:800; color:var(--oro)">Cuota Megaticket: <span style="background:rgba(241,196,15,0.1); padding:4px 8px; border-radius:6px;">x${totalCuota.toFixed(2)}</span></div>
+                <button onclick="guardarCombinada('${idTicket}')" style="width:100%; background:var(--sonadora-color); color:#fff; border:none; font-weight:bold; padding:12px; border-radius:8px; cursor:pointer;">🔮 Guardar Todo en Mis Picks</button></div>`;
+
+                htmlCompletoRender += h;
+                ticketsSonadoresTotales++;
+            }
+
+            renderContenedor.innerHTML = ticketsSonadoresTotales === 0 ? `<p style="padding:40px 20px; text-align:center; color:var(--texto-gris);">⚠️ Se necesitan partidos en la cartelera para agrupar el boleto gigante.</p>` : htmlCompletoRender;
         }
 
         function obtenerPicksLocales() { return JSON.parse(localStorage.getItem('gp_picks')) || []; }
@@ -685,7 +801,7 @@
             let h = obtenerPicksLocales(); let tk = ticketsMultiplesGenerados[idT]; if (!tk) return; 
             tk.forEach(i => { h.push({ id: Date.now() + Math.random(), home: i.p.homeTeam.name, away: i.p.awayTeam.name, mercado: i.mercado, cuota: i.cuota.toFixed(2), estado: 'PROYECTADO' }); }); 
             localStorage.setItem('gp_picks', JSON.stringify(h)); actualizarEstructuraPicksLocales(); 
-            alert("🎯 ¡Ticket guardado en Mis Picks!"); 
+            alert("🎯 ¡Ticket completo guardado en Mis Picks!"); 
         }
 
         function actualizarEstructuraPicksLocales() { 
