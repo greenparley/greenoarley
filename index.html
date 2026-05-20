@@ -195,7 +195,7 @@
 
         async function cargarDatosDeportivos() {
             document.getElementById('logs-servidor-error').classList.add('oculto');
-            const cacheKey = `sports_cache_mix_${deporteActivo}`;
+            const cacheKey = `sports_cache_mix_v2_${deporteActivo}`;
             const cachedData = localStorage.getItem(cacheKey);
             
             if (cachedData) {
@@ -218,18 +218,18 @@
         async function fetchFutbolOddsApi() {
             try {
                 const hoyStr = new Date().toISOString().split('T')[0];
-                let ligasFutbolObj = JSON.parse(localStorage.getItem('gp_ligas_futbol_odds_cache'));
+                let ligasFutbolObj = JSON.parse(localStorage.getItem('gp_ligas_futbol_odds_cache_v2'));
                 
-                // Lista estricta con las competiciones solicitadas
+                // Lista ordenada estratégicamente colocando copas y finales al inicio estricto
                 const ligasPrioridad = [
-                    "soccer_argentina_primera_division", // Argentina
+                    "soccer_uefa_europa_league",         // Europa League (Prioridad Máxima)
+                    "soccer_uefa_champs_league",         // Champions League
                     "soccer_fifa_world_cup",             // Mundial
-                    "soccer_conmebol_copa_libertadores", // Copas de América
+                    "soccer_conmebol_copa_libertadores", // Copas de América / Conmebol
                     "soccer_conmebol_copa_sudamericana",
                     "soccer_conmebol_copa_america",
-                    "soccer_uefa_champs_league",         // Copas de Europa
-                    "soccer_uefa_europa_league",
-                    "soccer_epl",                        // Top 5
+                    "soccer_argentina_primera_division", // Argentina
+                    "soccer_epl",                        // Las 5 Grandes de Europa
                     "soccer_spain_la_liga",
                     "soccer_italy_serie_a",
                     "soccer_germany_bundesliga",
@@ -237,7 +237,11 @@
                     "soccer_netherlands_eredivisie",     // 4 Más de Europa
                     "soccer_portugal_primeira_liga",
                     "soccer_turkey_super_league",
-                    "soccer_england_championship"
+                    "soccer_england_championship",
+                    "soccer_scotland_premiership",       // Escocia
+                    "soccer_norway_eliteserien",         // Noruega
+                    "soccer_sweden_allsvenskan",         // Suecia
+                    "soccer_saudi_prof_league"           // Arabia Saudita
                 ];
 
                 if (!ligasFutbolObj || ligasFutbolObj.fecha !== hoyStr) {
@@ -246,14 +250,19 @@
                     if (!resSports.ok) { mostrarError("Límite de API excedido."); return []; }
                     const sports = await resSports.json();
                     
-                    // Filtra solo las ligas de nuestra lista que estén activas hoy
-                    let torneosActivos = sports.filter(s => s.group === 'Soccer' && ligasPrioridad.includes(s.key)).map(s => s.key);
+                    // Ordenamos las ligas activas siguiendo el mismo orden de nuestra prioridad
+                    let torneosActivos = sports
+                        .filter(s => s.group === 'Soccer' && ligasPrioridad.includes(s.key))
+                        .map(s => s.key);
+                    
+                    torneosActivos.sort((a, b) => ligasPrioridad.indexOf(a) - ligasPrioridad.indexOf(b));
+
                     ligasFutbolObj = { fecha: hoyStr, ligas: torneosActivos };
-                    localStorage.setItem('gp_ligas_futbol_odds_cache', JSON.stringify(ligasFutbolObj));
+                    localStorage.setItem('gp_ligas_futbol_odds_cache_v2', JSON.stringify(ligasFutbolObj));
                 }
 
-                // Para cuidar los límites de peticiones gratis, llamamos a un máximo de 10 torneos activos por vez
-                let torneosAProcesar = ligasFutbolObj.ligas.slice(0, 10); 
+                // Subimos la ventana de procesamiento a 18 ligas para asegurar cobertura total sin recortes abruptos
+                let torneosAProcesar = ligasFutbolObj.ligas.slice(0, 18); 
                 let poolResultados = [];
                 
                 const promesas = torneosAProcesar.map(async (liga) => {
@@ -296,7 +305,7 @@
             
             for (let liga of endpoints) {
                 try {
-                    const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/basketball/${liga.id}/scoreboard?${fechas}&limit=40`);
+                    const res = fetch(`https://site.api.espn.com/apis/site/v2/sports/basketball/${liga.id}/scoreboard?${fechas}&limit=40`);
                     if (!res.ok) continue; const data = await res.json(); if (!data || !data.events) continue;
                     const procesados = data.events.map(evento => {
                         const localRaw = evento.competitions[0].competitors.find(c => c.homeAway === 'home');
@@ -365,7 +374,7 @@
             const p = baseDeDatosHoy.find(item => item.id === id); if (!p) return;
             document.getElementById('herramientas-top').classList.add('oculto'); document.getElementById('contenedor-partidos').classList.add('oculto'); document.getElementById('seccion-combinada').classList.add('oculto'); document.getElementById('vista-detalle').classList.remove('oculto');
             document.getElementById('detalle-cabecera').innerHTML = `<div style="text-align:center; width:45%;">${generarMonograma(p.homeTeam.name, 'detalle')}<p style="font-size:0.90rem; font-weight:bold;">${p.homeTeam.name}</p></div><h2 style="width:10%; text-align:center; color:var(--verde-principal);">VS</h2><div style="text-align:center; width:45%;">${generarMonograma(p.awayTeam.name, 'detalle')}<p style="font-size:0.90rem; font-weight:bold;">${p.awayTeam.name}</p></div>`;
-            document.getElementById('detalle-consejo').innerHTML = `<div class="caja-consejo">💡 <b>Modelado IA Avanzado:</b> Datos estadísticos ampliados.</div>`;
+            document.getElementById('detalle-consejo').innerHTML = `<div class="caja-consejo">💡 <b>Modelado IA Advanced:</b> Análisis expandido sobre este evento.</div>`;
 
             let probL = p.cuotasReales.local !== "N/A" ? Math.round((1 / p.cuotasReales.local) * 100) : 42;
             let probV = p.cuotasReales.visita !== "N/A" ? Math.round((1 / p.cuotasReales.visita) * 100) : 33;
@@ -557,7 +566,7 @@
         }
         
         function volverAlLobby() { document.getElementById('lobby-selector').classList.remove('oculto'); document.getElementById('app-content').classList.add('oculto'); document.getElementById('vista-detalle').classList.add('oculto'); document.getElementById('logs-servidor-error').classList.add('oculto'); }
-        function forzarActualizacion() { localStorage.removeItem(`sports_cache_mix_${deporteActivo}`); iniciarApp(); }
+        function forzarActualizacion() { localStorage.removeItem(`sports_cache_mix_v2_${deporteActivo}`); iniciarApp(); }
 
         window.onload = () => { actualizarEstructuraPicksLocales(); };
     </script>
