@@ -66,7 +66,7 @@
         .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 500px; background: #0e1726; border-top: 1px solid var(--tarjeta-borde); display: flex; height: 55px; z-index: 999; }
         .nav-item-btn { flex: 1; background: transparent; border: none; color: var(--texto-gris); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer; }
         .nav-item-btn.activo { color: var(--verde-principal); }
-        .badge-contador { background: var(--verde-principal); color: #111; font-size: 0.7 tribe; font-weight: bold; padding: 1px 5px; border-radius: 10px; position: absolute; top: 4px; right: 22%; }
+        .badge-contador { background: var(--verde-principal); color: #111; font-size: 0.7rem; font-weight: bold; padding: 1px 5px; border-radius: 10px; position: absolute; top: 4px; right: 22%; }
         
         /* Panel Lateral de Picks Guardados */
         .panel-picks-lateral { position: fixed; top: 0; right: 0; width: 100%; max-width: 320px; height: 100%; background: #0c1322; border-left: 1px solid var(--tarjeta-borde); z-index: 10000; padding: 20px; transition: transform 0.3s; }
@@ -219,19 +219,44 @@
             try {
                 const hoyStr = new Date().toISOString().split('T')[0];
                 let ligasFutbolObj = JSON.parse(localStorage.getItem('gp_ligas_futbol_odds_cache'));
+                
+                // Lista estricta con las competiciones solicitadas
+                const ligasPrioridad = [
+                    "soccer_argentina_primera_division", // Argentina
+                    "soccer_fifa_world_cup",             // Mundial
+                    "soccer_conmebol_copa_libertadores", // Copas de América
+                    "soccer_conmebol_copa_sudamericana",
+                    "soccer_conmebol_copa_america",
+                    "soccer_uefa_champs_league",         // Copas de Europa
+                    "soccer_uefa_europa_league",
+                    "soccer_epl",                        // Top 5
+                    "soccer_spain_la_liga",
+                    "soccer_italy_serie_a",
+                    "soccer_germany_bundesliga",
+                    "soccer_france_ligue_one",
+                    "soccer_netherlands_eredivisie",     // 4 Más de Europa
+                    "soccer_portugal_primeira_liga",
+                    "soccer_turkey_super_league",
+                    "soccer_england_championship"
+                ];
+
                 if (!ligasFutbolObj || ligasFutbolObj.fecha !== hoyStr) {
                     let resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
                     if (!resSports.ok && rotarApiKey()) resSports = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${obtenerApiKeyActiva()}`);
                     if (!resSports.ok) { mostrarError("Límite de API excedido."); return []; }
                     const sports = await resSports.json();
-                    let torneosActivos = sports.filter(s => s.group === 'Soccer').map(s => s.key);
+                    
+                    // Filtra solo las ligas de nuestra lista que estén activas hoy
+                    let torneosActivos = sports.filter(s => s.group === 'Soccer' && ligasPrioridad.includes(s.key)).map(s => s.key);
                     ligasFutbolObj = { fecha: hoyStr, ligas: torneosActivos };
                     localStorage.setItem('gp_ligas_futbol_odds_cache', JSON.stringify(ligasFutbolObj));
                 }
 
-                let torneosPrioritarios = ligasFutbolObj.ligas.slice(0, 8); 
+                // Para cuidar los límites de peticiones gratis, llamamos a un máximo de 10 torneos activos por vez
+                let torneosAProcesar = ligasFutbolObj.ligas.slice(0, 10); 
                 let poolResultados = [];
-                const promesas = torneosPrioritarios.map(async (liga) => {
+                
+                const promesas = torneosAProcesar.map(async (liga) => {
                     try {
                         let res = await fetch(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=${obtenerApiKeyActiva()}&regions=eu&markets=h2h`);
                         if (res.ok) return await res.json();
