@@ -163,7 +163,7 @@
     </div>
 
     <script>
-        // Listado de claves actualizadas de la imagen de respaldo (Solo las nuevas operativas)
+        // Claves operativas e intactas
         const API_KEYS = [
             "85bc73d9e83050fb3f96603a1fc6c5cc",
             "f491c12da7793540be1e7da993f1f7d2"
@@ -188,7 +188,6 @@
         let ticketsMultiplesGenerados = {}; 
         let deporteActivo = 'futbol'; 
 
-        // Aseguramos la persistencia de todas las ligas requeridas
         const LIGAS_FUTBOL_REQUERIDAS = [
             { key: "soccer_epl", nombre: "Premier League" },
             { key: "soccer_spain_la_liga", nombre: "LaLiga" },
@@ -196,7 +195,7 @@
             { key: "soccer_germany_bundesliga", nombre: "Bundesliga" },
             { key: "soccer_france_ligue_one", nombre: "Ligue 1 Francia" },
             { key: "soccer_argentina_primera", nombre: "Liga Profesional Argentina" },
-            { key: "soccer_saudi_pro_league", nombre: "Saudi Pro League (Liga Árabe)" },
+            { key: "soccer_saudi_pro_league", nombre: "Saudi Pro League" },
             { key: "soccer_uefa_champions_league", nombre: "UEFA Champions League" },
             { key: "soccer_uefa_europa_league", nombre: "UEFA Europa League" },
             { key: "soccer_uefa_conference_league", nombre: "UEFA Conference League" },
@@ -260,30 +259,24 @@
 
         async function fetchFutbolOddsApi() {
             let poolDePartidosUnificados = [];
-            
             const ahora = new Date();
             const limitePasado = new Date(ahora.getTime() - 43200000); 
             const fechaInicioIso = limitePasado.toISOString().split('.')[0] + 'Z'; 
-            
             const maxFuturo = new Date();
             maxFuturo.setDate(ahora.getDate() + 7);
             const fechaFinIso = maxFuturo.toISOString().split('.')[0] + 'Z';
 
             for (const liga of LIGAS_FUTBOL_REQUERIDAS) {
                 let peticionExitosa = false;
-                
                 while (!peticionExitosa) {
                     try {
                         let urlLigaEspecifica = `https://api.the-odds-api.com/v4/sports/${liga.key}/odds/?apiKey=${obtenerApiKeyActiva()}&regions=eu,us,uk,au&markets=h2h&commenceTimeFrom=${fechaInicioIso}&commenceTimeTo=${fechaFinIso}`;
-                        
                         let res = await fetch(urlLigaEspecifica);
                         
                         if (!res.ok) {
-                            console.warn(`Key índice ${indiceApiKeyActual} rechazada con estado: ${res.status}. Solicitando rotación inmediata...`);
-                            if (rotarApiKey()) {
-                                continue; 
-                            } else {
-                                mostrarError("Se han agotado los créditos en todas las API Keys registradas en el sistema.");
+                            if (rotarApiKey()) continue; 
+                            else {
+                                mostrarError("Se han agotado los créditos en todas las API Keys registradas.");
                                 return poolDePartidosUnificados; 
                             }
                         }
@@ -312,20 +305,11 @@
                                 isFinished: estado.isFinished
                             };
                         });
-                        
                         poolDePartidosUnificados = poolDePartidosUnificados.concat(procesados);
-                        
-                    } catch (error) {
-                        console.error("Error crítico de red consultando la liga: " + liga.nombre, error);
-                        break; 
-                    }
+                    } catch (error) { break; }
                 }
             }
-            
-            if (poolDePartidosUnificados.length === 0) {
-                mostrarError("No se encontraron partidos válidos o todas las llaves están agotadas.");
-            }
-            
+            if (poolDePartidosUnificados.length === 0) mostrarError("No se encontraron partidos válidos.");
             return poolDePartidosUnificados;
         }
 
@@ -377,7 +361,6 @@
                         if (rotarApiKey()) continue;
                         else return [];
                     }
-                    
                     const resultadosTotales = await res.json();
                     peticionExitosa = true;
                     
@@ -419,7 +402,7 @@
         function toggleMercado(mercadoId, opcion) {
             const masContenedor = document.getElementById(`${mercadoId}-mas-content`);
             const menosContenedor = document.getElementById(`${mercadoId}-menos-content`);
-            const btnMas = document.getElementById://btn-${mercadoId}-mas);
+            const btnMas = document.getElementById(`btn-${mercadoId}-mas`);
             const btnMenos = document.getElementById(`btn-${mercadoId}-menos`);
 
             if (opcion === 'mas') {
@@ -585,10 +568,6 @@
                     <div class="bloque-mercado"><div class="titulo-mercado">📊 GAMES DENTRO DEL SET</div>
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>${p.homeTeam.name}: Más de 4.5 Games en Set 1</span><span>${gamesSetL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${gamesSetL}%"></div></div></div>
                     <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>${p.awayTeam.name}: Más de 4.5 Games en Set 1</span><span>${gamesSetV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${gamesSetV}%"></div></div></div></div>
-                    <div class="bloque-mercado"><div class="titulo-mercado">📈 TOTAL DE GAMES (PARTIDO COMPLETO)</div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>General: Más de 21.5 Games Totales</span><span>${totalGamesGeneral}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--oro); width:${totalGamesGeneral}%"></div></div></div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Individual: ${p.homeTeam.name} Más de 11.5 Games</span><span>${indGamesL}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--verde-principal); width:${indGamesL}%"></div></div></div>
-                    <div class="barra-container"><div style="display:flex; justify-content:space-between;"><span>Individual: ${p.awayTeam.name} Más de 11.5 Games</span><span>${indGamesV}%</span></div><div class="barra-fondo"><div class="barra-progreso" style="background:var(--alerta); width:${indGamesV}%"></div></div></div></div>
                     <div class="bloque-mercado"><div class="titulo-mercado">⚡ ACES PROYECTADOS POR IA</div>
                     <div style="display:flex; justify-content:space-between; font-size:0.85rem; padding:5px 0;">
                         <span>🚀 Proyección ${p.homeTeam.name}: <b>${acesL} Aces</b></span>
@@ -779,9 +758,9 @@
                 let carteleraDia = partidosPorDia[dia]; if (carteleraDia.length < 2) continue; 
                 let idTicket = `sn_${dia.replace('/','')}_r_${riesgoSonadoraSeleccionado}`; let poolPicks = [];
                 
-                let badgeTexto = "🔮 MEGATICKET SOÑADOR: ASEGURADO (Selección de Máxima Confianza)";
-                if (riesgoSonadoraSeleccionado === 'moderada') badgeTexto = "🔮 MEGATICKET SOÑADOR: MODERADO (Optimización de Valor)";
-                if (riesgoSonadoraSeleccionado === 'arriesgada') badgeTexto = "🔮 MEGATICKET SOÑADOR: ARRIESGADO (¡Un Pick Único de Cuota Alta por Partido!)";
+                let badgeTexto = "🔮 MEGATICKET SOÑADOR: ASEGURADO";
+                if (riesgoSonadoraSeleccionado === 'moderada') badgeTexto = "🔮 MEGATICKET SOÑADOR: MODERADO";
+                if (riesgoSonadoraSeleccionado === 'arriesgada') badgeTexto = "🔮 MEGATICKET SOÑADOR: ARRIESGADO";
 
                 htmlCompletoRender += `<div style="background: rgba(155, 89, 182, 0.12); border: 1px solid var(--sonadora-color); color: var(--sonadora-color); padding: 8px; border-radius: 6px; text-align: center; margin: 20px 0 12px 0; font-weight: bold; font-size: 0.85rem;">✨ CARTELERA COMPLETA DE LA FECHA: ${dia}</div>`;
 
