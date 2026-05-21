@@ -163,8 +163,8 @@
     </div>
 
     <script>
-        // Clave operativa verificada
-        const API_KEYS = ["f900242e004a6964ac7d11eafca1119c"];
+        // Clave corregida letra por letra según captura de pantalla
+        const API_KEYS = ["f900242e004a6964ac7d11eafca119c"];
         let indiceApiKeyActual = 0;
         
         function obtenerApiKeyActiva() { return API_KEYS[indiceApiKeyActual]; }
@@ -191,7 +191,7 @@
         function generarMonograma(nombre, extraClass = "") {
             if(!nombre) nombre = "X";
             const iniciales = nombre.substring(0,3).toUpperCase();
-            return `<div class="escudo-dinamico ${extraClass}">${iniciales}</div>`;
+            return `<div class="escuda-dinamico ${extraClass}">${iniciales}</div>`;
         }
 
         function formatearFechaHoraLocal(fechaIso) {
@@ -222,7 +222,6 @@
         async function cargarDatosDeportivos() {
             document.getElementById('logs-servidor-error').classList.add('oculto');
             
-            // BORRADO FORZOSO DE CACHÉ: Evita que el navegador use respuestas viejas con error
             const cacheKey = `sports_cache_mix_v4_${deporteActivo}`;
             localStorage.removeItem(cacheKey);
 
@@ -238,7 +237,6 @@
             return datosProcesados;
         }
 
-        // Sistema híbrido robusto para Fútbol
         async function fetchFutbolOddsApiAgrupado() {
             let poolDePartidosUnificados = [];
             const ahora = new Date();
@@ -246,7 +244,6 @@
             const fechaInicioIso = limitePasado.toISOString().split('.')[0] + 'Z'; 
             
             try {
-                // Probamos con el endpoint de 'soccer' general (Máximo ahorro: 1 crédito)
                 let urlGlobal = `https://api.the-odds-api.com/v4/sports/soccer/odds/?apiKey=${obtenerApiKeyActiva()}&regions=eu&markets=h2h&commenceTimeFrom=${fechaInicioIso}`;
                 let res = await fetch(urlGlobal);
                 
@@ -352,7 +349,7 @@
 
         async function iniciarApp() {
             const contenedor = document.getElementById('contenedor-partidos');
-            contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px; text-align:center;">⏳ Sincronizando cartelera con API Key limpia...</p>`;
+            contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px; text-align:center;">⏳ Cargando cartelera y verificando accesos...</p>`;
             baseDeDatosHoy = await cargarDatosDeportivos();
             if (baseDeDatosHoy.length > 0) { 
                 generarCombinadaDelDia(); 
