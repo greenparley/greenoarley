@@ -163,14 +163,10 @@
     </div>
 
     <script>
-        // Listado de claves de respaldo (Actualizado a 6 llaves en total)
+        // Listado de claves actualizadas de la imagen de respaldo (Solo las nuevas operativas)
         const API_KEYS = [
-            "b1068f561f80975166b5c1ab67a2888a",
-            "c7b062bf872742e25c086b5ad997ba0a",
-            "f900242e004a6964ac7d711eafca119c",
-            "d3d7b6a1627d78292b24d7b2554e8c5d",
-            "PEGA_AQUÍ_TU_QUINTA_KEY",
-            "PEGA_AQUÍ_TU_SEXTA_KEY"
+            "85bc73d9e83050fb3f96603a1fc6c5cc",
+            "f491c12da7793540be1e7da993f1f7d2"
         ];
         let indiceApiKeyActual = 0;
         
@@ -192,6 +188,7 @@
         let ticketsMultiplesGenerados = {}; 
         let deporteActivo = 'futbol'; 
 
+        // Aseguramos la persistencia de todas las ligas requeridas
         const LIGAS_FUTBOL_REQUERIDAS = [
             { key: "soccer_epl", nombre: "Premier League" },
             { key: "soccer_spain_la_liga", nombre: "LaLiga" },
@@ -409,7 +406,7 @@
 
         async function iniciarApp() {
             const contenedor = document.getElementById('contenedor-partidos');
-            contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px; text-align:center;">⏳ Validando API Keys y descargando ligas avanzadas a 7 días...</p>`;
+            contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px; text-align:center;">⏳ Conectando con las nuevas API Keys y descargando ligas a 7 días...</p>`;
             baseDeDatosHoy = await cargarDatosDeportivos();
             if (baseDeDatosHoy.length > 0) { 
                 generarCombinadaDelDia(); 
@@ -422,7 +419,7 @@
         function toggleMercado(mercadoId, opcion) {
             const masContenedor = document.getElementById(`${mercadoId}-mas-content`);
             const menosContenedor = document.getElementById(`${mercadoId}-menos-content`);
-            const btnMas = document.getElementById(`btn-${mercadoId}-mas`);
+            const btnMas = document.getElementById://btn-${mercadoId}-mas);
             const btnMenos = document.getElementById(`btn-${mercadoId}-menos`);
 
             if (opcion === 'mas') {
