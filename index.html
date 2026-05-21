@@ -173,17 +173,15 @@
         let indiceApiKeyActual = 0;
         function obtenerApiKeyActiva() { return API_KEYS[indiceApiKeyActual]; }
         
-        // Función inteligente: si se cae una API KEY, pasa a la siguiente
         function rotarApiKey() {
             indiceApiKeyActual++;
             if (indiceApiKeyActual >= API_KEYS.length) {
-                indiceApiKeyActual = 0; // Si llegamos al final, vuelve a probar la primera
+                indiceApiKeyActual = 0; 
                 return false; 
             }
             return true;
         }
 
-        // Fetch inteligente que reintenta si la cuenta se quedó sin créditos (Error 401/429)
         async function fetchConRotacion(urlTemplate) {
             let url = urlTemplate.replace('API_KEY_PLACEHOLDER', obtenerApiKeyActiva());
             let res = await fetch(url);
@@ -223,15 +221,15 @@
             // 🐪 Liga Árabe
             "soccer_saudi_arabia_pro_league": "Saudi Pro League",
             
-            // 🇦🇷 Liga Argentina (Pongo ambas variantes que usa la API para asegurar)
+            // 🇦🇷 Liga Argentina
             "soccer_argentina_primera_division": "Liga Profesional Arg",
             "soccer_argentina_primera": "Liga Profesional Arg",
             
-            // 🌎 Copas CONMEBOL
-            "soccer_conmebol_libertadores": "Copa Libertadores",
-            "soccer_conmebol_sudamericana": "Copa Sudamericana",
+            // 🌎 Copas CONMEBOL Corregidas
+            "soccer_conmebol_copa_libertadores": "Copa Libertadores",
+            "soccer_conmebol_copa_sudamericana": "Copa Sudamericana",
             
-            // 🏆 Copas UEFA (Pongo ambas variantes de Champions por compatibilidad)
+            // 🏆 Copas UEFA
             "soccer_uefa_champs_league": "Champions League",
             "soccer_uefa_champions_league": "Champions League",
             "soccer_uefa_europa_league": "Europa League",
@@ -271,7 +269,6 @@
 
         async function cargarDatosDeportivos() {
             document.getElementById('logs-servidor-error').classList.add('oculto');
-            
             const cacheKey = `sports_cache_mix_v4_${deporteActivo}`;
             localStorage.removeItem(cacheKey);
 
@@ -287,10 +284,9 @@
             return datosProcesados;
         }
 
-        // LÓGICA DE FÚTBOL CORREGIDA (Ligas Específicas)
         async function fetchFutbolOddsApiAgrupado() {
             let poolDePartidosUnificados = [];
-            const ligasParaBuscar = Object.keys(MAPEO_LIGAS); // Busca explícitamente en el catálogo ampliado
+            const ligasParaBuscar = Object.keys(MAPEO_LIGAS);
             
             try {
                 let promesas = ligasParaBuscar.map(async (liga) => {
@@ -366,21 +362,15 @@
             return pool;
         }
 
-        // LÓGICA DE TENIS CORREGIDA (Busca dinámicamente los torneos activos de hoy)
         async function fetchTenisOddsApi() {
             let pool = [];
             try {
-                // 1. Primero le pregunta a la API qué torneos de tenis se juegan HOY
                 let resSports = await fetchConRotacion(`https://api.the-odds-api.com/v4/sports/?apiKey=API_KEY_PLACEHOLDER`);
                 if (!resSports.ok) return [];
                 let sports = await resSports.json();
-                
-                // Filtramos los torneos que pertenecen al grupo de Tenis y tomamos los primeros 4 más importantes
                 let torneosDeTenisActivos = sports.filter(s => s.group === 'Tennis').map(s => s.key).slice(0, 4);
-                
-                if(torneosDeTenisActivos.length === 0) return []; // No hay tenis hoy
+                if(torneosDeTenisActivos.length === 0) return [];
 
-                // 2. Busca los partidos exactos de esos torneos activos
                 let promesas = torneosDeTenisActivos.map(async (liga) => {
                     let res = await fetchConRotacion(`https://api.the-odds-api.com/v4/sports/${liga}/odds/?apiKey=API_KEY_PLACEHOLDER&regions=eu&markets=h2h`);
                     if (!res.ok) return [];
@@ -467,29 +457,6 @@
                 let gol15 = Math.min(94, Math.max(70, 85 + (probE % 10)));
                 let gol25 = Math.min(82, Math.max(40, 55 + (probL % 15) - (probE % 8)));
                 let gol35 = Math.min(55, Math.max(18, 28 + (probV % 12)));
-                
-                let corner85 = Math.min(92, Math.max(75, 83 + (probL % 8)));
-                let corner95 = Math.min(78, Math.max(50, 62 + (probV % 9)));
-                let corner105 = Math.min(58, Math.max(25, 41 + (probE % 7)));
-
-                let tarjeta35 = Math.min(89, Math.max(65, 74 + (probE % 12)));
-                let tarjeta45 = Math.min(72, Math.max(40, 53 + (probL % 10)));
-                let tarjeta55 = Math.min(48, Math.max(15, 29 + (probV % 8)));
-
-                let m1, m2, m3; let pm1, pm2, pm3;
-                if (probL > probV + 10) {
-                    m1 = "2-0"; pm1 = Math.max(12, Math.round(probL * 0.25));
-                    m2 = "1-0"; pm2 = Math.max(10, Math.round(probL * 0.20));
-                    m3 = "2-1"; pm3 = Math.max(8, Math.round(probL * 0.15));
-                } else if (probV > probL + 10) {
-                    m1 = "0-2"; pm1 = Math.max(12, Math.round(probV * 0.25));
-                    m2 = "0-1"; pm2 = Math.max(10, Math.round(probV * 0.20));
-                    m3 = "1-2"; pm3 = Math.max(8, Math.round(probV * 0.15));
-                } else {
-                    m1 = "1-1"; pm1 = Math.max(15, Math.round(probE * 0.35));
-                    m2 = "0-0"; pm2 = Math.max(10, Math.round(probE * 0.25));
-                    m3 = "1-0"; pm3 = Math.max(8, Math.round(probL * 0.18));
-                }
 
                 htmlMercados += `
                     <div class="bloque-mercado"><div class="titulo-mercado">🎯 GANADOR DEL PARTIDO (1X2)</div>
@@ -519,8 +486,6 @@
             } 
             else if (deporteActivo === 'tenis') {
                 let setL = Math.min(88, Math.max(15, probL + 4)); let setV = 100 - setL;
-                let gamesSetL = Math.min(85, Math.max(30, 45 + (probL % 20)));
-                let gamesSetV = Math.min(85, Math.max(30, 45 + (probV % 20)));
 
                 htmlMercados += `
                     <div class="bloque-mercado"><div class="titulo-mercado">🎾 GANADOR DEL PARTIDO</div>
@@ -726,7 +691,7 @@
                     if (deporteActivo === 'futbol') {
                         if (riesgoSonadoraSeleccionado === 'asegurada') {
                             if (esMuyFavorito) { pickMercado = `Doble Oportunidad: ${analisis.favName} o Empate`; pickCuota = 1.16; } 
-                            else { pickMercado = `Corners: Más de 7.5 Corners Totales`; pickCuota = 1.18; }
+                            else { pickMercado = `Goles: Más de 0.5 Goles Totales`; pickCuota = 1.12; }
                         } else if (riesgoSonadoraSeleccionado === 'moderada') {
                             if (esMuyFavorito) { pickMercado = `Ganador Directo: ${analisis.favName}`; pickCuota = Math.max(1.35, analisis.favOdds); } 
                             else { pickMercado = `Goles: Más de 1.5 Goles Totales`; pickCuota = 1.32; }
