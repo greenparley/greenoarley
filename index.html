@@ -88,7 +88,7 @@
             <p class="lobby-sub">Plataforma de Tendencias Deportivas</p>
 
             <button class="btn-deporte-card" onclick="irADeporte('futbol')">
-                <div class="deporte-info"><h3>Fútbol Profesional ⚽</h3><p>Grandes Ligas Europeas y Copas Internacionales</p></div><div class="deporte-icono">🏟️</div>
+                <div class="deporte-info"><h3>Fútbol Profesional ⚽</h3><p>Ligas Globales y Copas Internacionales</p></div><div class="deporte-icono">🏟️</div>
             </button>
             <button class="btn-deporte-card" onclick="irADeporte('basquet')">
                 <div class="deporte-info"><h3>Básquetbol Global 🏀</h3><p>Cartelera Directa de ESPN</p></div><div class="deporte-icono">🏀</div>
@@ -206,22 +206,42 @@
         let deporteActivo = 'futbol'; 
 
         const MAPEO_LIGAS = {
+            // 🌟 5 Grandes Ligas
             "soccer_epl": "Premier League",
             "soccer_spain_la_liga": "LaLiga",
             "soccer_italy_serie_a": "Serie A",
             "soccer_germany_bundesliga": "Bundesliga",
-            "soccer_france_ligue_one": "Ligue 1 Francia",
+            "soccer_france_ligue_one": "Ligue 1",
+            
+            // 🇪🇺 5 Europeas Complementarias
+            "soccer_portugal_primeira_liga": "Primeira Liga (POR)",
+            "soccer_netherlands_eredivisie": "Eredivisie (NED)",
+            "soccer_belgium_first_div": "Pro League (BEL)",
+            "soccer_turkey_super_league": "Süper Lig (TUR)",
+            "soccer_greece_super_league": "Super League (GRE)",
+            
+            // 🐪 Liga Árabe
+            "soccer_saudi_arabia_pro_league": "Saudi Pro League",
+            
+            // 🇦🇷 Liga Argentina (Pongo ambas variantes que usa la API para asegurar)
+            "soccer_argentina_primera_division": "Liga Profesional Arg",
             "soccer_argentina_primera": "Liga Profesional Arg",
+            
+            // 🌎 Copas CONMEBOL
             "soccer_conmebol_libertadores": "Copa Libertadores",
+            "soccer_conmebol_sudamericana": "Copa Sudamericana",
+            
+            // 🏆 Copas UEFA (Pongo ambas variantes de Champions por compatibilidad)
+            "soccer_uefa_champs_league": "Champions League",
             "soccer_uefa_champions_league": "Champions League",
             "soccer_uefa_europa_league": "Europa League",
-            "soccer_mexico_ligamx": "Liga MX"
+            "soccer_uefa_europa_conference_league": "Conference League"
         };
 
         function generarMonograma(nombre, extraClass = "") {
             if(!nombre) nombre = "X";
             const iniciales = nombre.substring(0,3).toUpperCase();
-            return `<div class="escuda-dinamico ${extraClass}">${iniciales}</div>`;
+            return `<div class="escudo-dinamico ${extraClass}">${iniciales}</div>`;
         }
 
         function formatearFechaHoraLocal(fechaIso) {
@@ -270,7 +290,7 @@
         // LÓGICA DE FÚTBOL CORREGIDA (Ligas Específicas)
         async function fetchFutbolOddsApiAgrupado() {
             let poolDePartidosUnificados = [];
-            const ligasParaBuscar = Object.keys(MAPEO_LIGAS); // Busca explícitamente en Premier, LaLiga, Libertadores, etc.
+            const ligasParaBuscar = Object.keys(MAPEO_LIGAS); // Busca explícitamente en el catálogo ampliado
             
             try {
                 let promesas = ligasParaBuscar.map(async (liga) => {
