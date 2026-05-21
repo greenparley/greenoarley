@@ -163,18 +163,19 @@
     </div>
 
     <script>
-        // Listado de claves de respaldo
+        // Listado de claves de respaldo (Actualizado a 6 llaves en total)
         const API_KEYS = [
             "b1068f561f80975166b5c1ab67a2888a",
             "c7b062bf872742e25c086b5ad997ba0a",
             "f900242e004a6964ac7d711eafca119c",
-            "d3d7b6a1627d78292b24d7b2554e8c5d"
+            "d3d7b6a1627d78292b24d7b2554e8c5d",
+            "PEGA_AQUÍ_TU_QUINTA_KEY",
+            "PEGA_AQUÍ_TU_SEXTA_KEY"
         ];
         let indiceApiKeyActual = 0;
         
         function obtenerApiKeyActiva() { return API_KEYS[indiceApiKeyActual]; }
         
-        // Función de rotación pura: Devuelve falso si ya quemamos todas las claves de la lista
         function rotarApiKey() {
             if (indiceApiKeyActual < API_KEYS.length - 1) { 
                 indiceApiKeyActual++; 
@@ -260,7 +261,6 @@
             return datosProcesados;
         }
 
-        // FUNCIÓN CRÍTICA CON BUCLE DE INTENTOS BLINDADO PARA EVITAR CUOTAS EXPIRADAS (ERRORES 429 / 401)
         async function fetchFutbolOddsApi() {
             let poolDePartidosUnificados = [];
             
@@ -275,28 +275,24 @@
             for (const liga of LIGAS_FUTBOL_REQUERIDAS) {
                 let peticionExitosa = false;
                 
-                // Mientras no logremos una petición limpia y queden llaves disponibles, el bucle insiste
                 while (!peticionExitosa) {
                     try {
                         let urlLigaEspecifica = `https://api.the-odds-api.com/v4/sports/${liga.key}/odds/?apiKey=${obtenerApiKeyActiva()}&regions=eu,us,uk,au&markets=h2h&commenceTimeFrom=${fechaInicioIso}&commenceTimeTo=${fechaFinIso}`;
                         
                         let res = await fetch(urlLigaEspecifica);
                         
-                        // Si la API responde con Código 429 (Límite excedido) o 401 (No autorizado)
                         if (!res.ok) {
                             console.warn(`Key índice ${indiceApiKeyActual} rechazada con estado: ${res.status}. Solicitando rotación inmediata...`);
                             if (rotarApiKey()) {
-                                // Se ejecuta el bucle 'while' de nuevo usando el nuevo token asignado
                                 continue; 
                             } else {
-                                // Si rotarApiKey devuelve false, significa que quemamos absolutamente todas las llaves
                                 mostrarError("Se han agotado los créditos en todas las API Keys registradas en el sistema.");
                                 return poolDePartidosUnificados; 
                             }
                         }
                         
                         const resultadoLiga = await res.json();
-                        peticionExitosa = true; // Rompe el ciclo while para avanzar a la siguiente liga del array principal
+                        peticionExitosa = true; 
                         
                         const procesados = resultadoLiga.map(partido => {
                             let cuotas = { local: "N/A", empate: "N/A", visita: "N/A" };
@@ -324,7 +320,6 @@
                         
                     } catch (error) {
                         console.error("Error crítico de red consultando la liga: " + liga.nombre, error);
-                        // En caso de caída de internet o bloqueo de red, saltamos para no congelar la pantalla
                         break; 
                     }
                 }
