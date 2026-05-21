@@ -91,7 +91,7 @@
                 <div class="deporte-info"><h3>Fútbol Profesional ⚽</h3><p>Grandes Ligas, Copas Europeas y Conmebol</p></div><div class="deporte-icono">🏟️</div>
             </button>
             <button class="btn-deporte-card" onclick="irADeporte('basquet')">
-                <div class="deporte-info"><h3>Básquetbol Global 🏀</h3><p>Cartelera Directa de ESPN</p></div><div class="deporte-icono">🏀</div>
+                <div class="deporte-info"><h3>Básquetbol Global 🏀</h3><p>Cartelera Ampliada a 7 días</p></div><div class="deporte-icono">🏀</div>
             </button>
             <button class="btn-deporte-card" onclick="irADeporte('tenis')">
                 <div class="deporte-info"><h3>Tenis Internacional 🎾</h3><p>Torneos ATP, WTA y Challengers</p></div><div class="deporte-icono">🎾</div>
@@ -221,7 +221,8 @@
             
             if (cachedData) {
                 const parsed = JSON.parse(cachedData);
-                if (Date.now() - parsed.timestamp < 300000 && parsed.data && parsed.data.length > 0) return parsed.data; 
+                // Bajamos el caché a 1 minuto para asegurar recargas fluidas de toda la semana
+                if (Date.now() - parsed.timestamp < 60000 && parsed.data && parsed.data.length > 0) return parsed.data; 
             }
 
             let datosProcesados = [];
@@ -236,10 +237,11 @@
             return datosProcesados;
         }
 
-        /* ⚽ METODO DE AHORRO FÚTBOL (Abierto a todas las ligas disponibles) */
+        /* ⚽ METODO DE FÚTBOL (Rango semanal abierto sin límites superiores) */
         async function fetchFutbolOddsApi() {
             try {
                 const limiteTiempoFiltro = new Date(Date.now() - 86400000); 
+                const maxLimiteFuturo = new Date(Date.now() + (7 * 86400000)); // Límite técnico a 7 días en el futuro
                 
                 let res = await fetch(`https://api.the-odds-api.com/v4/sports/soccer/odds/?apiKey=${obtenerApiKeyActiva()}&regions=eu&markets=h2h`);
                 if (!res.ok && rotarApiKey()) {
@@ -269,19 +271,23 @@
                         isLiveNative: estado.isLiveNative, 
                         isFinished: estado.isFinished
                     };
-                }).filter(p => new Date(p.utcDate) >= limiteTiempoFiltro);
+                }).filter(p => {
+                    const d = new Date(p.utcDate);
+                    return d >= limiteTiempoFiltro && d <= maxLimiteFuturo;
+                });
             } catch (error) { return []; }
         }
 
+        /* 🏀 METODO DE BÁSQUETBOL (Ampliado de 3 a 7 días exactos en el futuro) */
         async function fetchBasketESPNPublico() {
             let pool = []; const endpoints = [{ id: "nba", tag: "NBA" }, { id: "mens-euroleague", tag: "Euroliga" }];
             let d1 = new Date(); d1.setDate(d1.getDate() - 1); 
-            let d2 = new Date(); d2.setDate(d2.getDate() + 3);
+            let d2 = new Date(); d2.setDate(d2.getDate() + 7); // 📅 CAMBIO CLAVE: Ampliado a 7 días completos
             let fechas = `dates=${d1.toISOString().split('T')[0].replace(/-/g, '')}-${d2.toISOString().split('T')[0].replace(/-/g, '')}`;
             
             for (let liga of endpoints) {
                 try {
-                    const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/basketball/${liga.id}/scoreboard?${fechas}&limit=40`);
+                    const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/basketball/${liga.id}/scoreboard?${fechas}&limit=100`);
                     if (!res.ok) continue; const data = await res.json(); if (!data || !data.events) continue;
                     const procesados = data.events.map(evento => {
                         const localRaw = evento.competitions[0].competitors.find(c => c.homeAway === 'home');
@@ -305,10 +311,11 @@
             return pool;
         }
 
-        /* 🎾 METODO DE AHORRO TENIS (1 Sola Petición Global) */
+        /* 🎾 METODO DE TENIS (Rango semanal completo de 7 días futuros) */
         async function fetchTenisOddsApi() {
             try {
                 const limiteTiempoFiltro = new Date(Date.now() - 86400000); 
+                const maxLimiteFuturo = new Date(Date.now() + (7 * 86400000));
                 
                 let res = await fetch(`https://api.the-odds-api.com/v4/sports/tennis/odds/?apiKey=${obtenerApiKeyActiva()}&regions=eu&markets=h2h`);
                 if (!res.ok && rotarApiKey()) {
@@ -335,20 +342,23 @@
                             awayTeam: { name: partido.away_team, score: estado.isFinished ? "F" : "" }, 
                             cuotasReales: cuotas, isLiveNative: estado.isLiveNative, isFinished: estado.isFinished 
                         };
-                    }).filter(p => new Date(p.utcDate) >= limiteTiempoFiltro);
+                    }).filter(p => {
+                        const d = new Date(p.utcDate);
+                        return d >= limiteTiempoFiltro && d <= maxLimiteFuturo;
+                    });
             } catch (error) { return []; }
         }
 
         async function iniciarApp() {
             const contenedor = document.getElementById('contenedor-partidos');
-            contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px; text-align:center;">⏳ Conectando con los servidores...</p>`;
+            contenedor.innerHTML = `<p style="color: var(--verde-principal); padding:20px; text-align:center;">⏳ Buscando eventos para los próximos 7 días...</p>`;
             baseDeDatosHoy = await cargarDatosDeportivos();
             if (baseDeDatosHoy.length > 0) { 
                 generarCombinadaDelDia(); 
                 generarSonadoraDelDia();
                 aplicarFiltrosMaster(); 
             } 
-            else { contenedor.innerHTML = `<p style="text-align:center; color:var(--texto-gris); padding:20px;">⚠️ Cartelera sin eventos disponibles.</p>`; }
+            else { contenedor.innerHTML = `<p style="text-align:center; color:var(--texto-gris); padding:20px;">⚠️ Cartelera sin eventos disponibles en este rango semanal.</p>`; }
         }
 
         function toggleMercado(mercadoId, opcion) {
@@ -703,7 +713,7 @@
                     htmlCompletoRender += h; combinadasTotales++;
                 }
             }
-            renderContenedor.innerHTML = combinadasTotales === 0 ? `<p style="padding:40px 20px; text-align:center; color:var(--texto-gris);">⚠️ Se necesitan al menos 3 partidos futuros para estructurar tripletas.</p>` : htmlCompletoRender;
+            renderContenedor.innerHTML = combinadasTotales === 0 ? `<p style="padding:40px 20px; text-align:center; color:var(--texto-gris);">⚠️ Se necesitan al menos 3 partidos en los días siguientes para armar boletos.</p>` : htmlCompletoRender;
         }
 
         function generarSonadoraDelDia() {
@@ -714,9 +724,9 @@
                 let carteleraDia = partidosPorDia[dia]; if (carteleraDia.length < 2) continue; 
                 let idTicket = `sn_${dia.replace('/','')}_r_${riesgoSonadoraSeleccionado}`; let poolPicks = [];
                 
-                let badgeTexto = "🔮 MEGATICKET SOÑADOR: ASEGURADO (Selección de Máxima Confianza)";
+                let badgeTexto = "🔮 MEGATICKET SOÑADOR: ASEGURADO (Máxima Confianza)";
                 if (riesgoSonadoraSeleccionado === 'moderada') badgeTexto = "🔮 MEGATICKET SOÑADOR: MODERADO (Optimización de Valor)";
-                if (riesgoSonadoraSeleccionado === 'arriesgada') badgeTexto = "🔮 MEGATICKET SOÑADOR: ARRIESGADO (¡Un Pick Único de Cuota Alta por Partido!)";
+                if (riesgoSonadoraSeleccionado === 'arriesgada') badgeTexto = "🔮 MEGATICKET SOÑADOR: ARRIESGADO (Cuotas Altas por Partido)";
 
                 htmlCompletoRender += `<div style="background: rgba(155, 89, 182, 0.12); border: 1px solid var(--sonadora-color); color: var(--sonadora-color); padding: 8px; border-radius: 6px; text-align: center; margin: 20px 0 12px 0; font-weight: bold; font-size: 0.85rem;">✨ CARTELERA COMPLETA DE LA FECHA: ${dia}</div>`;
 
@@ -781,7 +791,7 @@
 
                 htmlCompletoRender += h; ticketsSonadoresTotales++;
             }
-            renderContenedor.innerHTML = ticketsSonadoresTotales === 0 ? `<p style="padding:40px 20px; text-align:center; color:var(--texto-gris);">⚠️ Se necesitan partidos en la cartelera para agrupar el boleto gigante.</p>` : htmlCompletoRender;
+            renderContenedor.innerHTML = ticketsSonadoresTotales === 0 ? `<p style="padding:40px 20px; text-align:center; color:var(--texto-gris);">⚠️ Se necesitan partidos en la cartelera para estructurar la superlista.</p>` : htmlCompletoRender;
         }
 
         function obtenerPicksLocales() { return JSON.parse(localStorage.getItem('gp_picks')) || []; }
