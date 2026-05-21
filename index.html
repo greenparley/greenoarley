@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Panel Deportivo Oficial PRO</title>
+<title>GreenPicks Pro - Agenda Premium</title>
 
 <style>
 :root{
@@ -13,6 +13,8 @@
     --text:#f3f4f6;
     --muted:#9ca3af;
     --green:#10b981;
+    --danger:#ef4444;
+    --gold:#facc15;
 }
 
 *{
@@ -38,12 +40,15 @@ header{
     align-items:center;
     gap:15px;
     flex-wrap:wrap;
-    margin-bottom:30px;
+    margin-bottom:25px;
+    border-bottom:1px solid var(--border);
+    padding-bottom:20px;
 }
 
 h1{
     margin:0;
     font-size:28px;
+    font-weight:900;
 }
 
 .api-group{
@@ -59,6 +64,7 @@ input{
     padding:12px;
     border-radius:8px;
     width:320px;
+    outline:none;
 }
 
 button{
@@ -69,10 +75,61 @@ button{
     border-radius:8px;
     font-weight:bold;
     cursor:pointer;
+    transition:.2s;
 }
 
 button:hover{
     background:#059669;
+}
+
+.stats-bar{
+    display:flex;
+    gap:15px;
+    flex-wrap:wrap;
+    margin-bottom:30px;
+}
+
+.stat-box{
+    background:var(--card);
+    border:1px solid var(--border);
+    padding:14px 18px;
+    border-radius:10px;
+    min-width:180px;
+}
+
+.stat-title{
+    color:var(--muted);
+    font-size:12px;
+    margin-bottom:5px;
+}
+
+.stat-value{
+    font-size:24px;
+    font-weight:800;
+    color:#34d399;
+}
+
+.filters{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:25px;
+}
+
+.filter-btn{
+    background:#111827;
+    border:1px solid #1f2937;
+    color:white;
+    padding:10px 14px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:13px;
+    transition:.2s;
+}
+
+.filter-btn.active{
+    background:var(--green);
+    border-color:var(--green);
 }
 
 .loader{
@@ -81,23 +138,31 @@ button:hover{
     color:var(--green);
     margin:40px 0;
     display:none;
+    font-weight:900;
 }
 
 .sport-block{
     margin-bottom:40px;
+    background:rgba(17,24,39,.7);
+    border:1px solid var(--border);
+    border-radius:15px;
+    padding:20px;
 }
 
 .sport-title{
-    font-size:28px;
-    margin-bottom:20px;
-    border-left:6px solid var(--green);
-    padding-left:12px;
+    font-size:26px;
+    margin:0 0 20px;
+    font-weight:900;
+    border-bottom:3px solid var(--green);
+    padding-bottom:10px;
 }
 
 .day-title{
     margin:25px 0 15px;
-    font-size:18px;
+    font-size:16px;
     color:#93c5fd;
+    font-weight:700;
+    text-transform: capitalize;
 }
 
 .matches-grid{
@@ -107,28 +172,50 @@ button:hover{
 }
 
 .match-card{
-    background:var(--card);
-    border:1px solid var(--border);
+    background:#0f172a;
+    border:1px solid #1e293b;
     border-radius:12px;
     padding:16px;
+    position:relative;
+    overflow:hidden;
+}
+
+.top-pick{
+    position:absolute;
+    top:12px;
+    right:12px;
+    background:var(--gold);
+    color:black;
+    padding:4px 8px;
+    border-radius:6px;
+    font-size:10px;
+    font-weight:900;
 }
 
 .match-top{
     display:flex;
     justify-content:space-between;
-    margin-bottom:10px;
-    font-size:13px;
+    margin-bottom:12px;
+    font-size:12px;
+    align-items: center;
+    gap:10px;
 }
 
 .league{
     color:#60a5fa;
-    font-weight:700;
+    font-weight:800;
+    text-transform:uppercase;
+    max-width: 65%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .time{
     background:#1e293b;
     padding:4px 8px;
     border-radius:6px;
+    font-weight:700;
 }
 
 .teams{
@@ -138,6 +225,7 @@ button:hover{
 .team{
     padding:4px 0;
     font-weight:700;
+    font-size:14px;
 }
 
 .market-title{
@@ -160,22 +248,72 @@ button:hover{
 }
 
 .odd{
-    background:#0f172a;
+    background:#111827;
     border-radius:8px;
     padding:8px;
     text-align:center;
+    border:1px solid #1f2937;
 }
 
 .odd-label{
-    font-size:11px;
+    font-size:10px;
     color:var(--muted);
     margin-bottom:4px;
+    font-weight:700;
 }
 
 .odd-value{
     color:#34d399;
-    font-weight:bold;
+    font-weight:900;
     font-size:14px;
+}
+
+.prediction-box{
+    margin-top:16px;
+    border-top:1px solid rgba(255,255,255,.06);
+    padding-top:12px;
+}
+
+.prediction-title{
+    font-size:11px;
+    color:#9ca3af;
+    margin-bottom:8px;
+    font-weight:700;
+}
+
+.prediction-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+}
+
+.pick{
+    padding:10px;
+    border-radius:8px;
+    text-align:center;
+    font-weight:800;
+    font-size:11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pick.safe{
+    background:rgba(16,185,129,.15);
+    border:1px solid rgba(16,185,129,.4);
+    color:#34d399;
+}
+
+.pick.medium{
+    background:rgba(250,204,21,.12);
+    border:1px solid rgba(250,204,21,.4);
+    color:#facc15;
+}
+
+.pick.risky{
+    background:rgba(239,68,68,.12);
+    border:1px solid rgba(239,68,68,.4);
+    color:#ef4444;
 }
 
 .no-data{
@@ -183,13 +321,15 @@ button:hover{
     font-size:12px;
 }
 
-.stats{
-    margin-bottom:25px;
-    background:var(--card);
-    border:1px solid var(--border);
-    padding:14px 18px;
-    border-radius:10px;
-    display:none;
+.cache-info {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 5px;
+}
+
+@media(max-width:700px){
+    input{ width:100%; }
+    .prediction-grid{ grid-template-columns:1fr; }
 }
 </style>
 </head>
@@ -199,7 +339,10 @@ button:hover{
 <div class="container">
 
 <header>
-    <h1>⚽ Agenda Deportiva Premium</h1>
+    <div>
+        <h1>⚽ GreenPicks Pro - Agenda Inteligente</h1>
+        <div id="cacheStatus" class="cache-info"></div>
+    </div>
 
     <div class="api-group">
         <input type="text" id="apiKey" placeholder="API Key The Odds API">
@@ -207,12 +350,30 @@ button:hover{
     </div>
 </header>
 
-<div class="stats" id="statsBox">
-    Eventos encontrados: <strong id="totalEvents">0</strong>
+<div class="stats-bar">
+    <div class="stat-box">
+        <div class="stat-title">Eventos Totales</div>
+        <div class="stat-value" id="totalEvents">0</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-title">Ligas Configuradas</div>
+        <div class="stat-value" id="totalLeagues">0</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-title">Top Picks</div>
+        <div class="stat-value" id="topPicksCount">0</div>
+    </div>
+</div>
+
+<div class="filters">
+    <button class="filter-btn active" onclick="filtrarDeporte('all', event)">Todos</button>
+    <button class="filter-btn" onclick="filtrarDeporte('Fútbol ⚽', event)">Fútbol</button>
+    <button class="filter-btn" onclick="filtrarDeporte('Básquet 🏀', event)">NBA</button>
+    <button class="filter-btn" onclick="filtrarDeporte('Tenis 🎾', event)">Tenis</button>
 </div>
 
 <div class="loader" id="loader">
-    Cargando mercados deportivos...
+    Sincronizando mercados premium... ⏳
 </div>
 
 <div id="content"></div>
@@ -222,7 +383,6 @@ button:hover{
 <script>
 
 const deportesConfig = {
-
     // 5 GRANDES
     'soccer_epl': { key: 'soccer_epl', nombre:'Premier League', deporte:'Fútbol ⚽' },
     'soccer_spain_la_liga': { key: 'soccer_spain_la_liga', nombre:'La Liga', deporte:'Fútbol ⚽' },
@@ -262,8 +422,31 @@ const deportesConfig = {
     'tennis_atp_matches': { key: 'tennis_atp_matches', nombre:'ATP', deporte:'Tenis 🎾' }
 };
 
-async function cargarAgenda(){
+let ultimoFiltro = 'all';
 
+document.addEventListener("DOMContentLoaded", () => {
+    const savedKey = localStorage.getItem('greenpicks_apikey');
+    if(savedKey) document.getElementById('apiKey').value = savedKey;
+    document.getElementById('totalLeagues').innerText = Object.keys(deportesConfig).length;
+});
+
+function generarPickAlgoritmico(market){
+    if(!market || !market.outcomes || market.outcomes.length === 0) {
+        return { tipo: 'PICK 3/5', clase: 'safe' };
+    }
+    const cuotas = market.outcomes.map(o => o.price);
+    const minCuota = Math.min(...cuotas);
+
+    if(minCuota <= 1.55){
+        return { tipo: 'PICK 3/5', clase: 'safe' };
+    }
+    if(minCuota <= 2.30){
+        return { tipo: 'PICK 4/5', clase: 'medium' };
+    }
+    return { tipo: 'PICK 5/5', clase: 'risky' };
+}
+
+async function cargarAgenda(){
     const apiKey = document.getElementById('apiKey').value.trim();
 
     if(!apiKey){
@@ -271,71 +454,75 @@ async function cargarAgenda(){
         return;
     }
 
+    localStorage.setItem('greenpicks_apikey', apiKey);
+
     const content = document.getElementById('content');
     const loader = document.getElementById('loader');
-    const statsBox = document.getElementById('statsBox');
     const totalEvents = document.getElementById('totalEvents');
+    const topPicksCount = document.getElementById('topPicksCount');
+    const cacheStatus = document.getElementById('cacheStatus');
 
     content.innerHTML = '';
     loader.style.display = 'block';
-    statsBox.style.display = 'none';
 
-    const sportKeys = Object.keys(deportesConfig);
+    const cacheKey = 'sports_agenda_data';
+    const cacheTimeKey = 'sports_agenda_timestamp';
+    const CACHE_DURATION = 10 * 60 * 1000; 
 
-    const promises = sportKeys.map(async sportKey => {
+    const ahoraTimestamp = new Date().getTime();
+    const cachedData = localStorage.getItem(cacheKey);
+    const cachedTimestamp = localStorage.getItem(cacheTimeKey);
 
-        try{
+    let resultados = [];
 
-            let markets = '';
+    if (cachedData && cachedTimestamp && (ahoraTimestamp - cachedTimestamp < CACHE_DURATION)) {
+        resultados = JSON.parse(cachedData);
+        cacheStatus.innerText = "⚡ Datos cargados desde el caché local (Ahorrando API créditos)";
+    } else {
+        cacheStatus.innerText = "🌐 Consultando nuevos mercados a la API...";
+        const sportKeys = Object.keys(deportesConfig);
 
-            if(sportKey.startsWith('soccer')){
+        const promises = sportKeys.map(async sportKey => {
+            try{
+                let markets = '';
+                if(sportKey.startsWith('soccer')){
+                    markets = 'h2h,totals,spreads,correct_score';
+                }else if(sportKey.startsWith('tennis')){
+                    markets = 'h2h,totals,spreads';
+                }else if(sportKey.startsWith('basketball')){
+                    markets = 'h2h,spreads,totals';
+                }
 
-                markets = 'h2h,totals,spreads,correct_score';
-
-            }else if(sportKey.startsWith('tennis')){
-
-                markets = 'h2h,totals,spreads';
-
-            }else if(sportKey.startsWith('basketball')){
-
-                markets = 'h2h,spreads,totals';
+                const url = `https://api.the-odds-api.com/v4/sports/${sportKey}/odds/?regions=eu&markets=${markets}&oddsFormat=decimal&apiKey=${apiKey}`;
+                const response = await fetch(url);
+                if(!response.ok) throw new Error();
+                const data = await response.json();
+                return {sportKey, data};
+            }catch(e){
+                return {sportKey, data:[]};
             }
+        });
 
-            const url =
-            `https://api.the-odds-api.com/v4/sports/${sportKey}/odds/?regions=eu&markets=${markets}&oddsFormat=decimal&apiKey=${apiKey}`;
-
-            const response = await fetch(url);
-
-            if(!response.ok) throw new Error();
-
-            const data = await response.json();
-
-            return {sportKey,data};
-
-        }catch(e){
-
-            return {sportKey,data:[]};
-        }
-    });
-
-    const resultados = await Promise.all(promises);
+        resultados = await Promise.all(promises);
+        localStorage.setItem(cacheKey, JSON.stringify(resultados));
+        localStorage.setItem(cacheTimeKey, ahoraTimestamp.toString());
+    }
 
     loader.style.display = 'none';
 
     const estructura = {};
-
     let contador = 0;
+    let contadorTopPicks = 0;
 
     const ahora = new Date();
     const limite = new Date();
     limite.setDate(ahora.getDate()+7);
 
     resultados.forEach(resultado=>{
-
         const config = deportesConfig[resultado.sportKey];
+        if(!config) return;
 
         resultado.data.forEach(evento=>{
-
             const fecha = new Date(evento.commence_time);
 
             if(fecha < ahora || fecha > limite) return;
@@ -347,9 +534,7 @@ async function cargarAgenda(){
             }
 
             const dia = fecha.toLocaleDateString('es-AR',{
-                weekday:'long',
-                day:'numeric',
-                month:'long'
+                weekday:'long', day:'numeric', month:'long'
             });
 
             if(!estructura[config.deporte][dia]){
@@ -357,67 +542,56 @@ async function cargarAgenda(){
             }
 
             evento.liga = config.nombre;
-
             estructura[config.deporte][dia].push(evento);
         });
     });
 
     totalEvents.innerText = contador;
-    statsBox.style.display = 'block';
 
-    for(const [deporte,dias] of Object.entries(estructura)){
-
+    for(const [deporte, dias] of Object.entries(estructura)){
         const sportBlock = document.createElement('div');
         sportBlock.className = 'sport-block';
+        sportBlock.dataset.sport = deporte;
 
-        sportBlock.innerHTML += `
-            <div class="sport-title">${deporte}</div>
-        `;
+        sportBlock.innerHTML += `<h2 class="sport-title">${deporte}</h2>`;
 
-        for(const [dia,eventos] of Object.entries(dias)){
+        const diasOrdenados = Object.keys(dias).sort((a,b) => {
+            return new Date(dias[a][0].commence_time) - new Date(dias[b][0].commence_time);
+        });
 
-            sportBlock.innerHTML += `
-                <div class="day-title">📅 ${dia}</div>
-            `;
+        diasOrdenados.forEach(dia => {
+            const dayWrapper = document.createElement('div');
+            dayWrapper.innerHTML = `<div class="day-title">📅 ${dia}</div>`;
 
             const grid = document.createElement('div');
             grid.className = 'matches-grid';
 
-            eventos.sort((a,b)=>
-                new Date(a.commence_time)-new Date(b.commence_time)
-            );
+            dias[dia].sort((a,b)=> new Date(a.commence_time) - new Date(b.commence_time));
 
-            eventos.forEach(evento=>{
-
-                const hora = new Date(evento.commence_time)
-                .toLocaleTimeString('es-AR',{
-                    hour:'2-digit',
-                    minute:'2-digit'
+            dias[dia].forEach(evento=>{
+                const hora = new Date(evento.commence_time).toLocaleTimeString('es-AR',{
+                    hour:'2-digit', minute:'2-digit'
                 });
 
                 const card = document.createElement('div');
                 card.className = 'match-card';
 
                 let marketsHTML = '';
-
                 const bookmaker = evento.bookmakers?.[0];
+                let h2hMarket = null;
 
                 if(bookmaker){
+                    h2hMarket = bookmaker.markets.find(m => m.key === 'h2h');
 
                     bookmaker.markets.forEach(market=>{
-
                         let title = '';
-
                         if(market.key === 'h2h') title = 'Ganador';
                         if(market.key === 'totals') title = 'Totales';
                         if(market.key === 'spreads') title = 'Hándicap / Líneas';
                         if(market.key === 'correct_score') title = 'Marcador Exacto';
 
                         let cols = 3;
-
-                        if(market.outcomes.length === 2){
-                            cols = 2;
-                        }
+                        if(market.outcomes.length === 2){ cols = 2; }
 
                         marketsHTML += `
                             <div class="market-title">${title}</div>
@@ -425,9 +599,7 @@ async function cargarAgenda(){
                         `;
 
                         market.outcomes.slice(0,12).forEach(outcome=>{
-
                             let label = outcome.name;
-
                             if(outcome.point !== undefined){
                                 label += ` ${outcome.point > 0 ? '+' : ''}${outcome.point}`;
                             }
@@ -442,17 +614,32 @@ async function cargarAgenda(){
 
                         marketsHTML += `</div>`;
                     });
-
                 }else{
+                    marketsHTML = `<div class="no-data">Sin mercados disponibles</div>`;
+                }
 
-                    marketsHTML = `
-                        <div class="no-data">
-                            Sin mercados disponibles
-                        </div>
-                    `;
+                const pickData = generarPickAlgoritmico(h2hMarket);
+                let isTopPick = false;
+
+                if(pickData.tipo === 'PICK 5/5') {
+                    contadorTopPicks++;
+                    isTopPick = true;
+                }
+
+                let subTagDoble = "DOBLE OPORTUNIDAD";
+                let subTagMercado = "+1.5 GOLES";
+
+                if (deporte.includes('Básquet')) {
+                    subTagDoble = "GANA CON HANDICAP";
+                    subTagMercado = "+210.5 PUNTOS";
+                } else if (deporte.includes('Tenis')) {
+                    subTagDoble = "GANADOR DEL SET 1";
+                    subTagMercado = "+21.5 GAMES";
                 }
 
                 card.innerHTML = `
+                    ${isTopPick ? `<div class="top-pick">TOP PICK</div>` : ''}
+                    
                     <div class="match-top">
                         <div class="league">${evento.liga}</div>
                         <div class="time">${hora}</div>
@@ -464,18 +651,52 @@ async function cargarAgenda(){
                     </div>
 
                     ${marketsHTML}
+
+                    <div class="prediction-box">
+                        <div class="prediction-title">SISTEMA GREENPICKS 3-4-5</div>
+                        <div class="prediction-grid">
+                            <div class="pick ${pickData.clase}">${pickData.tipo}</div>
+                            <div class="pick safe">${subTagDoble}</div>
+                            <div class="pick medium">${subTagMercado}</div>
+                        </div>
+                    </div>
                 `;
 
                 grid.appendChild(card);
             });
 
-            sportBlock.appendChild(grid);
-        }
+            dayWrapper.appendChild(grid);
+            sportBlock.appendChild(dayWrapper);
+        });
 
         content.appendChild(sportBlock);
     }
+
+    topPicksCount.innerText = contadorTopPicks;
+    filtrarDeporte(ultimoFiltro);
 }
 
+function filtrarDeporte(tipo, evento){
+    ultimoFiltro = tipo;
+
+    document.querySelectorAll('.filter-btn').forEach(btn=>{
+        btn.classList.remove('active');
+    });
+
+    if(evento && evento.target) {
+        evento.target.classList.add('active');
+    }
+
+    document.querySelectorAll('.sport-block').forEach(block=>{
+        if(tipo === 'all'){
+            block.style.display = 'block';
+        } else if(block.dataset.sport === tipo){
+            block.style.display = 'block';
+        } else {
+            block.style.display = 'none';
+        }
+    });
+}
 </script>
 
 </body>
