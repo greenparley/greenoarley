@@ -236,7 +236,7 @@
             return datosProcesados;
         }
 
-        /* ⚽ METODO DE AHORRO FÚTBOL (1 Sola Petición Global) */
+        /* ⚽ METODO DE AHORRO FÚTBOL (Abierto a todas las ligas disponibles) */
         async function fetchFutbolOddsApi() {
             try {
                 const limiteTiempoFiltro = new Date(Date.now() - 86400000); 
@@ -249,34 +249,27 @@
                 
                 const poolResultados = await res.json();
                 
-                const ligasPrioridad = [
-                    "soccer_uefa_europa_league", "soccer_uefa_champs_league", "soccer_fifa_world_cup",
-                    "soccer_conmebol_copa_libertadores", "soccer_conmebol_copa_sudamericana", "soccer_conmebol_copa_america",
-                    "soccer_argentina_primera_division", "soccer_saudi_prof_league", "soccer_epl", "soccer_spain_la_liga",
-                    "soccer_italy_serie_a", "soccer_germany_bundesliga", "soccer_france_ligue_one", "soccer_netherlands_eredivisie",
-                    "soccer_portugal_primeira_liga", "soccer_turkey_super_league", "soccer_england_championship",
-                    "soccer_scotland_premiership", "soccer_norway_eliteserien", "soccer_sweden_allsvenskan"
-                ];
-
-                return poolResultados
-                    .filter(partido => ligasPrioridad.includes(partido.sport_key))
-                    .map(partido => {
-                        let cuotas = { local: "N/A", empate: "N/A", visita: "N/A" };
-                        if (partido.bookmakers && partido.bookmakers.length > 0 && partido.bookmakers[0].markets[0].outcomes) {
-                            partido.bookmakers[0].markets[0].outcomes.forEach(out => { 
-                                if (out.name === partido.home_team) cuotas.local = out.price; 
-                                else if (out.name === partido.away_team) cuotas.visita = out.price; 
-                                else cuotas.empate = out.price;
-                            });
-                        }
-                        let estado = procesarEstadoTiempo(partido.commence_time);
-                        return {
-                            id: 'fb_' + partido.id, utcDate: partido.commence_time, competition: { name: partido.sport_title.replace("Soccer - ", "") },
-                            homeTeam: { name: partido.home_team, score: estado.isFinished ? "F" : "" }, 
-                            awayTeam: { name: partido.away_team, score: estado.isFinished ? "F" : "" },
-                            cuotasReales: cuotas, isLiveNative: estado.isLiveNative, isFinished: estado.isFinished
-                        };
-                    }).filter(p => new Date(p.utcDate) >= limiteTiempoFiltro);
+                return poolResultados.map(partido => {
+                    let cuotas = { local: "N/A", empate: "N/A", visita: "N/A" };
+                    if (partido.bookmakers && partido.bookmakers.length > 0 && partido.bookmakers[0].markets[0].outcomes) {
+                        partido.bookmakers[0].markets[0].outcomes.forEach(out => { 
+                            if (out.name === partido.home_team) cuotas.local = out.price; 
+                            else if (out.name === partido.away_team) cuotas.visita = out.price; 
+                            else cuotas.empate = out.price;
+                        });
+                    }
+                    let estado = procesarEstadoTiempo(partido.commence_time);
+                    return {
+                        id: 'fb_' + partido.id, 
+                        utcDate: partido.commence_time, 
+                        competition: { name: partido.sport_title.replace("Soccer - ", "") },
+                        homeTeam: { name: partido.home_team, score: estado.isFinished ? "F" : "" }, 
+                        awayTeam: { name: partido.away_team, score: estado.isFinished ? "F" : "" },
+                        cuotasReales: cuotas, 
+                        isLiveNative: estado.isLiveNative, 
+                        isFinished: estado.isFinished
+                    };
+                }).filter(p => new Date(p.utcDate) >= limiteTiempoFiltro);
             } catch (error) { return []; }
         }
 
@@ -500,7 +493,6 @@
                 let acesL = Math.min(15, Math.max(2, 6 + (probL % 7)));
                 let acesV = Math.min(15, Math.max(2, 5 + (probV % 6)));
 
-                // 🧠 NUEVA SECCIÓN: MARCADOR EXACTO EN SETS (Simulación Matemática IA)
                 let m20 = Math.round((probL / 100) * (probL / 100) * 100);
                 let m21 = Math.round(probL - m20);
                 let m02 = Math.round((probV / 100) * (probV / 100) * 100);
