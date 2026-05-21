@@ -186,17 +186,27 @@
 
         // Listado exacto de las 13 ligas y torneos exigidos mapeados según el catálogo de The Odds API
         const LIGAS_FUTBOL_REQUERIDAS = [
+            // --- TOP 5 LIGAS EUROPEAS ---
             { key: "soccer_epl", nombre: "Premier League" },
             { key: "soccer_spain_la_liga", nombre: "LaLiga" },
             { key: "soccer_italy_serie_a", nombre: "Serie A" },
             { key: "soccer_germany_bundesliga", nombre: "Bundesliga" },
+            { key: "soccer_france_ligue_one", nombre: "Ligue 1 Francia" },
+
+            // --- LIGAS REGIONALES ---
             { key: "soccer_argentina_primera", nombre: "Liga Profesional Argentina" },
-            { key: "soccer_saudi_pro_league", nombre: "Saudi Pro League" },
+            { key: "soccer_saudi_pro_league", nombre: "Saudi Pro League (Liga Árabe)" },
+
+            // --- COPAS INTERNACIONALES UEFA ---
             { key: "soccer_uefa_champions_league", nombre: "UEFA Champions League" },
             { key: "soccer_uefa_europa_league", nombre: "UEFA Europa League" },
             { key: "soccer_uefa_conference_league", nombre: "UEFA Conference League" },
+
+            // --- COPAS INTERNACIONALES CONMEBOL ---
             { key: "soccer_conmebol_libertadores", nombre: "Copa Libertadores" },
             { key: "soccer_conmebol_sudamericana", nombre: "Copa Sudamericana" },
+
+            // --- SELECCIONES ---
             { key: "soccer_fifa_world_cup", nombre: "Mundial de Fútbol" }
         ];
 
@@ -253,11 +263,9 @@
             return datosProcesados;
         }
 
-        /* ⚽ SOLUCIÓN FINAL: RECORRER CADA LIGA REQUERIDA DE FORMA INDEPENDIENTE CON FILTRO A 7 DÍAS */
         async function fetchFutbolOddsApi() {
             let poolDePartidosUnificados = [];
             
-            // Definición dinámica del rango de fechas (Desde hace 12 horas para capturar En Vivo, hasta hoy + 7 días)
             const ahora = new Date();
             const limitePasado = new Date(ahora.getTime() - 43200000); 
             const fechaInicioIso = limitePasado.toISOString().split('.')[0] + 'Z'; 
@@ -266,20 +274,18 @@
             maxFuturo.setDate(ahora.getDate() + 7);
             const fechaFinIso = maxFuturo.toISOString().split('.')[0] + 'Z';
 
-            // Consultar de forma asíncrona cada liga obligatoria requerida
             for (const liga of LIGAS_FUTBOL_REQUERIDAS) {
                 try {
                     let urlLigaEspecifica = `https://api.the-odds-api.com/v4/sports/${liga.key}/odds/?apiKey=${obtenerApiKeyActiva()}&regions=eu,us,uk,au&markets=h2h&commenceTimeFrom=${fechaInicioIso}&commenceTimeTo=${fechaFinIso}`;
                     
                     let res = await fetch(urlLigaEspecifica);
                     
-                    // Rotación automática si esta key llega a fallar o agotarse
                     if (!res.ok && rotarApiKey()) {
                         urlLigaEspecifica = `https://api.the-odds-api.com/v4/sports/${liga.key}/odds/?apiKey=${obtenerApiKeyActiva()}&regions=eu,us,uk,au&markets=h2h&commenceTimeFrom=${fechaInicioIso}&commenceTimeTo=${fechaFinIso}`;
                         res = await fetch(urlLigaEspecifica);
                     }
                     
-                    if (!res.ok) continue; // Si la liga no tiene partidos programados o falla la petición, pasa a la siguiente
+                    if (!res.ok) continue; 
                     
                     const resultadoLiga = await res.json();
                     
@@ -321,7 +327,7 @@
         async function fetchBasketESPNPublico() {
             let pool = []; const endpoints = [{ id: "nba", tag: "NBA" }, { id: "mens-euroleague", tag: "Euroliga" }];
             let d1 = new Date(); d1.setDate(d1.getDate() - 1); 
-            let d2 = new Date(); d2.setDate(d2.getDate() + 7); // Forzado también a 7 días
+            let d2 = new Date(); d2.setDate(d2.getDate() + 7); 
             let fechas = `dates=${d1.toISOString().split('T')[0].replace(/-/g, '')}-${d2.toISOString().split('T')[0].replace(/-/g, '')}`;
             
             for (let liga of endpoints) {
@@ -813,7 +819,7 @@
                             else { pickMercado = `Hándicap Extremo: ${analisis.favName} -11.5`; pickCuota = 2.40; }
                         }
                     }
-                    poolPicks.push({ p: p, mercado: pickMercado, cuota: pickCuota });
+                    poolPicks.push({ p: p, merchant: pickMercado, cuota: pickCuota });
                 });
 
                 ticketsMultiplesGenerados[idTicket] = poolPicks; let totalCuota = 1.0;
