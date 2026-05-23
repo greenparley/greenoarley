@@ -1,8 +1,3 @@
-¡Acá tenés tu aplicación completa y actualizada!
-Integré tus dos solicitudes (**el mercado de Gol en el Primer Tiempo en los detalles** y **el algoritmo de Valor Esperado (EV+) para los tickets de La Soñadora**) directamente sobre tu propio código.
-Además, adapté el algoritmo de La Soñadora para que no solo funcione con fútbol, sino que también genere cuotas y probabilidades dinámicas cuando cambies a Tenis o Básquet desde el Lobby.
-Copiá este bloque completo y reemplazalo en tu archivo HTML:
-```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -459,7 +454,6 @@ Copiá este bloque completo y reemplazalo en tu archivo HTML:
                 let tar45 = Math.min(75, Math.max(40, 50 + (probE % 15))); 
                 let tar55 = Math.min(50, Math.max(20, 30 + (probE % 10)));
                 
-                // NUEVO: Gol en Primera Mitad (PT)
                 let golPMLocal = Math.min(85, Math.max(15, 35 + (probL * 0.4)));
                 let golPMVisita = Math.min(85, Math.max(15, 35 + (probV * 0.4)));
 
@@ -755,7 +749,7 @@ Copiá este bloque completo y reemplazalo en tu archivo HTML:
             renderContenedor.innerHTML = combinadasTotales === 0 ? `<p style="padding:40px 20px; text-align:center; color:var(--texto-gris);">⚠️ Se necesitan al menos 3 partidos en cartelera para armar tripletas automáticas.</p>` : htmlCompletoRender;
         }
 
-        // NUEVO ALGORITMO: LA SOÑADORA (EXPECTED VALUE) MULTIDEPORTE
+        // MOTOR EV+ LA SOÑADORA
         function generarSonadoraDelDia() {
             const renderContenedor = document.getElementById('sonadora-ticket-render'); renderContenedor.innerHTML = '';
             const partidosPorDia = obtenerCarteleraAgrupada(); let ticketsSonadoresTotales = 0; let htmlCompletoRender = '';
@@ -823,9 +817,8 @@ Copiá este bloque completo y reemplazalo en tu archivo HTML:
                         mercadosValidos = mercadosCandidatos.filter(x => x.p < 55 && x.c >= 1.80);
                     }
 
-                    if (mercadosValidos.length === 0) mercadosValidos = [...mercadosCandidatos]; // Respaldo por si no hay mercados en rango
+                    if (mercadosValidos.length === 0) mercadosValidos = [...mercadosCandidatos]; 
 
-                    // Motor EV+: Filtramos el mercado que genera el mejor Valor Esperado
                     mercadosValidos.sort((a, b) => ((b.p / 100) * b.c) - ((a.p / 100) * a.c));
                     let elMejorPick = mercadosValidos[0];
 
@@ -888,5 +881,3 @@ Copiá este bloque completo y reemplazalo en tu archivo HTML:
     </script>
 </body>
 </html>
-
-```
