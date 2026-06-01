@@ -88,7 +88,7 @@
             <p class="lobby-sub">Plataforma de Tendencias Deportivas</p>
 
             <button class="btn-deporte-card" onclick="irADeporte('futbol')">
-                <div class="deporte-info"><h3>Fútbol Profesional ⚽</h3><p>Ligas Globales, Sudamericanas y Europeas</p></div><div class="deporte-icono">🏟️</div>
+                <div class="deporte-info"><h3>Fútbol Profesional ⚽</h3><p>Ligas Globales, Copas y Selecciones</p></div><div class="deporte-icono">🏟️</div>
             </button>
             <button class="btn-deporte-card" onclick="irADeporte('basquet')">
                 <div class="deporte-info"><h3>Básquetbol Global 🏀</h3><p>Cartelera Directa de ESPN</p></div><div class="deporte-icono">🏀</div>
@@ -204,7 +204,7 @@
         let ticketsMultiplesGenerados = {}; 
         let deporteActivo = 'futbol'; 
 
-        // CONFIGURACIÓN DE LIGAS AMPLIADA (CON BRASIL, MLS, NORUEGA Y ESCOCIA)
+        // CONFIGURACIÓN DE LIGAS AMPLIADA
         const MAPEO_LIGAS = {
             "soccer_epl": "Premier League",
             "soccer_spain_la_liga": "LaLiga",
@@ -225,7 +225,9 @@
             "soccer_conmebol_copa_libertadores": "Copa Libertadores",
             "soccer_conmebol_copa_sudamericana": "Copa Sudamericana",
             "soccer_uefa_champs_league": "Champions League",
-            "soccer_uefa_europa_league": "Europa League"
+            "soccer_uefa_europa_league": "Europa League",
+            "soccer_fifa_world_cup": "Copa Mundial FIFA",
+            "soccer_friendly_match_men": "Amistosos Internacionales"
         };
 
         function generarMonograma(nombre, extraClass = "") {
@@ -448,10 +450,14 @@
             if (deporteActivo === 'futbol') {
                 let gol15 = Math.min(94, Math.max(70, 85 + (probE % 10)));
                 let gol25 = Math.min(82, Math.max(40, 55 + (probL % 15) - (probE % 8)));
+                let gol35 = Math.min(55, Math.max(18, 28 + (probV % 12)));
+                
                 let cor85 = Math.min(85, Math.max(55, 60 + (probL % 12)));
                 let cor95 = Math.min(65, Math.max(35, 45 + (probV % 10)));
+                
                 let tar45 = Math.min(75, Math.max(40, 50 + (probE % 15))); 
                 let tar55 = Math.min(50, Math.max(20, 30 + (probE % 10)));
+                
                 let golPMLocal = Math.min(85, Math.max(15, 35 + (probL * 0.4)));
                 let golPMVisita = Math.min(85, Math.max(15, 35 + (probV * 0.4)));
 
