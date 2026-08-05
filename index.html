@@ -1,285 +1,7080 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GreenPicks Pro</title>
-    <style>
-        :root { --bg-principal: #0b0f19; --tarjeta-bg: #151f32; --tarjeta-borde: #223452; --verde-principal: #2ecc71; --oro: #f1c40f; --alerta: #e74c3c; --sonadora-color: #9b59b6; --texto-blanco: #ffffff; --texto-gris: #8a99ad; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-principal); color: var(--texto-blanco); padding-bottom: 60px; }
-        .contenedor-app { max-width: 500px; margin: 0 auto; padding: 15px; position: relative; }
-        .oculto { display: none !important; }
-        
-        /* Lobby o Selector de Deportes */
-        .lobby-container { text-align: center; padding: 30px 20px; }
-        .lobby-titulo { font-size: 2.4rem; color: var(--verde-principal); margin-bottom: 8px; font-weight: 800; }
-        .lobby-sub { color: var(--texto-gris); margin-bottom: 30px; font-size: 1rem; }
-        .btn-deporte-card { background: linear-gradient(145deg, #151f32, #111827); border: 1px solid var(--tarjeta-borde); border-radius: 16px; padding: 22px 25px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; width: 100%; text-align: left; }
-        .deporte-info h3 { color: var(--texto-blanco); font-size: 1.25rem; margin-bottom: 6px; }
-        .deporte-info p { color: var(--texto-gris); font-size: 0.88rem; }
-        .deporte-icono { font-size: 2.2rem; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
-        
-        /* Headers y Filtros Superiores */
-        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--tarjeta-borde); }
-        .btn-volver-lobby { background: transparent; border: 1px solid var(--tarjeta-borde); color: var(--texto-gris); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
-        .herramientas-grid { display: flex; gap: 10px; margin-bottom: 15px; }
-        .buscador-input { flex: 1; background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); padding: 10px; border-radius: 8px; color: white; font-size: 0.9rem; }
-        .btn-refresh-live { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); color: white; width: 42px; border-radius: 8px; cursor: pointer; }
-        .nav-filtros { display: flex; flex-wrap: wrap; background: var(--tarjeta-bg); padding: 4px; border-radius: 10px; margin-bottom: 20px; gap: 4px; }
-        .btn-filto-main { flex: 1; min-width: 75px; background: transparent; border: none; color: var(--texto-gris); padding: 10px 2px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.75rem; text-align: center; }
-        .btn-filto-main.activo { background: var(--bg-principal); color: var(--verde-principal); }
 
-        /* Tarjetas de Eventos / Partidos */
-        .tarjeta-partido { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); border-radius: 12px; padding: 15px; margin-bottom: 12px; cursor: pointer; }
-        .tarjeta-partido.finalizado { opacity: 0.65; background-color: #0b0f19; border-color: #1a253a; }
-        .encabezado-liga { font-size: 0.75rem; color: var(--texto-blanco); display: flex; align-items: center; gap: 8px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 5px; font-weight: bold; text-transform: uppercase;}
-        .etiqueta-hora { color: var(--oro); background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; display: flex; align-items: center; gap: 4px; letter-spacing: 0.5px;}
-        .cuerpo-partido { display: flex; justify-content: space-between; align-items: center; }
-        .equipos { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-        .equipo-linea { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; font-weight: 500; }
-        .escudo-dinamico { width: 26px; height: 26px; background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid var(--tarjeta-borde); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 800; color: #cbd5e1; text-transform: uppercase; }
-        .marcador-live span, .marcador-finalizado { background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; }
-        .resultado-score { margin-left: auto; font-weight: bold; color: var(--oro); background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; }
+<meta charset="UTF-8">
 
-        /* Pantalla Detalles del Evento */
-        .cabecera-detalle-grid { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; background: var(--tarjeta-bg); padding: 20px 10px; border-radius: 14px; border: 1px solid var(--tarjeta-borde); }
-        .caja-consejo { background: rgba(46, 204, 113, 0.08); border-left: 4px solid var(--verde-principal); padding: 12px 15px; border-radius: 0 8px 8px 0; margin-bottom: 20px; font-size: 0.85rem; line-height: 1.5; }
-        .barra-container { margin-bottom: 12px; }
-        .barra-container span { display: block; font-size: 0.82rem; margin-bottom: 4px; color: var(--texto-blanco); }
-        .barra-fondo { background: rgba(255,255,255,0.06); height: 9px; border-radius: 5px; overflow: hidden; width: 100%; }
-        .barra-progreso { height: 100%; width: 0%; border-radius: 5px; transition: width 0.6s; }
-        .cuota-real-badge { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: var(--oro); font-size: 0.78rem; margin-left: 8px;}
-        .bloque-mercado { background: #111827; border: 1px solid var(--tarjeta-borde); padding: 15px; border-radius: 10px; margin-bottom: 15px; }
-        .titulo-mercado { color: var(--oro); font-size: 0.88rem; font-weight: bold; margin-bottom: 12px; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 6px; }
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-        /* Selectores de Más/Menos interactivos */
-        .btn-toggle-group { display: flex; background: rgba(0,0,0,0.4); padding: 2px; border-radius: 6px; border: 1px solid var(--tarjeta-borde); }
-        .btn-toggle-item { background: transparent; border: none; color: var(--texto-gris); padding: 4px 10px; font-size: 0.72rem; font-weight: bold; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
-        .btn-toggle-item.activo { background: var(--verde-principal); color: #0b0f19; }
+<title>GreenPicks Pro</title>
 
-        /* Secciones de Tickets */
-        .selector-riesgo-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 15px; }
-        .btn-riesgo { padding: 10px 2px; border-radius: 8px; border: 1px solid var(--tarjeta-borde); background: var(--tarjeta-bg); color: white; font-size: 0.72rem; font-weight: bold; cursor: pointer; text-align: center; }
-        .btn-riesgo.activo-asegurada { background: rgba(46, 204, 113, 0.2); border-color: var(--verde-principal); color: var(--verde-principal); }
-        .btn-riesgo.activo-moderada { background: rgba(241, 196, 15, 0.2); border-color: var(--oro); color: var(--oro); }
-        .btn-riesgo.activo-arriesgada { background: rgba(231, 76, 60, 0.2); border-color: var(--alerta); color: var(--alerta); }
-        .tarjeta-combinada { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-        .ticket-item { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 0.85rem; }
 
-        /* Menú de Navegación Inferior */
-        .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 500px; background: #0e1726; border-top: 1px solid var(--tarjeta-borde); display: flex; height: 55px; z-index: 999; }
-        .nav-item-btn { flex: 1; background: transparent; border: none; color: var(--texto-gris); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer; }
-        .nav-item-btn.activo { color: var(--verde-principal); }
-        .badge-contador { background: var(--verde-principal); color: #111; font-size: 0.7rem; font-weight: bold; padding: 1px 5px; border-radius: 10px; position: absolute; top: 4px; right: 22%; }
-        
-        /* Panel Lateral de Picks Guardados */
-        .panel-picks-lateral { position: fixed; top: 0; right: 0; width: 100%; max-width: 320px; height: 100%; background: #0c1322; border-left: 1px solid var(--tarjeta-borde); z-index: 10000; padding: 20px; transition: transform 0.3s; }
-        .oculto-panel { transform: translateX(100%); }
-        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--tarjeta-borde); padding-bottom: 10px; }
-        .item-pick-guardado { background: var(--tarjeta-bg); border: 1px solid var(--tarjeta-borde); border-radius: 8px; padding: 12px; font-size: 0.85rem; margin-bottom:10px; }
-    </style>
-</head>
-<body>
+<style>
 
-    <div class="contenedor-app">
-        <div id="lobby-selector" class="lobby-container">
-            <h1 class="lobby-titulo">GreenPicks Pro</h1>
-            <p class="lobby-sub">Plataforma de Tendencias Deportivas</p>
+:root {
 
-            <button class="btn-deporte-card" onclick="irADeporte('futbol')">
-                <div class="deporte-info"><h3>Fútbol Profesional ⚽</h3><p>Ligas Globales, Copas y Selecciones</p></div><div class="deporte-icono">🏟️</div>
-            </button>
-            <button class="btn-deporte-card" onclick="irADeporte('basquet')">
-                <div class="deporte-info"><h3>Básquetbol Global 🏀</h3><p>Cartelera Directa de ESPN & Ligas</p></div><div class="deporte-icono">🏀</div>
-            </button>
-            <button class="btn-deporte-card" onclick="irADeporte('tenis')">
-                <div class="deporte-info"><h3>Tenis Internacional 🎾</h3><p>Torneos ATP, WTA y Slams</p></div><div class="deporte-icono">🎾</div>
-            </button>
-        </div>
+--bg-principal:#0b0f19;
+--tarjeta-bg:#151f32;
+--tarjeta-borde:#223452;
+--verde-principal:#2ecc71;
+--oro:#f1c40f;
+--alerta:#e74c3c;
+--sonadora-color:#9b59b6;
+--texto-blanco:#ffffff;
+--texto-gris:#8a99ad;
 
-        <div id="app-content" class="oculto">
-            <div class="app-header">
-                <button class="btn-volver-lobby" onclick="volverAlLobby()">⬅️ Volver</button>
-                <h2 id="titulo-deporte-activo" style="color: var(--verde-principal);">FÚTBOL</h2>
-            </div>
-            
-            <div id="logs-servidor-error" class="oculto"></div>
-            
-            <div id="herramientas-top" class="herramientas-grid">
-                <input type="text" id="filtro-ligas-input" oninput="aplicarFiltrosMaster()" placeholder="Buscar equipo o liga..." class="buscador-input">
-                <button id="btn-refresh" class="btn-refresh-live" onclick="forzarActualizacion()">🔄</button>
-            </div>
-            
-            <div class="nav-filtros">
-                <button id="btn-proximos" class="btn-filto-main activo" onclick="setFiltroEstado('proximos')">Próximos</button>
-                <button id="btn-envivo" class="btn-filto-main" onclick="setFiltroEstado('envivo')">🔴 En Vivo</button>
-                <button id="btn-finalizados" class="btn-filto-main" onclick="setFiltroEstado('finalizados')">🏁 Finalizados</button>
-                <button id="btn-combinada" class="btn-filto-main" onclick="setFiltroEstado('combinada')">Combinadas</button>
-                <button id="btn-sonadora" class="btn-filto-main" onclick="setFiltroEstado('sonadora')">✨ Soñadoras</button>
-            </div>
-            
-            <div id="contenedor-partidos"></div>
-            
-            <div id="seccion-combinada" class="oculto">
-                <div class="selector-riesgo-grid">
-                    <button id="riesgo-cb-asegurada" class="btn-riesgo activo-asegurada" onclick="cambiarRiesgoCombinada('asegurada')">Asegurada (80-100%)</button>
-                    <button id="riesgo-cb-moderada" class="btn-riesgo" onclick="cambiarRiesgoCombinada('moderada')">Moderada (60-80%)</button>
-                    <button id="riesgo-cb-arriesgada" class="btn-riesgo" onclick="cambiarRiesgoCombinada('arriesgada')">Arriesgada (40-60%)</button>
-                </div>
-                <div id="combinada-ticket-render"></div>
-            </div>
+}
 
-            <div id="seccion-sonadora" class="oculto">
-                <div class="selector-riesgo-grid">
-                    <button id="riesgo-sn-asegurada" class="btn-riesgo activo-asegurada" onclick="cambiarRiesgoSonadora('asegurada')">Asegurada (80-100%)</button>
-                    <button id="riesgo-sn-moderada" class="btn-riesgo" onclick="cambiarRiesgoSonadora('moderada')">Moderada (60-80%)</button>
-                    <button id="riesgo-sn-arriesgada" class="btn-riesgo" onclick="cambiarRiesgoSonadora('arriesgada')">Arriesgada (40-60%)</button>
-                </div>
-                <div id="sonadora-ticket-render"></div>
-            </div>
-        </div>
 
-        <div id="vista-detalle" class="oculto">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <button class="btn-volver-lobby" onclick="cerrarDetalle()">⬅️ Volver atrás</button>
-            </div>
-            <div class="cabecera-detalle-grid" id="detalle-cabecera"></div>
-            <div id="detalle-consejo" style="margin-top: 15px;"></div>
-            <div id="detalle-barras"></div>
-        </div>
-    </div>
 
-    <div class="bottom-nav">
-        <button class="nav-item-btn activo" onclick="cerrarDetalle(); setFiltroEstado('proximos');"><span>🏟️</span><span>Eventos</span></button>
-        <button class="nav-item-btn" style="position:relative;" onclick="togglePanelPicks()">
-            <span id="contador-picks-badge" class="badge-contador">0</span><span>📋</span><span>Mis Picks</span>
-        </button>
-    </div>
+*{
+
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+
+}
+
+
+
+body{
+
+background-color:var(--bg-principal);
+color:var(--texto-blanco);
+padding-bottom:60px;
+
+}
+
+
+
+.contenedor-app{
+
+max-width:500px;
+margin:auto;
+padding:15px;
+position:relative;
+
+}
+
+
+
+.oculto{
+
+display:none!important;
+
+}
+
+
+
+/* LOBBY */
+
+.lobby-container{
+
+text-align:center;
+padding:30px 20px;
+
+}
+
+
+
+.lobby-titulo{
+
+font-size:2.4rem;
+color:var(--verde-principal);
+margin-bottom:8px;
+font-weight:800;
+
+}
+
+
+
+.lobby-sub{
+
+color:var(--texto-gris);
+margin-bottom:30px;
+font-size:1rem;
+
+}
+
+
+
+.btn-deporte-card{
+
+background:linear-gradient(145deg,#151f32,#111827);
+border:1px solid var(--tarjeta-borde);
+border-radius:16px;
+padding:22px 25px;
+margin-bottom:20px;
+display:flex;
+align-items:center;
+justify-content:space-between;
+cursor:pointer;
+width:100%;
+text-align:left;
+
+}
+
+
+
+.deporte-info h3{
+
+color:white;
+font-size:1.25rem;
+margin-bottom:6px;
+
+}
+
+
+
+.deporte-info p{
+
+color:var(--texto-gris);
+font-size:.88rem;
+
+}
+
+
+
+.deporte-icono{
+
+font-size:2.2rem;
+background:rgba(255,255,255,.03);
+padding:12px;
+border-radius:12px;
+border:1px solid rgba(255,255,255,.05);
+
+}
+
+
+
+/* HEADER APP */
+
+
+.app-header{
+
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
+padding-bottom:10px;
+border-bottom:1px solid var(--tarjeta-borde);
+
+}
+
+
+
+.btn-volver-lobby{
+
+background:transparent;
+border:1px solid var(--tarjeta-borde);
+color:var(--texto-gris);
+padding:6px 12px;
+border-radius:6px;
+cursor:pointer;
+
+}
+
+
+
+.herramientas-grid{
+
+display:flex;
+gap:10px;
+margin-bottom:15px;
+
+}
+
+
+
+.buscador-input{
+
+flex:1;
+background:var(--tarjeta-bg);
+border:1px solid var(--tarjeta-borde);
+padding:10px;
+border-radius:8px;
+color:white;
+
+}
+
+
+
+.btn-refresh-live{
+
+background:var(--tarjeta-bg);
+border:1px solid var(--tarjeta-borde);
+color:white;
+width:42px;
+border-radius:8px;
+cursor:pointer;
+
+}
+ 
+.nav-filtros{
+
+display:flex;
+flex-wrap:wrap;
+background:var(--tarjeta-bg);
+padding:4px;
+border-radius:10px;
+margin-bottom:20px;
+gap:4px;
+
+}
+
+
+
+.btn-filto-main{
+
+flex:1;
+min-width:75px;
+background:transparent;
+border:none;
+color:var(--texto-gris);
+padding:10px 2px;
+border-radius:8px;
+cursor:pointer;
+font-weight:600;
+font-size:.75rem;
+
+}
+
+
+
+.btn-filto-main.activo{
+
+background:var(--bg-principal);
+color:var(--verde-principal);
+
+}
+
+
+
+
+/* TARJETAS PARTIDOS */
+
+
+.tarjeta-partido{
+
+background:var(--tarjeta-bg);
+border:1px solid var(--tarjeta-borde);
+border-radius:12px;
+padding:15px;
+margin-bottom:12px;
+cursor:pointer;
+
+}
+
+
+
+.tarjeta-partido.finalizado{
+
+opacity:.65;
+background:#0b0f19;
+
+}
+
+
+
+.encabezado-liga{
+
+font-size:.75rem;
+color:white;
+display:flex;
+align-items:center;
+gap:8px;
+margin-bottom:10px;
+border-bottom:1px solid rgba(255,255,255,.03);
+padding-bottom:5px;
+font-weight:bold;
+
+}
+
+
+
+.etiqueta-hora{
+
+color:var(--oro);
+background:rgba(0,0,0,.4);
+padding:4px 8px;
+border-radius:4px;
+font-size:.75rem;
+
+}
+
+
+
+.cuerpo-partido{
+
+display:flex;
+justify-content:space-between;
+align-items:center;
+
+}
+
+
+
+.equipos{
+
+flex:1;
+display:flex;
+flex-direction:column;
+gap:8px;
+
+}
+
+
+
+.equipo-linea{
+
+display:flex;
+align-items:center;
+gap:10px;
+font-size:.95rem;
+
+}
+
+
+
+.escudo-dinamico{
+
+width:26px;
+height:26px;
+background:linear-gradient(135deg,#1e293b,#0f172a);
+border:1px solid var(--tarjeta-borde);
+border-radius:50%;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:.65rem;
+font-weight:800;
+color:#cbd5e1;
+
+}
+
+
+
+.resultado-score{
+
+margin-left:auto;
+font-weight:bold;
+color:var(--oro);
+background:rgba(0,0,0,.3);
+padding:2px 6px;
+border-radius:4px;
+
+}
+
+
+
+/* DETALLE PARTIDO */
+
+
+.cabecera-detalle-grid{
+
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-top:15px;
+background:var(--tarjeta-bg);
+padding:20px 10px;
+border-radius:14px;
+border:1px solid var(--tarjeta-borde);
+
+}
+
+
+
+.caja-consejo{
+
+background:rgba(46,204,113,.08);
+border-left:4px solid var(--verde-principal);
+padding:12px 15px;
+border-radius:0 8px 8px 0;
+margin-bottom:20px;
+font-size:.85rem;
+line-height:1.5;
+
+}
+
+
+
+.barra-container{
+
+margin-bottom:12px;
+
+}
+
+
+
+.barra-container span{
+
+display:block;
+font-size:.82rem;
+margin-bottom:4px;
+
+}
+
+
+
+.barra-fondo{
+
+background:rgba(255,255,255,.06);
+height:9px;
+border-radius:5px;
+overflow:hidden;
+
+}
+
+
+
+.barra-progreso{
+
+height:100%;
+width:0%;
+border-radius:5px;
+
+}
     
-    <div id="panel-picks" class="panel-picks-lateral oculto-panel">
-        <div class="panel-header"><h3>Mis Picks</h3><button class="btn-volver-lobby" onclick="togglePanelPicks()">❌</button></div>
-        <div id="contenedor-lista-picks"></div>
+.bloque-mercado{
+
+background:#111827;
+border:1px solid var(--tarjeta-borde);
+padding:15px;
+border-radius:10px;
+margin-bottom:15px;
+
+}
+
+
+
+.titulo-mercado{
+
+color:var(--oro);
+font-size:.88rem;
+font-weight:bold;
+margin-bottom:12px;
+border-bottom:1px dashed rgba(255,255,255,.1);
+padding-bottom:6px;
+
+}
+
+
+
+/* SELECTORES MERCADOS */
+
+
+.btn-toggle-group{
+
+display:flex;
+background:rgba(0,0,0,.4);
+padding:2px;
+border-radius:6px;
+border:1px solid var(--tarjeta-borde);
+
+}
+
+
+
+.btn-toggle-item{
+
+background:transparent;
+border:none;
+color:var(--texto-gris);
+padding:4px 10px;
+font-size:.72rem;
+font-weight:bold;
+border-radius:4px;
+cursor:pointer;
+
+}
+
+
+
+.btn-toggle-item.activo{
+
+background:var(--verde-principal);
+color:#0b0f19;
+
+}
+
+
+
+
+/* COMBINADAS Y SOÑADORAS */
+
+
+.selector-riesgo-grid{
+
+display:grid;
+grid-template-columns:1fr 1fr 1fr;
+gap:6px;
+margin-bottom:15px;
+
+}
+
+
+
+.btn-riesgo{
+
+padding:10px 2px;
+border-radius:8px;
+border:1px solid var(--tarjeta-borde);
+background:var(--tarjeta-bg);
+color:white;
+font-size:.72rem;
+font-weight:bold;
+cursor:pointer;
+
+}
+
+
+
+.btn-riesgo.activo-asegurada{
+
+background:rgba(46,204,113,.2);
+border-color:var(--verde-principal);
+color:var(--verde-principal);
+
+}
+
+
+
+.btn-riesgo.activo-moderada{
+
+background:rgba(241,196,15,.2);
+border-color:var(--oro);
+color:var(--oro);
+
+}
+
+
+
+.btn-riesgo.activo-arriesgada{
+
+background:rgba(231,76,60,.2);
+border-color:var(--alerta);
+color:var(--alerta);
+
+}
+
+
+
+.tarjeta-combinada{
+
+background:var(--tarjeta-bg);
+border:1px solid var(--tarjeta-borde);
+border-radius:12px;
+padding:15px;
+margin-bottom:15px;
+
+}
+
+
+
+.ticket-item{
+
+background:rgba(0,0,0,.2);
+padding:10px;
+border-radius:6px;
+margin-bottom:8px;
+font-size:.85rem;
+
+}
+
+
+
+
+/* NAVEGACIÓN INFERIOR */
+
+
+.bottom-nav{
+
+position:fixed;
+bottom:0;
+left:50%;
+transform:translateX(-50%);
+width:100%;
+max-width:500px;
+background:#0e1726;
+border-top:1px solid var(--tarjeta-borde);
+display:flex;
+height:55px;
+z-index:999;
+
+}
+
+
+
+.nav-item-btn{
+
+flex:1;
+background:transparent;
+border:none;
+color:var(--texto-gris);
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+font-size:.75rem;
+cursor:pointer;
+
+}
+
+
+
+.nav-item-btn.activo{
+
+color:var(--verde-principal);
+
+}
+
+
+
+.badge-contador{
+
+background:var(--verde-principal);
+color:#111;
+font-size:.7rem;
+font-weight:bold;
+padding:1px 5px;
+border-radius:10px;
+
+}
+
+
+
+/* PANEL PICKS */
+
+
+.panel-picks-lateral{
+
+position:fixed;
+top:0;
+right:0;
+width:100%;
+max-width:320px;
+height:100%;
+background:#0c1322;
+border-left:1px solid var(--tarjeta-borde);
+z-index:10000;
+padding:20px;
+transition:.3s;
+
+}
+
+
+
+.oculto-panel{
+
+transform:translateX(100%);
+
+}
+
+
+
+.panel-header{
+
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
+
+}
+
+
+
+.item-pick-guardado{
+
+background:var(--tarjeta-bg);
+border:1px solid var(--tarjeta-borde);
+border-radius:8px;
+padding:12px;
+font-size:.85rem;
+margin-bottom:10px;
+
+}
+
+
+</style>
+
+
+</head>
+
+
+<body>
+    
+<div class="contenedor-app">
+
+
+<!-- =========================
+     LOBBY PRINCIPAL
+========================= -->
+
+<div id="lobby-selector" class="lobby-container">
+
+
+<h1 class="lobby-titulo">
+GreenPicks Pro
+</h1>
+
+
+<p class="lobby-sub">
+Plataforma de Tendencias Deportivas
+</p>
+
+
+
+<button class="btn-deporte-card" onclick="irADeporte('futbol')">
+
+<div class="deporte-info">
+
+<h3>
+Fútbol Profesional ⚽
+</h3>
+
+<p>
+Ligas Globales, Copas y Selecciones
+</p>
+
+</div>
+
+<div class="deporte-icono">
+🏟️
+</div>
+
+</button>
+
+
+
+
+<button class="btn-deporte-card" onclick="irADeporte('basquet')">
+
+<div class="deporte-info">
+
+<h3>
+Básquetbol Global 🏀
+</h3>
+
+<p>
+Ligas internacionales
+</p>
+
+</div>
+
+<div class="deporte-icono">
+🏀
+</div>
+
+</button>
+
+
+
+
+
+<button class="btn-deporte-card" onclick="irADeporte('tenis')">
+
+<div class="deporte-info">
+
+<h3>
+Tenis Internacional 🎾
+</h3>
+
+<p>
+ATP, WTA y Grand Slam
+</p>
+
+</div>
+
+<div class="deporte-icono">
+🎾
+</div>
+
+</button>
+
+
+
+</div>
+
+
+
+
+
+<!-- =========================
+     APP PRINCIPAL
+========================= -->
+
+
+<div id="app-content" class="oculto">
+
+
+
+<div class="app-header">
+
+
+<button class="btn-volver-lobby" onclick="volverAlLobby()">
+
+⬅️ Volver
+
+</button>
+
+
+
+<h2 id="titulo-deporte-activo"
+style="color:var(--verde-principal)">
+
+FÚTBOL
+
+</h2>
+
+
+</div>
+
+
+
+
+<div id="logs-servidor-error" class="oculto"></div>
+
+
+
+
+<div id="herramientas-top" class="herramientas-grid">
+
+
+<input
+
+id="filtro-ligas-input"
+
+class="buscador-input"
+
+placeholder="Buscar equipo o liga..."
+
+oninput="aplicarFiltrosMaster()"
+
+>
+
+
+<button
+
+id="btn-refresh"
+
+class="btn-refresh-live"
+
+onclick="forzarActualizacion()"
+
+>
+
+🔄
+
+</button>
+
+
+
+</div>
+
+
+
+
+
+<div class="nav-filtros">
+
+
+<button id="btn-proximos"
+
+class="btn-filto-main activo"
+
+onclick="setFiltroEstado('proximos')">
+
+Próximos
+
+</button>
+
+
+
+<button id="btn-envivo"
+
+class="btn-filto-main"
+
+onclick="setFiltroEstado('envivo')">
+
+🔴 En Vivo
+
+</button>
+
+
+
+<button id="btn-finalizados"
+
+class="btn-filto-main"
+
+onclick="setFiltroEstado('finalizados')">
+
+🏁 Finalizados
+
+</button>
+
+
+
+<button id="btn-combinada"
+
+class="btn-filto-main"
+
+onclick="setFiltroEstado('combinada')">
+
+Combinadas
+
+</button>
+
+
+
+<button id="btn-sonadora"
+
+class="btn-filto-main"
+
+onclick="setFiltroEstado('sonadora')">
+
+✨ Soñadoras
+
+</button>
+
+
+</div>
+
+
+
+
+
+<div id="contenedor-partidos"></div>
+
+
+
+</div>
+<!-- =========================
+     SECCIÓN COMBINADAS
+========================= -->
+
+
+<div id="seccion-combinada" class="oculto">
+
+
+<div class="selector-riesgo-grid">
+
+
+<button
+
+id="riesgo-cb-asegurada"
+
+class="btn-riesgo activo-asegurada"
+
+onclick="cambiarRiesgoCombinada('asegurada')">
+
+Asegurada (80-100%)
+
+</button>
+
+
+
+<button
+
+id="riesgo-cb-moderada"
+
+class="btn-riesgo"
+
+onclick="cambiarRiesgoCombinada('moderada')">
+
+Moderada (60-80%)
+
+</button>
+
+
+
+<button
+
+id="riesgo-cb-arriesgada"
+
+class="btn-riesgo"
+
+onclick="cambiarRiesgoCombinada('arriesgada')">
+
+Arriesgada (40-60%)
+
+</button>
+
+
+
+</div>
+
+
+<div id="combinada-ticket-render"></div>
+
+
+</div>
+
+
+
+
+
+<!-- =========================
+     SECCIÓN SOÑADORAS
+========================= -->
+
+
+<div id="seccion-sonadora" class="oculto">
+
+
+<div class="selector-riesgo-grid">
+
+
+<button
+
+id="riesgo-sn-asegurada"
+
+class="btn-riesgo activo-asegurada"
+
+onclick="cambiarRiesgoSonadora('asegurada')">
+
+Asegurada (80-100%)
+
+</button>
+
+
+
+<button
+
+id="riesgo-sn-moderada"
+
+class="btn-riesgo"
+
+onclick="cambiarRiesgoSonadora('moderada')">
+
+Moderada (60-80%)
+
+</button>
+
+
+
+<button
+
+id="riesgo-sn-arriesgada"
+
+class="btn-riesgo"
+
+onclick="cambiarRiesgoSonadora('arriesgada')">
+
+Arriesgada (40-60%)
+
+</button>
+
+
+
+</div>
+
+
+
+<div id="sonadora-ticket-render"></div>
+
+
+</div>
+
+
+
+
+
+<!-- =========================
+     VISTA DETALLE PARTIDO
+========================= -->
+
+
+<div id="vista-detalle" class="oculto">
+
+
+<div style="display:flex;justify-content:space-between;align-items:center;">
+
+
+<button
+
+class="btn-volver-lobby"
+
+onclick="cerrarDetalle()">
+
+⬅️ Volver atrás
+
+</button>
+
+
+</div>
+
+
+
+<div
+
+class="cabecera-detalle-grid"
+
+id="detalle-cabecera">
+
+</div>
+
+
+
+
+<div
+
+id="detalle-consejo"
+
+style="margin-top:15px">
+
+</div>
+
+
+
+<div id="detalle-barras"></div>
+
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+<!-- =========================
+     MENU INFERIOR
+========================= -->
+
+
+<div class="bottom-nav">
+
+
+<button
+
+class="nav-item-btn activo"
+
+onclick="cerrarDetalle();setFiltroEstado('proximos');">
+
+<span>🏟️</span>
+
+<span>Eventos</span>
+
+</button>
+
+
+
+
+
+<button
+
+class="nav-item-btn"
+
+style="position:relative"
+
+onclick="togglePanelPicks()">
+
+
+<span id="contador-picks-badge"
+
+class="badge-contador">
+
+0
+
+</span>
+
+
+<span>📋</span>
+
+<span>Mis Picks</span>
+
+
+</button>
+
+
+
+</div>
+
+
+
+
+
+<!-- =========================
+     PANEL PICKS
+========================= -->
+
+
+<div
+
+id="panel-picks"
+
+class="panel-picks-lateral oculto-panel">
+
+
+<div class="panel-header">
+
+
+<h3>
+Mis Picks
+</h3>
+
+
+<button
+
+class="btn-volver-lobby"
+
+onclick="togglePanelPicks()">
+
+❌
+
+</button>
+
+
+</div>
+
+
+
+<div id="contenedor-lista-picks"></div>
+
+
+</div>
+<script>
+
+
+// =====================================
+// GREENPICKS PRO
+// SISTEMA DE APIS
+// ROTACIÓN + CACHÉ + CONTROL ERRORES
+// =====================================
+
+
+const API_KEYS = [
+
+"b1068f561f80975166b5c1ab67a2888a",
+
+"c7b062bf872742e25c086b5ad997ba0a",
+
+"f900242e004a6964ac7d711eafca119c",
+
+"12645d55775fe9919ad938d99af60474"
+
+];
+
+
+
+let indiceApiKeyActual = 0;
+
+
+
+const CACHE_API = {};
+
+const TIEMPO_CACHE = 300000;
+
+
+
+
+function obtenerApiKeyActiva(){
+
+return API_KEYS[indiceApiKeyActual];
+
+}
+
+
+
+
+
+function rotarApiKey(){
+
+
+indiceApiKeyActual++;
+
+
+if(indiceApiKeyActual >= API_KEYS.length){
+
+indiceApiKeyActual = 0;
+
+}
+
+
+}
+
+
+
+
+
+function limpiarCacheAPI(){
+
+
+Object.keys(CACHE_API).forEach(key=>{
+
+delete CACHE_API[key];
+
+});
+
+
+}
+
+
+
+
+function guardarCacheAPI(url,data){
+
+
+CACHE_API[url]={
+
+data:data,
+
+fecha:Date.now()
+
+};
+
+
+}
+
+
+
+
+
+function obtenerCacheAPI(url){
+
+
+const item = CACHE_API[url];
+
+
+if(!item)
+return null;
+
+
+
+if(Date.now()-item.fecha > TIEMPO_CACHE){
+
+
+delete CACHE_API[url];
+
+
+return null;
+
+}
+
+
+
+return item.data;
+
+
+}
+
+
+
+
+
+
+
+async function fetchConRotacion(urlTemplate){
+
+
+
+const cache = obtenerCacheAPI(urlTemplate);
+
+
+
+if(cache){
+
+
+console.log("📦 Usando caché");
+
+
+return {
+
+
+ok:true,
+
+
+json:async()=>cache
+
+
+};
+
+
+}
+
+
+
+
+
+
+
+for(let intento=0; intento<API_KEYS.length; intento++){
+
+
+
+let url = urlTemplate.replace(
+
+"API_KEY_PLACEHOLDER",
+
+obtenerApiKeyActiva()
+
+);
+
+
+
+
+try{
+
+
+
+const controller = new AbortController();
+
+
+
+const timeout = setTimeout(()=>{
+
+controller.abort();
+
+},8000);
+
+
+
+
+let res = await fetch(url,{
+
+signal:controller.signal
+
+});
+
+
+
+
+clearTimeout(timeout);
+
+
+
+
+
+
+
+if(res.status===401 || res.status===429){
+
+
+
+console.log(
+
+"API rechazada, rotando clave"
+
+);
+
+
+
+rotarApiKey();
+
+
+continue;
+
+
+}
+
+
+
+
+
+
+
+if(!res.ok){
+
+
+rotarApiKey();
+
+
+continue;
+
+
+}
+
+
+
+
+
+
+
+let data = await res.json();
+
+
+
+
+
+guardarCacheAPI(
+
+urlTemplate,
+
+data
+
+);
+
+
+
+
+
+
+return {
+
+
+ok:true,
+
+
+json:async()=>data
+
+
+};
+
+
+
+
+
+}catch(error){
+
+
+
+console.log(
+
+"Error API:",
+
+error.message
+
+);
+
+
+
+rotarApiKey();
+
+
+
+}
+
+
+
+
+
+}
+
+
+
+
+
+
+throw new Error(
+
+"Todas las APIs no disponibles"
+
+);
+
+
+
+}
+    
+// =====================================
+// VARIABLES GLOBALES DEL SISTEMA
+// =====================================
+
+
+let baseDeDatosHoy = [];
+
+let estadoFiltroActual = "proximos";
+
+let riesgoCombinadaSeleccionado = "asegurada";
+
+let riesgoSonadoraSeleccionado = "asegurada";
+
+let ticketsMultiplesGenerados = {};
+
+let deporteActivo = "futbol";
+
+let partidoSeleccionado = null;
+
+let picksGuardados = [];
+
+
+
+
+
+// =====================================
+// MAPEO DE LIGAS
+// =====================================
+
+
+const MAPEO_LIGAS = {
+
+
+
+/* EUROPA */
+
+
+"soccer_epl":
+"Premier League 🏴",
+
+
+"soccer_spain_la_liga":
+"LaLiga 🇪🇸",
+
+
+"soccer_italy_serie_a":
+"Serie A 🇮🇹",
+
+
+"soccer_germany_bundesliga":
+"Bundesliga 🇩🇪",
+
+
+"soccer_france_ligue_one":
+"Ligue 1 🇫🇷",
+
+
+"soccer_portugal_primeira_liga":
+"Primeira Liga 🇵🇹",
+
+
+"soccer_netherlands_eredivisie":
+"Eredivisie 🇳🇱",
+
+
+"soccer_belgium_first_div":
+"Pro League Bélgica 🇧🇪",
+
+
+"soccer_turkey_super_league":
+"Süper Lig Turquía 🇹🇷",
+
+
+
+
+/* ARGENTINA */
+
+
+"soccer_argentina_primera":
+"Liga Profesional Argentina 🇦🇷",
+
+
+"soccer_argentina_copa_de_la_liga":
+"Copa Argentina 🇦🇷",
+
+
+
+
+
+/* SUDAMÉRICA */
+
+
+"soccer_brazil_campeonato":
+"Brasileirão 🇧🇷",
+
+
+"soccer_conmebol_copa_libertadores":
+"Copa Libertadores 🌎",
+
+
+"soccer_conmebol_copa_sudamericana":
+"Copa Sudamericana 🌎",
+
+
+
+
+
+/* AUSTRALIA */
+
+
+"soccer_australia_aleague":
+"A-League Australia 🇦🇺",
+
+
+
+
+
+/* UEFA */
+
+
+"soccer_uefa_champs_league":
+"UEFA Champions League ⭐",
+
+
+"soccer_uefa_champs_league_qualifying":
+"Champions League Clasificación ⭐",
+
+
+"soccer_uefa_europa_league":
+"Europa League 🏆",
+
+
+"soccer_uefa_europa_conference_league":
+"Conference League 🏆",
+
+
+
+
+
+/* INTERNACIONAL */
+
+
+"soccer_fifa_world_cup":
+"Copa Mundial FIFA 🌎",
+
+
+"soccer_friendly_match_men":
+"Amistosos Internacionales"
+
+};
+
+
+
+
+// =====================================
+// CONFIGURACIÓN DE MERCADOS BASE
+// =====================================
+
+
+const MERCADOS_DISPONIBLES = [
+
+
+"Ganador partido",
+
+"Doble oportunidad",
+
+"Más/Menos goles",
+
+"Ambos equipos marcan",
+
+"Resultado exacto",
+
+"Goleador",
+
+"Córners",
+
+"Tiros al arco",
+
+"Tarjetas"
+
+
+
+];
+   
+// =====================================
+// NAVEGACIÓN PRINCIPAL
+// =====================================
+
+
+function irADeporte(deporte){
+
+
+    deporteActivo = deporte;
+
+
+    document
+    .getElementById("lobby-selector")
+    .classList.add("oculto");
+
+
+
+    document
+    .getElementById("app-content")
+    .classList.remove("oculto");
+
+
+
+    const titulo =
+    document.getElementById(
+        "titulo-deporte-activo"
+    );
+
+
+
+    if(deporte==="futbol"){
+
+        titulo.innerHTML="FÚTBOL ⚽";
+
+    }
+
+
+    else if(deporte==="basquet"){
+
+        titulo.innerHTML="BÁSQUET 🏀";
+
+    }
+
+
+    else if(deporte==="tenis"){
+
+        titulo.innerHTML="TENIS 🎾";
+
+    }
+
+
+
+    cargarDatosDeportivos();
+
+
+}
+
+
+
+
+function volverAlLobby(){
+
+
+    document
+    .getElementById("app-content")
+    .classList.add("oculto");
+
+
+
+    document
+    .getElementById("vista-detalle")
+    .classList.add("oculto");
+
+
+
+    document
+    .getElementById("lobby-selector")
+    .classList.remove("oculto");
+
+
+}
+
+
+
+
+// =====================================
+// FILTROS
+// =====================================
+
+
+function setFiltroEstado(estado){
+
+
+    estadoFiltroActual = estado;
+
+
+
+    document
+    .querySelectorAll(".btn-filto-main")
+    .forEach(btn=>{
+
+        btn.classList.remove("activo");
+
+    });
+
+
+
+    const boton =
+    document.getElementById(
+        "btn-"+estado
+    );
+
+
+
+    if(boton){
+
+        boton.classList.add("activo");
+
+    }
+
+
+
+    renderizarVistaActual();
+
+
+}
+
+
+
+
+
+// =====================================
+// ACTUALIZACIÓN MANUAL
+// =====================================
+
+
+async function forzarActualizacion(){
+
+
+    console.log(
+        "🔄 Actualización forzada"
+    );
+
+
+
+    limpiarCacheAPI();
+
+
+
+    baseDeDatosHoy=[];
+
+
+
+    await cargarDatosDeportivos();
+
+
+}
+
+
+
+
+
+// =====================================
+// CARGA PRINCIPAL
+// =====================================
+
+
+async function cargarDatosDeportivos(){
+
+
+    const errorBox =
+    document.getElementById(
+        "logs-servidor-error"
+    );
+
+
+
+    if(errorBox){
+
+        errorBox.classList.add("oculto");
+
+    }
+
+
+
+
+    try{
+
+
+        let datos=[];
+
+
+
+        if(deporteActivo==="futbol"){
+
+
+            datos =
+            await fetchFutbolOddsApiAgrupado();
+
+
+
+        }
+
+
+
+        else if(deporteActivo==="basquet"){
+
+
+            datos =
+            await fetchBasketESPNPublico();
+
+
+
+        }
+
+
+
+        else if(deporteActivo==="tenis"){
+
+
+            datos =
+            await fetchTenisOddsApi();
+
+
+
+        }
+
+
+
+
+
+        baseDeDatosHoy = datos || [];
+
+
+
+        renderizarVistaActual();
+
+
+
+
+    }catch(error){
+
+
+
+        console.log(error);
+
+
+
+        mostrarError(
+            "No se pudieron cargar los eventos"
+        );
+
+
+
+    }
+
+
+
+}
+    
+// =====================================
+// UTILIDADES DE EVENTOS
+// =====================================
+
+
+function generarMonograma(nombre, extraClass=""){
+
+
+    if(!nombre)
+        nombre="X";
+
+
+    const iniciales =
+    nombre.substring(0,3).toUpperCase();
+
+
+
+    return `
+
+    <div class="escudo-dinamico ${extraClass}">
+
+    ${iniciales}
+
     </div>
 
-    <script>
-        // LISTA DE API KEYS PARA ROTACIÓN AUTOMÁTICA
-        const API_KEYS = [
-            "b1068f561f80975166b5c1ab67a2888a",
-            "c7b062bf872742e25c086b5ad997ba0a",
-            "f900242e004a6964ac7d711eafca119c",
-            "12645d55775fe9919ad938d99af60474"
-        ];
-        
-        let indiceApiKeyActual = 0;
-        function obtenerApiKeyActiva() { return API_KEYS[indiceApiKeyActual]; }
-        
-        function rotarApiKey() {
-            indiceApiKeyActual++;
-            if (indiceApiKeyActual >= API_KEYS.length) {
-                indiceApiKeyActual = 0; 
-                return false; 
-            }
-            return true;
-        }
+    `;
 
-        async function fetchConRotacion(urlTemplate) {
-            let url = urlTemplate.replace('API_KEY_PLACEHOLDER', obtenerApiKeyActiva());
-            let res = await fetch(url);
-            
-            if (res.status === 401 || res.status === 429) {
-                console.log("API Key agotada o rechazada. Cambiando a la siguiente...");
-                if (rotarApiKey()) {
-                    url = urlTemplate.replace('API_KEY_PLACEHOLDER', obtenerApiKeyActiva());
-                    res = await fetch(url);
-                }
-            }
-            return res;
-        }
+}
 
-        let baseDeDatosHoy = [];
-        let estadoFiltroActual = 'proximos';
-        let riesgoCombinadaSeleccionado = 'asegurada';
-        let riesgoSonadoraSeleccionado = 'asegurada';
-        let ticketsMultiplesGenerados = {}; 
-        let deporteActivo = 'futbol'; 
 
-        // CONFIGURACIÓN DE LIGAS AMPLIADA CON LIGA ARGENTINA, AUSTRALIA Y UEFA EUROPA / CONFERENCE
-        const MAPEO_LIGAS = {
-            // Ligas Principales Europeas
-            "soccer_epl": "Premier League",
-            "soccer_spain_la_liga": "LaLiga",
-            "soccer_italy_serie_a": "Serie A",
-            "soccer_germany_bundesliga": "Bundesliga",
-            "soccer_france_ligue_one": "Ligue 1",
-            "soccer_portugal_primeira_liga": "Primeira Liga (POR)",
-            "soccer_netherlands_eredivisie": "Eredivisie (NED)",
-            "soccer_belgium_first_div": "Pro League (BEL)",
-            "soccer_turkey_super_league": "Süper Lig (TUR)",
-            "soccer_greece_super_league": "Super League (GRE)",
-            "soccer_saudi_arabia_pro_league": "Saudi Pro League",
-            "soccer_norway_eliteserien": "Eliteserien (NOR)",
-            "soccer_spl": "Premiership (ESC)",
-            
-            // Ligas Sudamericanas e Internacionales (Incluida Argentina)
-            "soccer_argentina_primera": "Liga Profesional Arg 🇦🇷",
-            "soccer_argentina_copa_de_la_liga": "Copa de la Liga Arg 🇦🇷",
-            "soccer_brazil_campeonato": "Brasileirão 🇧🇷",
-            "soccer_usa_mls": "MLS 🇺🇸",
-            
-            // Ligas de Australia
-            "soccer_australia_aleague": "A-League (Australia) 🇦🇺",
-            
-            // Competiciones Internacionales UEFA y CONMEBOL
-            "soccer_uefa_champs_league": "UEFA Champions League",
-            "soccer_uefa_champs_league_qualifying": "UEFA Champions League (Clasif.)",
-            "soccer_uefa_europa_league": "UEFA Europa League 🇪🇺",
-            "soccer_uefa_europa_conference_league": "UEFA Conference League 🇪🇺",
-            "soccer_conmebol_copa_libertadores": "Copa Libertadores",
-            "soccer_conmebol_copa_sudamericana": "Copa Sudamericana",
-            "soccer_fifa_world_cup": "Copa Mundial FIFA",
-            "soccer_friendly_match_men": "Amistosos Internacionales"
+
+
+
+function formatearFechaHoraLocal(fechaIso){
+
+
+    if(!fechaIso)
+        return "--/-- --:--";
+
+
+
+    const fecha =
+    new Date(fechaIso);
+
+
+
+    const dia =
+    String(fecha.getDate())
+    .padStart(2,"0");
+
+
+
+    const mes =
+    String(fecha.getMonth()+1)
+    .padStart(2,"0");
+
+
+
+    const hora =
+    String(fecha.getHours())
+    .padStart(2,"0");
+
+
+
+    const minutos =
+    String(fecha.getMinutes())
+    .padStart(2,"0");
+
+
+
+    return `${dia}/${mes} - ${hora}:${minutos}`;
+
+}
+
+
+
+
+
+function procesarEstadoTiempo(fechaIso){
+
+
+    const ahora =
+    Date.now();
+
+
+
+    const inicio =
+    new Date(fechaIso).getTime();
+
+
+
+    const diferencia =
+    ahora - inicio;
+
+
+
+
+    if(
+        diferencia > 0 &&
+        diferencia < 9000000
+    ){
+
+        return {
+
+            isLiveNative:true,
+
+            isFinished:false
+
         };
 
-        function generarMonograma(nombre, extraClass = "") {
-            if(!nombre) nombre = "X";
-            const iniciales = nombre.substring(0,3).toUpperCase();
-            return `<div class="escudo-dinamico ${extraClass}">${iniciales}</div>`;
+    }
+
+
+
+
+    if(
+        diferencia >= 9000000 &&
+        diferencia < 86400000
+    ){
+
+        return {
+
+            isLiveNative:false,
+
+            isFinished:true
+
+        };
+
+    }
+
+
+
+
+    return {
+
+        isLiveNative:false,
+
+        isFinished:false
+
+    };
+
+
+}
+
+
+
+
+
+// =====================================
+// RENDER DE PARTIDOS
+// =====================================
+
+
+function renderizarVistaActual(){
+
+
+    const contenedor =
+    document.getElementById(
+        "contenedor-partidos"
+    );
+
+
+
+    if(!contenedor)
+        return;
+
+
+
+    contenedor.innerHTML="";
+
+
+
+
+
+    let lista =
+    [...baseDeDatosHoy];
+
+
+
+
+
+    if(estadoFiltroActual==="envivo"){
+
+
+        lista =
+        lista.filter(p=>p.live);
+
+
+
+    }
+
+
+
+    else if(
+        estadoFiltroActual==="finalizados"
+    ){
+
+
+        lista =
+        lista.filter(p=>p.finalizado);
+
+
+
+    }
+
+
+
+    else if(
+        estadoFiltroActual==="proximos"
+    ){
+
+
+        lista =
+        lista.filter(
+            p=>!p.finalizado
+        );
+
+    }
+
+
+
+
+
+    if(lista.length===0){
+
+
+        contenedor.innerHTML=`
+
+        <div class="tarjeta-partido">
+
+        No hay eventos disponibles
+
+        </div>
+
+        `;
+
+
+        return;
+
+    }
+
+
+
+
+
+    lista.forEach(partido=>{
+
+
+        contenedor.innerHTML += crearTarjetaPartido(partido);
+
+
+    });
+
+
+}
+
+
+
+
+
+
+function crearTarjetaPartido(partido){
+
+
+
+    const hora =
+    formatearFechaHoraLocal(
+        partido.fecha
+    );
+
+
+
+    const liga =
+    partido.liga ||
+    "Competición";
+
+
+
+    const local =
+    partido.local ||
+    "Local";
+
+
+
+    const visitante =
+    partido.visitante ||
+    "Visitante";
+
+
+
+    return `
+
+
+    <div class="tarjeta-partido"
+
+    onclick="abrirDetallePartido('${partido.id}')">
+
+
+        <div class="encabezado-liga">
+
+        ${liga}
+
+        <span class="etiqueta-hora">
+
+        🕒 ${hora}
+
+        </span>
+
+        </div>
+
+
+
+        <div class="cuerpo-partido">
+
+
+            <div class="equipos">
+
+
+                <div class="equipo-linea">
+
+                ${generarMonograma(local)}
+
+                ${local}
+
+                </div>
+
+
+
+                <div class="equipo-linea">
+
+                ${generarMonograma(visitante)}
+
+                ${visitante}
+
+                </div>
+
+
+            </div>
+
+
+
+        </div>
+
+
+    </div>
+
+
+    `;
+
+
+            }
+    
+// =====================================
+// BUSCADOR Y FILTROS AVANZADOS
+// =====================================
+
+
+function aplicarFiltrosMaster(){
+
+
+    const texto =
+    document
+    .getElementById(
+        "filtro-ligas-input"
+    )
+    .value
+    .toLowerCase();
+
+
+
+    if(!texto){
+
+
+        renderizarVistaActual();
+
+        return;
+
+    }
+
+
+
+
+    const filtrados =
+    baseDeDatosHoy.filter(partido=>{
+
+
+        const contenido = (
+
+            (partido.local || "") +
+            " " +
+            (partido.visitante || "") +
+            " " +
+            (partido.liga || "")
+
+        ).toLowerCase();
+
+
+
+        return contenido.includes(texto);
+
+
+    });
+
+
+
+
+
+    const copia =
+    baseDeDatosHoy;
+
+
+
+    baseDeDatosHoy =
+    filtrados;
+
+
+
+    renderizarVistaActual();
+
+
+
+    baseDeDatosHoy =
+    copia;
+
+
+}
+
+
+
+
+
+
+
+// =====================================
+// DETALLE DEL PARTIDO
+// =====================================
+
+
+function abrirDetallePartido(id){
+
+
+    const partido =
+    baseDeDatosHoy.find(
+        p=>String(p.id)===String(id)
+    );
+
+
+
+    if(!partido)
+        return;
+
+
+
+    partidoSeleccionado = partido;
+
+
+
+
+    document
+    .getElementById(
+        "app-content"
+    )
+    .classList.add("oculto");
+
+
+
+    document
+    .getElementById(
+        "vista-detalle"
+    )
+    .classList.remove("oculto");
+
+
+
+
+
+    renderDetallePartido(partido);
+
+
+}
+
+
+
+
+
+
+function cerrarDetalle(){
+
+
+    document
+    .getElementById(
+        "vista-detalle"
+    )
+    .classList.add("oculto");
+
+
+
+    document
+    .getElementById(
+        "app-content"
+    )
+    .classList.remove("oculto");
+
+
+}
+
+
+
+
+
+
+
+function renderDetallePartido(partido){
+
+
+
+    const cabecera =
+    document.getElementById(
+        "detalle-cabecera"
+    );
+
+
+
+    cabecera.innerHTML=`
+
+
+    <div>
+
+    ${generarMonograma(partido.local)}
+
+    <br>
+
+    <b>${partido.local}</b>
+
+    </div>
+
+
+    <div>
+
+    VS
+
+    </div>
+
+
+    <div>
+
+    ${generarMonograma(partido.visitante)}
+
+    <br>
+
+    <b>${partido.visitante}</b>
+
+    </div>
+
+
+    `;
+
+
+
+
+
+    document
+    .getElementById(
+        "detalle-consejo"
+    )
+    .innerHTML=`
+
+
+    <div class="caja-consejo">
+
+    🤖 Analizando encuentro...
+
+    La IA evaluará estadísticas,
+    forma reciente y mercados.
+
+    </div>
+
+
+    `;
+
+
+
+
+
+    document
+    .getElementById(
+        "detalle-barras"
+    )
+    .innerHTML=`
+
+
+    <div class="bloque-mercado">
+
+
+    <div class="titulo-mercado">
+
+    Probabilidades iniciales
+
+    </div>
+
+
+
+    <div class="barra-container">
+
+    <span>
+
+    Victoria ${partido.local}
+
+    </span>
+
+
+    <div class="barra-fondo">
+
+    <div
+
+    class="barra-progreso"
+
+    style="width:50%;background:var(--verde-principal)"
+
+    >
+
+    </div>
+
+    </div>
+
+
+    </div>
+
+
+
+
+
+    <div class="barra-container">
+
+    <span>
+
+    Victoria ${partido.visitante}
+
+    </span>
+
+
+    <div class="barra-fondo">
+
+    <div
+
+    class="barra-progreso"
+
+    style="width:50%;background:var(--oro)"
+
+    >
+
+    </div>
+
+    </div>
+
+
+    </div>
+
+
+
+    </div>
+
+
+    `;
+
+
+
+        }
+    
+// =====================================
+// CONEXIÓN DATOS FÚTBOL
+// API ODDS / EVENTOS
+// =====================================
+
+
+async function fetchFutbolOddsApiAgrupado(){
+
+
+    const eventos = [];
+
+
+
+    try{
+
+
+        const url =
+
+        "https://api.the-odds-api.com/v4/sports/soccer/odds/?regions=eu&markets=h2h,totals,btts&oddsFormat=decimal&apiKey=API_KEY_PLACEHOLDER";
+
+
+
+
+        const respuesta =
+        await fetchConRotacion(url);
+
+
+
+        const datos =
+        await respuesta.json();
+
+
+
+
+
+        if(!Array.isArray(datos)){
+
+            return eventos;
+
         }
 
-        function formatearFechaHoraLocal(fechaIso) {
-            if (!fechaIso) return "--/-- --:--";
-            const f = new Date(fechaIso);
-            const dia = String(f.getDate()).padStart(2, '0');
-            const mes = String(f.getMonth() + 1).padStart(2, '0');
-            const horas = String(f.getHours()).padStart(2, '0');
-            const mins = String(f.getMinutes()).padStart(2, '0');
-            return `${dia}/${mes} - ${horas}:${mins}`;
+
+
+
+
+        datos.forEach(evento=>{
+
+
+            let ligaNombre =
+            MAPEO_LIGAS[evento.sport_key]
+            ||
+            evento.sport_title
+            ||
+            "Liga internacional";
+
+
+
+            eventos.push({
+
+
+                id:
+                evento.id,
+
+
+
+                liga:
+                ligaNombre,
+
+
+
+                local:
+                evento.home_team,
+
+
+
+                visitante:
+                evento.away_team,
+
+
+
+                fecha:
+                evento.commence_time,
+
+
+
+                live:false,
+
+
+
+                finalizado:false,
+
+
+
+                mercados:
+                evento.bookmakers || []
+
+
+
+            });
+
+
+
+        });
+
+
+
+
+    }catch(error){
+
+
+
+        console.log(
+            "Error fútbol:",
+            error
+        );
+
+
+
+    }
+
+
+
+
+    return eventos;
+
+
+}
+
+
+
+
+
+
+
+// =====================================
+// BÁSQUET
+// =====================================
+
+
+async function fetchBasketESPNPublico(){
+
+
+    return [];
+
+
+}
+
+
+
+
+
+
+
+// =====================================
+// TENIS
+// =====================================
+
+
+async function fetchTenisOddsApi(){
+
+
+    const partidos=[];
+
+
+
+    try{
+
+
+        const url =
+
+        "https://api.the-odds-api.com/v4/sports/tennis/odds/?regions=eu&markets=h2h&oddsFormat=decimal&apiKey=API_KEY_PLACEHOLDER";
+
+
+
+
+        const respuesta =
+        await fetchConRotacion(url);
+
+
+
+        const datos =
+        await respuesta.json();
+
+
+
+
+
+        datos.forEach(evento=>{
+
+
+            partidos.push({
+
+
+                id:evento.id,
+
+
+                liga:
+                evento.sport_title,
+
+
+
+                local:
+                evento.home_team,
+
+
+
+                visitante:
+                evento.away_team,
+
+
+
+                fecha:
+                evento.commence_time,
+
+
+
+                live:false,
+
+
+                finalizado:false,
+
+
+                mercados:
+                evento.bookmakers
+
+
+            });
+
+
+
+        });
+
+
+
+    }catch(error){
+
+
+        console.log(
+            "Error tenis:",
+            error
+        );
+
+
+    }
+
+
+
+
+    return partidos;
+
+
+}
+// =====================================
+// MOTOR IA GREENPICKS PRO
+// ANÁLISIS DE MERCADOS
+// =====================================
+
+
+
+function convertirCuotaProbabilidad(cuota){
+
+
+    if(!cuota || cuota<=0)
+        return 0;
+
+
+
+    return (1 / cuota) * 100;
+
+
+}
+
+
+
+
+
+
+
+function calcularConfianzaBase(partido){
+
+
+    let confianza = 50;
+
+
+
+    if(partido.mercados){
+
+        confianza += 10;
+
+    }
+
+
+
+    if(partido.liga){
+
+        confianza += 5;
+
+    }
+
+
+
+    if(partido.fecha){
+
+        confianza += 5;
+
+    }
+
+
+
+    if(confianza>95){
+
+        confianza=95;
+
+    }
+
+
+
+    return confianza;
+
+
+}
+
+
+
+
+
+
+
+
+function analizarPartidoIA(partido){
+
+
+
+    const confianza =
+    calcularConfianzaBase(partido);
+
+
+
+
+
+    let analisis = {
+
+
+
+        ganador:
+
+        {
+
+            seleccion:
+            partido.local,
+
+            probabilidad:
+            confianza
+
+        },
+
+
+
+        dobleOportunidad:
+
+
+        {
+
+            seleccion:
+            "1X",
+
+            probabilidad:
+            Math.min(confianza+5,98)
+
+        },
+
+
+
+        goles:
+
+
+        {
+
+            mercado:
+            "Más de 1.5 goles",
+
+            probabilidad:
+            Math.min(confianza+3,95)
+
+        },
+
+
+
+        ambosMarcan:
+
+
+        {
+
+            mercado:
+            "Ambos marcan",
+
+            probabilidad:
+            55
+
+        },
+
+
+
+        exacto:
+
+
+        [
+
+            {
+
+                marcador:"1-0",
+
+                probabilidad:20
+
+            },
+
+            {
+
+                marcador:"2-0",
+
+                probabilidad:15
+
+            },
+
+            {
+
+                marcador:"2-1",
+
+                probabilidad:12
+
+            }
+
+        ]
+
+
+
+    };
+
+
+
+
+    return analisis;
+
+
+}
+
+
+
+
+
+
+
+
+function generarPickIA(partido){
+
+
+    const ia =
+    analizarPartidoIA(partido);
+
+
+
+    return {
+
+
+        partido:
+        partido.local+
+        " vs "+
+        partido.visitante,
+
+
+
+        pick:
+        ia.ganador.seleccion,
+
+
+
+        probabilidad:
+        ia.ganador.probabilidad,
+
+
+
+        mercado:
+        "Ganador"
+
+
+
+    };
+
+
+
+}
+
+
+
+
+
+
+
+// =====================================
+// VALOR ESPERADO EV+
+// =====================================
+
+
+
+function calcularEV(probabilidad,cuota){
+
+
+    if(!cuota)
+        return 0;
+
+
+
+    let p =
+    probabilidad / 100;
+
+
+
+    return (
+
+        (p * cuota) - 1
+
+    ) * 100;
+
+
+}
+
+
+
+
+
+
+
+function esEVPositivo(probabilidad,cuota){
+
+
+    return calcularEV(
+        probabilidad,
+        cuota
+    ) > 0;
+
+
+                }
+    
+// =====================================
+// RENDER PREDICCIÓN EN PARTIDO
+// =====================================
+
+
+
+function agregarPrediccionTarjeta(partido){
+
+
+    const ia =
+    analizarPartidoIA(partido);
+
+
+
+    return `
+
+
+    <div class="bloque-mercado">
+
+
+    <div class="titulo-mercado">
+
+    🤖 Predicción IA
+
+    </div>
+
+
+
+
+    <div class="ticket-item">
+
+
+    🏆 Pick recomendado:
+
+    <b>
+
+    ${ia.ganador.seleccion}
+
+    </b>
+
+
+    <br>
+
+
+    📊 Probabilidad:
+
+    ${ia.ganador.probabilidad}%
+
+
+
+    </div>
+
+
+
+
+
+    <div class="ticket-item">
+
+
+    ⚽
+
+    ${ia.goles.mercado}
+
+
+    <br>
+
+
+    Probabilidad:
+
+    ${ia.goles.probabilidad}%
+
+
+
+    </div>
+
+
+
+
+
+
+    <button
+
+    onclick="guardarPick('${partido.id}')"
+
+    >
+
+    📋 Guardar Pick
+
+    </button>
+
+
+
+    </div>
+
+
+    `;
+
+
+}
+
+
+
+
+
+
+
+// =====================================
+// PICKS GUARDADOS
+// =====================================
+
+
+
+function guardarPick(id){
+
+
+    const partido =
+    baseDeDatosHoy.find(
+        p=>String(p.id)===String(id)
+    );
+
+
+
+    if(!partido)
+        return;
+
+
+
+
+    const pick =
+    generarPickIA(partido);
+
+
+
+
+
+    picksGuardados.push(pick);
+
+
+
+    actualizarPanelPicks();
+
+
+
+    document
+    .getElementById(
+        "contador-picks-badge"
+    )
+    .innerHTML =
+    picksGuardados.length;
+
+
+
+}
+
+
+
+
+
+
+
+function actualizarPanelPicks(){
+
+
+    const contenedor =
+    document.getElementById(
+        "contenedor-lista-picks"
+    );
+
+
+
+    if(!contenedor)
+        return;
+
+
+
+
+    contenedor.innerHTML="";
+
+
+
+
+    picksGuardados.forEach(pick=>{
+
+
+        contenedor.innerHTML += `
+
+
+        <div class="item-pick-guardado">
+
+
+        ${pick.partido}
+
+
+        <br>
+
+
+        ✅ ${pick.pick}
+
+
+        <br>
+
+
+        📈 ${pick.probabilidad}%
+
+
+        </div>
+
+
+        `;
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+function togglePanelPicks(){
+
+
+
+    const panel =
+    document.getElementById(
+        "panel-picks"
+    );
+
+
+
+    panel.classList.toggle(
+        "oculto-panel"
+    );
+
+
+        }
+    
+// =====================================
+// RESULTADO EXACTO TOP 3
+// =====================================
+
+
+
+function generarResultadoExactoTop3(partido){
+
+
+    const ia =
+    analizarPartidoIA(partido);
+
+
+
+    return ia.exacto
+    .sort(
+        (a,b)=>
+        b.probabilidad-a.probabilidad
+    )
+    .slice(0,3);
+
+
+
+}
+
+
+
+
+
+
+
+function renderResultadoExacto(partido){
+
+
+
+    const resultados =
+    generarResultadoExactoTop3(partido);
+
+
+
+    let html = `
+
+
+    <div class="bloque-mercado">
+
+
+    <div class="titulo-mercado">
+
+    🎯 Resultado Exacto Top 3
+
+    </div>
+
+
+    `;
+
+
+
+
+    resultados.forEach(r=>{
+
+
+        html += `
+
+
+        <div class="ticket-item">
+
+
+        Marcador:
+
+        <b>${r.marcador}</b>
+
+
+        <br>
+
+
+        Probabilidad:
+
+        ${r.probabilidad}%
+
+
+
+        </div>
+
+
+        `;
+
+
+    });
+
+
+
+    html += "</div>";
+
+
+
+    return html;
+
+
+}
+
+
+
+
+
+
+
+
+
+// =====================================
+// MERCADOS AVANZADOS
+// =====================================
+
+
+
+function generarMercadosAvanzados(partido){
+
+
+
+    const ia =
+    analizarPartidoIA(partido);
+
+
+
+
+    return `
+
+
+
+    <div class="bloque-mercado">
+
+
+    <div class="titulo-mercado">
+
+    📊 Mercados Analizados
+
+    </div>
+
+
+
+
+
+    <div class="ticket-item">
+
+
+    ⚽ Más de 1.5 goles
+
+
+    <br>
+
+
+    ${ia.goles.probabilidad}%
+
+
+    </div>
+
+
+
+
+
+
+    <div class="ticket-item">
+
+
+    🔥 Ambos equipos marcan
+
+
+    <br>
+
+
+    ${ia.ambosMarcan.probabilidad}%
+
+
+    </div>
+
+
+
+
+
+
+
+    <div class="ticket-item">
+
+
+    🏆 Doble oportunidad
+
+
+    <br>
+
+
+    ${ia.dobleOportunidad.seleccion}
+
+
+    -
+
+    ${ia.dobleOportunidad.probabilidad}%
+
+
+    </div>
+
+
+
+
+
+    </div>
+
+
+
+    `;
+
+
+}
+
+
+
+
+
+
+
+
+
+// =====================================
+// MEJORAR DETALLE CON IA
+// =====================================
+
+
+
+function cargarAnalisisCompleto(partido){
+
+
+
+    const zona =
+    document.getElementById(
+        "detalle-barras"
+    );
+
+
+
+    zona.innerHTML =
+
+
+
+    agregarPrediccionTarjeta(partido)
+
+    +
+
+    renderResultadoExacto(partido)
+
+    +
+
+    generarMercadosAvanzados(partido);
+
+
+
+}
+
+
+
+
+
+
+
+// Sobrescribe detalle anterior
+const detalleOriginal =
+renderDetallePartido;
+
+
+
+renderDetallePartido=function(partido){
+
+
+
+    detalleOriginal(partido);
+
+
+
+    cargarAnalisisCompleto(partido);
+
+
+
+};
+    // =====================================
+// GREENPICKS PRO
+// MOTOR DE COMBINADAS INTELIGENTES
+// =====================================
+
+
+
+let picksIACombinada = [];
+
+
+
+
+
+function obtenerNivelRiesgo(probabilidad){
+
+
+    if(probabilidad >= 80){
+
+        return "asegurada";
+
+    }
+
+
+    if(probabilidad >= 60){
+
+        return "moderada";
+
+    }
+
+
+    return "arriesgada";
+
+
+}
+
+
+
+
+
+
+
+
+function generarPicksDisponibles(){
+
+
+    let lista=[];
+
+
+
+    baseDeDatosHoy.forEach(partido=>{
+
+
+        const pick =
+        generarPickIA(partido);
+
+
+
+        if(pick.probabilidad >= 40){
+
+
+            lista.push({
+
+                ...pick,
+
+                partidoData:partido
+
+
+            });
+
+
         }
 
-        function procesarEstadoTiempo(fechaIso) {
-            const ahora = Date.now();
-            const inicio = new Date(fechaIso).getTime();
-            const diff = ahora - inicio;
-            if (diff > 0 && diff < 9000000) return { isLiveNative: true, isFinished: false };
-            else if (diff >= 9000000 && diff < 86400000) return { isLiveNative: false, isFinished: true }; 
-            return { isLiveNative: false, isFinished: false };
+
+    });
+
+
+
+
+    return lista;
+
+
+
+}
+
+
+
+
+
+
+
+
+function cambiarRiesgoCombinada(nivel){
+
+
+    riesgoCombinadaSeleccionado=nivel;
+
+
+
+    document
+    .querySelectorAll(
+        "#seccion-combinada .btn-riesgo"
+    )
+    .forEach(btn=>{
+
+        btn.className="btn-riesgo";
+
+    });
+
+
+
+
+    const boton =
+    document.getElementById(
+        "riesgo-cb-"+nivel
+    );
+
+
+
+    if(boton){
+
+
+        boton.classList.add(
+            "activo-"+nivel
+        );
+
+
+    }
+
+
+
+    renderCombinada();
+
+
+
+}
+
+
+
+
+
+
+
+function generarCombinadaInteligente(nivel){
+
+
+
+    const disponibles =
+    generarPicksDisponibles();
+
+
+
+    let filtrados =
+    disponibles.filter(pick=>{
+
+
+        return obtenerNivelRiesgo(
+            pick.probabilidad
+        )===nivel;
+
+
+
+    });
+
+
+
+
+
+    if(filtrados.length < 2){
+
+
+        filtrados =
+        disponibles
+        .sort(
+            (a,b)=>
+            b.probabilidad-a.probabilidad
+        )
+        .slice(0,3);
+
+
+    }
+
+
+
+
+
+
+    return filtrados.slice(0,3);
+
+
+
+        }
+    
+// =====================================
+// CÁLCULO COMBINADAS
+// =====================================
+
+
+
+function calcularProbabilidadCombinada(picks){
+
+
+    if(!picks || picks.length===0)
+        return 0;
+
+
+
+    let resultado = 1;
+
+
+
+    picks.forEach(pick=>{
+
+
+        resultado *=
+        pick.probabilidad / 100;
+
+
+
+    });
+
+
+
+    return Math.round(
+        resultado * 100
+    );
+
+}
+
+
+
+
+
+
+
+
+function estimarCuotaPick(probabilidad){
+
+
+    if(!probabilidad || probabilidad<=0)
+        return 1;
+
+
+
+    return Number(
+        (100 / probabilidad)
+        .toFixed(2)
+    );
+
+
+}
+
+
+
+
+
+
+
+
+function calcularCuotaCombinada(picks){
+
+
+
+    let cuota = 1;
+
+
+
+    picks.forEach(pick=>{
+
+
+        cuota *=
+        estimarCuotaPick(
+            pick.probabilidad
+        );
+
+
+
+    });
+
+
+
+    return Number(
+        cuota.toFixed(2)
+    );
+
+
+}
+
+
+
+
+
+
+
+
+function calcularEVCombinada(picks){
+
+
+
+    const probabilidad =
+    calcularProbabilidadCombinada(
+        picks
+    );
+
+
+
+    const cuota =
+    calcularCuotaCombinada(
+        picks
+    );
+
+
+
+    return calcularEV(
+        probabilidad,
+        cuota
+    );
+
+}
+
+
+
+
+
+// =====================================
+// RENDER COMBINADA
+// =====================================
+
+
+
+function renderCombinada(){
+
+
+    const zona =
+    document.getElementById(
+        "combinada-ticket-render"
+    );
+
+
+
+    if(!zona)
+        return;
+
+
+
+
+    const picks =
+    generarCombinadaInteligente(
+        riesgoCombinadaSeleccionado
+    );
+
+
+
+
+    if(picks.length===0){
+
+
+        zona.innerHTML=`
+
+        <div class="tarjeta-combinada">
+
+        No hay suficientes picks
+
+        </div>
+
+        `;
+
+
+        return;
+
+
+    }
+
+
+
+
+
+    const probabilidad =
+    calcularProbabilidadCombinada(
+        picks
+    );
+
+
+
+    const cuota =
+    calcularCuotaCombinada(
+        picks
+    );
+
+
+
+    const ev =
+    calcularEVCombinada(
+        picks
+    );
+
+
+
+
+
+
+
+    let html=`
+
+
+    <div class="tarjeta-combinada">
+
+
+    <h3>
+
+    🎟️ Combinada IA
+
+    </h3>
+
+
+
+    <br>
+
+
+    `;
+
+
+
+
+
+    picks.forEach(pick=>{
+
+
+        html+=`
+
+
+        <div class="ticket-item">
+
+
+        ${pick.partido}
+
+
+        <br>
+
+
+        ✅ ${pick.pick}
+
+
+        <br>
+
+
+        📊 ${pick.probabilidad}%
+
+
+        </div>
+
+
+        `;
+
+
+    });
+
+
+
+
+
+
+    html+=`
+
+
+    <div class="ticket-item">
+
+
+    📈 Probabilidad total:
+
+    ${probabilidad}%
+
+
+    <br>
+
+
+    💰 Cuota estimada:
+
+    ${cuota}
+
+
+    <br>
+
+
+    🚀 EV:
+
+    ${ev.toFixed(2)}%
+
+
+    </div>
+
+
+
+    </div>
+
+
+    `;
+
+
+
+    zona.innerHTML=html;
+
+
+
+        }
+    
+// =====================================
+// MOTOR SOÑADORAS EV+
+// =====================================
+
+
+
+function cambiarRiesgoSonadora(nivel){
+
+
+    riesgoSonadoraSeleccionado=nivel;
+
+
+
+
+    document
+    .querySelectorAll(
+        "#seccion-sonadora .btn-riesgo"
+    )
+    .forEach(btn=>{
+
+
+        btn.className="btn-riesgo";
+
+
+    });
+
+
+
+
+
+    const boton =
+    document.getElementById(
+        "riesgo-sn-"+nivel
+    );
+
+
+
+    if(boton){
+
+
+        boton.classList.add(
+            "activo-"+nivel
+        );
+
+
+    }
+
+
+
+
+    renderSonadora();
+
+
+}
+
+
+
+
+
+
+
+
+
+function generarPicksSonadores(nivel){
+
+
+
+    let lista =
+    generarPicksDisponibles();
+
+
+
+
+
+    lista =
+    lista.filter(pick=>{
+
+
+        const categoria =
+        obtenerNivelRiesgo(
+            pick.probabilidad
+        );
+
+
+
+        return categoria===nivel;
+
+
+    });
+
+
+
+
+
+
+
+    lista.forEach(pick=>{
+
+
+        pick.cuotaEstimada =
+        estimarCuotaPick(
+            pick.probabilidad
+        );
+
+
+
+        pick.ev =
+        calcularEV(
+            pick.probabilidad,
+            pick.cuotaEstimada
+        );
+
+
+
+    });
+
+
+
+
+
+
+
+    return lista
+
+    .filter(
+        pick=>pick.ev>0
+    )
+
+    .sort(
+        (a,b)=>
+        b.cuotaEstimada-a.cuotaEstimada
+    )
+
+    .slice(0,3);
+
+
+
+}
+
+
+
+
+
+
+
+
+
+function renderSonadora(){
+
+
+
+    const zona =
+    document.getElementById(
+        "sonadora-ticket-render"
+    );
+
+
+
+    if(!zona)
+        return;
+
+
+
+
+
+    const picks =
+    generarPicksSonadores(
+        riesgoSonadoraSeleccionado
+    );
+
+
+
+
+
+
+    if(picks.length===0){
+
+
+
+        zona.innerHTML=`
+
+
+        <div class="tarjeta-combinada">
+
+
+        No hay oportunidades EV+ disponibles
+
+
+        </div>
+
+
+        `;
+
+
+
+        return;
+
+
+    }
+
+
+
+
+
+
+
+
+    let cuotaTotal =
+    calcularCuotaCombinada(
+        picks
+    );
+
+
+
+    let probabilidad =
+    calcularProbabilidadCombinada(
+        picks
+    );
+
+
+
+    let ev =
+    calcularEVCombinada(
+        picks
+    );
+
+
+
+
+
+
+
+
+
+    let html=`
+
+
+    <div class="tarjeta-combinada">
+
+
+    <h3>
+
+    ✨ Combinada Soñadora EV+
+
+    </h3>
+
+
+
+    <br>
+
+
+    `;
+
+
+
+
+
+
+
+
+    picks.forEach(pick=>{
+
+
+        html+=`
+
+
+        <div class="ticket-item">
+
+
+        🔥 ${pick.partido}
+
+
+        <br>
+
+
+        Pick:
+
+        <b>${pick.pick}</b>
+
+
+
+        <br>
+
+
+        Probabilidad:
+
+        ${pick.probabilidad}%
+
+
+
+        <br>
+
+
+        Cuota:
+
+        ${pick.cuotaEstimada}
+
+
+
+        <br>
+
+
+        EV:
+
+        ${pick.ev.toFixed(2)}%
+
+
+
+        </div>
+
+
+        `;
+
+
+
+    });
+
+
+
+
+
+
+
+    html+=`
+
+
+    <div class="ticket-item">
+
+
+    🎯 Probabilidad total:
+
+    ${probabilidad}%
+
+
+    <br>
+
+
+    💰 Cuota:
+
+    ${cuotaTotal}
+
+
+
+    <br>
+
+
+    🚀 EV:
+
+    ${ev.toFixed(2)}%
+
+
+    </div>
+
+
+
+
+    </div>
+
+
+    `;
+
+
+
+
+
+    zona.innerHTML=html;
+
+
+
+
+            }
+    
+// =====================================
+// CONTROL DE SECCIONES ESPECIALES
+// =====================================
+
+
+
+function mostrarSeccionEspecial(tipo){
+
+
+
+    const partidos =
+    document.getElementById(
+        "contenedor-partidos"
+    );
+
+
+
+    const combinada =
+    document.getElementById(
+        "seccion-combinada"
+    );
+
+
+
+    const sonadora =
+    document.getElementById(
+        "seccion-sonadora"
+    );
+
+
+
+
+    if(partidos){
+
+        partidos.classList.add(
+            "oculto"
+        );
+
+    }
+
+
+
+
+    if(combinada){
+
+        combinada.classList.add(
+            "oculto"
+        );
+
+    }
+
+
+
+
+    if(sonadora){
+
+        sonadora.classList.add(
+            "oculto"
+        );
+
+    }
+
+
+
+
+
+
+
+    if(tipo==="combinada"){
+
+
+        combinada.classList.remove(
+            "oculto"
+        );
+
+
+        renderCombinada();
+
+
+
+    }
+
+
+
+
+    if(tipo==="sonadora"){
+
+
+        sonadora.classList.remove(
+            "oculto"
+        );
+
+
+        renderSonadora();
+
+
+
+    }
+
+
+
+}
+
+
+
+
+
+
+
+
+// =====================================
+// MEJORA DEL FILTRO PRINCIPAL
+// =====================================
+
+
+
+const filtroAnterior =
+setFiltroEstado;
+
+
+
+setFiltroEstado=function(estado){
+
+
+
+    estadoFiltroActual=estado;
+
+
+
+
+
+    document
+    .querySelectorAll(
+        ".btn-filto-main"
+    )
+    .forEach(btn=>{
+
+
+        btn.classList.remove(
+            "activo"
+        );
+
+
+    });
+
+
+
+
+
+
+    const boton =
+    document.getElementById(
+        "btn-"+estado
+    );
+
+
+
+    if(boton){
+
+        boton.classList.add(
+            "activo"
+        );
+
+    }
+
+
+
+
+
+
+    if(estado==="combinada"){
+
+
+
+        mostrarSeccionEspecial(
+            "combinada"
+        );
+
+        return;
+
+
+    }
+
+
+
+
+
+
+    if(estado==="sonadora"){
+
+
+
+        mostrarSeccionEspecial(
+            "sonadora"
+        );
+
+        return;
+
+
+    }
+
+
+
+
+
+
+
+
+    document
+    .getElementById(
+        "contenedor-partidos"
+    )
+    .classList.remove(
+        "oculto"
+    );
+
+
+
+
+    document
+    .getElementById(
+        "seccion-combinada"
+    )
+    .classList.add(
+        "oculto"
+    );
+
+
+
+
+    document
+    .getElementById(
+        "seccion-sonadora"
+    )
+    .classList.add(
+        "oculto"
+    );
+
+
+
+
+
+    renderizarVistaActual();
+
+
+
+};
+
+
+
+
+
+
+
+// =====================================
+// ACTUALIZAR TICKETS AL CARGAR DATOS
+// =====================================
+
+
+
+const cargarOriginal =
+cargarDatosDeportivos;
+
+
+
+cargarDatosDeportivos = async function(){
+
+
+
+    await cargarOriginal();
+
+
+
+
+    if(
+        estadoFiltroActual==="combinada"
+    ){
+
+        renderCombinada();
+
+    }
+
+
+
+
+    if(
+        estadoFiltroActual==="sonadora"
+    ){
+
+        renderSonadora();
+
+    }
+
+
+
+};
+    
+// =====================================
+// GREENPICKS PRO
+// IA AVANZADA V1
+// SISTEMA DE PUNTUACIÓN
+// =====================================
+
+
+
+let historialAnalisis = {};
+
+
+
+
+
+
+
+function generarPuntuacionEquipo(nombre){
+
+
+    if(!nombre)
+        return 50;
+
+
+
+    let hash = 0;
+
+
+
+    for(
+        let i=0;
+        i<nombre.length;
+        i++
+    ){
+
+
+        hash +=
+        nombre.charCodeAt(i);
+
+
+
+    }
+
+
+
+    // Simulación estable
+    // será reemplazada por estadísticas reales
+
+
+    return 45 + (hash % 45);
+
+
+}
+
+
+
+
+
+
+
+function analizarFuerzaEquipos(partido){
+
+
+
+    const fuerzaLocal =
+    generarPuntuacionEquipo(
+        partido.local
+    );
+
+
+
+    const fuerzaVisitante =
+    generarPuntuacionEquipo(
+        partido.visitante
+    );
+
+
+
+
+
+    return {
+
+
+        local:
+        fuerzaLocal,
+
+
+
+        visitante:
+        fuerzaVisitante,
+
+
+
+        diferencia:
+        fuerzaLocal-fuerzaVisitante
+
+
+    };
+
+
+}
+
+
+
+
+
+
+
+
+function factorLocalia(partido){
+
+
+
+    if(!partido)
+        return 0;
+
+
+
+    return 5;
+
+
+}
+
+
+
+
+
+
+
+
+function calcularIAAvanzada(partido){
+
+
+
+    const fuerza =
+    analizarFuerzaEquipos(
+        partido
+    );
+
+
+
+
+    let probLocal = 50;
+
+
+
+
+
+    probLocal +=
+    fuerza.diferencia / 2;
+
+
+
+
+
+    probLocal +=
+    factorLocalia(
+        partido
+    );
+
+
+
+
+
+
+
+    if(probLocal>90){
+
+        probLocal=90;
+
+    }
+
+
+
+
+
+    if(probLocal<10){
+
+        probLocal=10;
+
+    }
+
+
+
+
+
+
+    const probVisitante =
+    100 - probLocal;
+
+
+
+
+
+    return {
+
+
+        local:
+
+        Math.round(
+            probLocal
+        ),
+
+
+
+        visitante:
+
+        Math.round(
+            probVisitante
+        ),
+
+
+
+        fuerza:fuerza
+
+
+    };
+
+
+
+}
+
+
+
+
+
+
+
+
+// =====================================
+// RANKING DE MEJORES PICKS
+// =====================================
+
+
+
+function rankingMejoresPicks(){
+
+
+
+    let lista =
+    generarPicksDisponibles();
+
+
+
+
+
+    lista.forEach(pick=>{
+
+
+
+        const avanzado =
+        calcularIAAvanzada(
+            pick.partidoData
+        );
+
+
+
+        pick.nuevaProbabilidad =
+        avanzado.local;
+
+
+
+    });
+
+
+
+
+
+
+
+    return lista
+
+    .sort(
+        (a,b)=>
+        b.nuevaProbabilidad -
+        a.nuevaProbabilidad
+    )
+
+    .slice(0,10);
+
+
+
+    }
+    
+// =====================================
+// IA MERCADOS AVANZADOS
+// GOLES / BTTS / CORNERS / TARJETAS
+// =====================================
+
+
+
+
+
+function analizarMercadoGoles(partido){
+
+
+
+    const fuerza =
+    analizarFuerzaEquipos(
+        partido
+    );
+
+
+
+    let probabilidad = 55;
+
+
+
+    probabilidad +=
+    Math.abs(
+        fuerza.diferencia
+    ) * 0.2;
+
+
+
+
+
+    if(probabilidad>90){
+
+        probabilidad=90;
+
+    }
+
+
+
+
+
+    return {
+
+
+        mas15:
+        Math.round(
+            probabilidad + 10
+        ),
+
+
+
+        mas25:
+        Math.round(
+            probabilidad
+        ),
+
+
+
+        menos35:
+        Math.round(
+            100-probabilidad
+        )
+
+
+    };
+
+
+}
+
+
+
+
+
+
+
+
+
+function analizarAmbosMarcan(partido){
+
+
+
+    const goles =
+    analizarMercadoGoles(
+        partido
+    );
+
+
+
+    return Math.min(
+
+        90,
+
+        Math.round(
+            goles.mas25 - 5
+        )
+
+    );
+
+
+}
+
+
+
+
+
+
+
+
+function analizarCorners(partido){
+
+
+
+    const fuerza =
+    analizarFuerzaEquipos(
+        partido
+    );
+
+
+
+    let valor =
+    50 +
+    Math.abs(
+        fuerza.diferencia
+    );
+
+
+
+
+    if(valor>85){
+
+        valor=85;
+
+    }
+
+
+
+
+    return {
+
+
+        mas85:
+        Math.round(valor),
+
+
+
+        mas95:
+        Math.round(
+            valor-10
+        )
+
+
+    };
+
+
+
+}
+
+
+
+
+
+
+
+
+function analizarTarjetas(partido){
+
+
+
+    const base = 55;
+
+
+
+    return {
+
+
+        mas35:
+        base,
+
+
+
+        mas45:
+        base-10
+
+
+    };
+
+
+}
+
+
+
+
+
+
+
+// =====================================
+// ANÁLISIS COMPLETO DEL EVENTO
+// =====================================
+
+
+
+function analisisCompletoIA(partido){
+
+
+
+    return {
+
+
+        ganador:
+        calcularIAAvanzada(
+            partido
+        ),
+
+
+
+        goles:
+        analizarMercadoGoles(
+            partido
+        ),
+
+
+
+        ambosMarcan:
+        analizarAmbosMarcan(
+            partido
+        ),
+
+
+
+        corners:
+        analizarCorners(
+            partido
+        ),
+
+
+
+        tarjetas:
+        analizarTarjetas(
+            partido
+        )
+
+
+
+    };
+
+
+
+}
+
+
+
+
+
+
+
+// =====================================
+// PICK DEL DÍA
+// =====================================
+
+
+
+function generarPickDelDia(){
+
+
+
+    const ranking =
+    rankingMejoresPicks();
+
+
+
+
+    if(ranking.length===0)
+        return null;
+
+
+
+
+
+    return ranking[0];
+
+
+            }
+    
+// =====================================
+// PICK DEL DÍA Y TOP PICKS
+// =====================================
+
+
+
+function nivelConfianzaIA(probabilidad){
+
+
+    if(probabilidad>=85){
+
+        return "🔥 MUY ALTA";
+
+    }
+
+
+
+    if(probabilidad>=70){
+
+        return "🟢 ALTA";
+
+    }
+
+
+
+    if(probabilidad>=55){
+
+        return "🟡 MEDIA";
+
+    }
+
+
+
+    return "🔴 BAJA";
+
+
+}
+
+
+
+
+
+
+
+function crearTarjetaPickIA(pick){
+
+
+
+    if(!pick)
+        return "";
+
+
+
+
+
+    return `
+
+
+    <div class="tarjeta-combinada">
+
+
+    <h3>
+
+    🧠 Pick destacado IA
+
+    </h3>
+
+
+
+    <br>
+
+
+
+    <div class="ticket-item">
+
+
+    ⚽ ${pick.partido}
+
+
+
+    <br><br>
+
+
+
+    ✅ Selección:
+
+    <b>
+
+    ${pick.pick}
+
+    </b>
+
+
+
+    <br>
+
+
+    📊 Probabilidad:
+
+    ${pick.probabilidad}%
+
+
+
+    <br>
+
+
+    ⭐ Confianza:
+
+    ${nivelConfianzaIA(
+        pick.probabilidad
+    )}
+
+
+
+    </div>
+
+
+    </div>
+
+
+    `;
+
+
+}
+
+
+
+
+
+
+
+function mostrarPickDelDia(){
+
+
+
+    const pick =
+    generarPickDelDia();
+
+
+
+
+    if(!pick)
+        return;
+
+
+
+
+    const contenedor =
+    document.getElementById(
+        "contenedor-partidos"
+    );
+
+
+
+
+    if(!contenedor)
+        return;
+
+
+
+
+    contenedor.innerHTML =
+
+    crearTarjetaPickIA(
+        pick
+    )
+
+    +
+
+    contenedor.innerHTML;
+
+
+
+}
+
+
+
+
+
+
+
+
+// =====================================
+// TOP 5 PICKS
+// =====================================
+
+
+
+function generarTop5Picks(){
+
+
+
+    const ranking =
+    rankingMejoresPicks();
+
+
+
+    let html=`
+
+
+
+    <div class="tarjeta-combinada">
+
+
+    <h3>
+
+    🏆 Top 5 Picks IA
+
+    </h3>
+
+
+
+    `;
+
+
+
+
+    ranking
+    .slice(0,5)
+    .forEach((pick,index)=>{
+
+
+
+        html+=`
+
+
+        <div class="ticket-item">
+
+
+        #${index+1}
+
+
+        <br>
+
+
+        ${pick.partido}
+
+
+
+        <br>
+
+
+        ✅ ${pick.pick}
+
+
+
+        <br>
+
+
+        📊 ${pick.probabilidad}%
+
+
+
+        </div>
+
+
+        `;
+
+
+
+    });
+
+
+
+
+
+    html+="</div>";
+
+
+
+    return html;
+
+
+}
+
+
+
+
+
+
+
+
+function insertarRankingIA(){
+
+
+
+    const contenedor =
+    document.getElementById(
+        "contenedor-partidos"
+    );
+
+
+
+    if(!contenedor)
+        return;
+
+
+
+    contenedor.innerHTML =
+
+    generarTop5Picks()
+
+    +
+
+    contenedor.innerHTML;
+
+
+
+    }
+    
+// =====================================
+// INTEGRACIÓN IA AVANZADA EN DETALLE
+// =====================================
+
+
+
+function renderIAAvanzadaDetalle(partido){
+
+
+
+    const analisis =
+    analisisCompletoIA(
+        partido
+    );
+
+
+
+
+    return `
+
+
+    <div class="bloque-mercado">
+
+
+    <div class="titulo-mercado">
+
+    🧠 Análisis IA Avanzado
+
+    </div>
+
+
+
+
+    <div class="ticket-item">
+
+
+    🏠 Local:
+
+    ${analisis.ganador.local}%
+
+
+
+    <br>
+
+
+    ✈️ Visitante:
+
+    ${analisis.ganador.visitante}%
+
+
+
+    </div>
+
+
+
+
+
+    <div class="ticket-item">
+
+
+    ⚽ Más de 1.5 goles:
+
+    ${analisis.goles.mas15}%
+
+
+
+    <br>
+
+
+    ⚽ Más de 2.5 goles:
+
+    ${analisis.goles.mas25}%
+
+
+
+    </div>
+
+
+
+
+
+    <div class="ticket-item">
+
+
+    🔥 Ambos marcan:
+
+    ${analisis.ambosMarcan}%
+
+
+
+    </div>
+
+
+
+
+
+    <div class="ticket-item">
+
+
+    🚩 Córners +8.5:
+
+    ${analisis.corners.mas85}%
+
+
+
+    <br>
+
+
+    🚩 Córners +9.5:
+
+    ${analisis.corners.mas95}%
+
+
+
+    </div>
+
+
+
+
+
+    <div class="ticket-item">
+
+
+    🟨 Tarjetas +3.5:
+
+    ${analisis.tarjetas.mas35}%
+
+
+
+    </div>
+
+
+
+    </div>
+
+
+    `;
+
+
+}
+
+
+
+
+
+
+
+
+// =====================================
+// ACTUALIZAR DETALLE EXISTENTE
+// =====================================
+
+
+
+const detalleIAAnterior =
+cargarAnalisisCompleto;
+
+
+
+cargarAnalisisCompleto=function(partido){
+
+
+
+    const zona =
+    document.getElementById(
+        "detalle-barras"
+    );
+
+
+
+    if(!zona)
+        return;
+
+
+
+    zona.innerHTML =
+
+
+
+    renderIAAvanzadaDetalle(
+        partido
+    )
+
+    +
+
+    renderResultadoExacto(
+        partido
+    )
+
+    +
+
+    generarMercadosAvanzados(
+        partido
+    );
+
+
+
+};
+
+
+
+
+
+
+
+
+// =====================================
+// AUTO MOSTRAR PICK DEL DÍA
+// =====================================
+
+
+
+const cargaFinalAnterior =
+cargarDatosDeportivos;
+
+
+
+cargarDatosDeportivos = async function(){
+
+
+
+    await cargaFinalAnterior();
+
+
+
+    setTimeout(()=>{
+
+
+        mostrarPickDelDia();
+
+
+
+    },500);
+
+
+
+};
+    
+// =====================================
+// ALMACENAMIENTO LOCAL
+// GREENPICKS PRO
+// =====================================
+
+
+
+const STORAGE_PICKS =
+"greenpicks_picks_guardados";
+
+
+
+const STORAGE_CACHE =
+"greenpicks_cache_v1";
+
+
+
+
+
+
+
+function guardarEstadoLocal(){
+
+
+
+    localStorage.setItem(
+
+        STORAGE_PICKS,
+
+        JSON.stringify(
+            picksGuardados
+        )
+
+    );
+
+
+
+}
+
+
+
+
+
+
+
+
+function cargarEstadoLocal(){
+
+
+
+    const datos =
+
+    localStorage.getItem(
+        STORAGE_PICKS
+    );
+
+
+
+
+    if(datos){
+
+
+
+        try{
+
+
+            picksGuardados =
+            JSON.parse(datos);
+
+
+
+        }catch(e){
+
+
+
+            picksGuardados=[];
+
+
+
         }
 
-        function mostrarError(mensaje) {
-            const logBox = document.getElementById('logs-servidor-error');
-            logBox.innerHTML = `<div style="background: rgba(231, 76, 60, 0.15); border: 1px solid var(--alerta); padding: 15px; border-radius: 10px; margin-bottom: 15px; font-size: 0.9rem; text-align: center;"><b>⚠️ Estado de API</b><br>${mensaje}</div>`;
-            logBox.classList.remove('oculto');
+
+    }
+
+
+
+    actualizarPanelPicks();
+
+
+
+}
+
+
+
+
+
+
+
+// =====================================
+// MEJORAR GUARDADO DE PICKS
+// =====================================
+
+
+
+const guardarPickAnterior =
+guardarPick;
+
+
+
+guardarPick=function(id){
+
+
+
+    guardarPickAnterior(id);
+
+
+
+    guardarEstadoLocal();
+
+
+
+};
+
+
+
+
+
+
+
+// =====================================
+// CACHE GENERAL APP
+// =====================================
+
+
+
+function guardarCacheLocal(nombre,datos){
+
+
+
+    const paquete={
+
+
+        fecha:
+        Date.now(),
+
+
+
+        datos:
+        datos
+
+
+    };
+
+
+
+
+    localStorage.setItem(
+
+        nombre,
+
+        JSON.stringify(
+            paquete
+        )
+
+    );
+
+
+
+}
+
+
+
+
+
+
+
+function obtenerCacheLocal(nombre){
+
+
+
+    const dato =
+
+    localStorage.getItem(
+        nombre
+    );
+
+
+
+    if(!dato)
+        return null;
+
+
+
+
+    try{
+
+
+        const paquete =
+        JSON.parse(dato);
+
+
+
+
+        // 30 minutos
+
+
+        if(
+            Date.now()
+            -
+            paquete.fecha
+            >
+            1800000
+        ){
+
+
+            localStorage.removeItem(
+                nombre
+            );
+
+
+            return null;
+
+
         }
 
-        async function cargarDatosDeportivos() {
-            document.getElementById('logs-servidor-error').classList.add('oculto');
-            const cacheKey = `sports_cache_mix_v5_${deporteActivo}`;
-            localStorage.removeItem(cacheKey);
 
-            let datosProcesados = [];
-            if (deporteActivo === 'futbol') datosProcesados = await fetchFutbolOddsApiAgrupado();
-            else if (deporteActivo === 'basquet') datosProcesados = await fetchBasketESPNPublico();
-            else if (deporteActivo === 'tenis') datosProcesados = await fetchTenisOddsApi();
 
-            if 
+
+        return paquete.datos;
+
+
+
+    }catch(e){
+
+
+
+        return null;
+
+
+
+    }
+
+
+
+}
+
+
+
+
+
+
+
+// =====================================
+// CARGA INICIAL
+// =====================================
+
+
+
+window.addEventListener(
+
+"load",
+
+()=>{
+
+
+    cargarEstadoLocal();
+
+
+}
+
+);
+    
+// =====================================
+// SISTEMA DE ERRORES Y ESTADO
+// =====================================
+
+
+
+let appOnline = true;
+
+
+
+
+
+function mostrarEstadoConexion(){
+
+
+
+    const caja =
+    document.getElementById(
+        "logs-servidor-error"
+    );
+
+
+
+    if(!caja)
+        return;
+
+
+
+
+
+    if(!appOnline){
+
+
+
+        caja.innerHTML = `
+
+
+        <div style="background:rgba(231,76,60,.15);
+        border:1px solid var(--alerta);
+        padding:15px;
+        border-radius:10px;
+        margin-bottom:15px;
+        text-align:center;">
+
+
+        📡 Sin conexión a internet
+
+        <br>
+
+        Mostrando datos disponibles
+
+
+        </div>
+
+
+        `;
+
+
+
+        caja.classList.remove(
+            "oculto"
+        );
+
+
+
+    }
+
+
+}
+
+
+
+
+
+
+
+window.addEventListener(
+
+"offline",
+
+()=>{
+
+
+    appOnline=false;
+
+
+    mostrarEstadoConexion();
+
+
+
+}
+
+);
+
+
+
+
+
+
+
+window.addEventListener(
+
+"online",
+
+()=>{
+
+
+    appOnline=true;
+
+
+
+    const caja =
+    document.getElementById(
+        "logs-servidor-error"
+    );
+
+
+
+    if(caja){
+
+        caja.classList.add(
+            "oculto"
+        );
+
+    }
+
+
+
+    cargarDatosDeportivos();
+
+
+
+}
+
+);
+
+
+
+
+
+
+
+
+// =====================================
+// FETCH SEGURO
+// =====================================
+
+
+
+async function fetchSeguro(url){
+
+
+
+    try{
+
+
+        const respuesta =
+        await fetch(url);
+
+
+
+        if(!respuesta.ok){
+
+
+            throw new Error(
+                "Respuesta inválida"
+            );
+
+
+        }
+
+
+
+        return await respuesta.json();
+
+
+
+    }catch(error){
+
+
+
+        console.log(
+            "Error conexión:",
+            error
+        );
+
+
+
+        return null;
+
+
+
+    }
+
+
+
+}
+
+
+
+
+
+
+
+
+// =====================================
+// CONTROL DE CARGA
+// =====================================
+
+
+
+function mostrarCargando(){
+
+
+
+    const contenedor =
+    document.getElementById(
+        "contenedor-partidos"
+    );
+
+
+
+    if(!contenedor)
+        return;
+
+
+
+
+    contenedor.innerHTML=`
+
+
+
+    <div class="tarjeta-partido">
+
+
+    ⏳ Analizando eventos...
+
+
+    </div>
+
+
+    `;
+
+
+}
+
+
+
+
+
+
+
+const cargaConLoader =
+cargarDatosDeportivos;
+
+
+
+cargarDatosDeportivos = async function(){
+
+
+
+    mostrarCargando();
+
+
+
+    await cargaConLoader();
+
+
+
+};
+    
+// =====================================
+// MEJORAS UX / MOBILE
+// GREENPICKS PRO
+// =====================================
+
+
+
+
+
+function animarEntrada(elemento){
+
+
+
+    if(!elemento)
+        return;
+
+
+
+    elemento.style.opacity="0";
+
+    elemento.style.transform=
+    "translateY(10px)";
+
+
+
+    setTimeout(()=>{
+
+
+
+        elemento.style.transition=
+        "all .3s ease";
+
+
+
+        elemento.style.opacity="1";
+
+        elemento.style.transform=
+        "translateY(0)";
+
+
+
+    },50);
+
+
+
+}
+
+
+
+
+
+
+
+
+function activarAnimacionesTarjetas(){
+
+
+
+    const tarjetas =
+    document.querySelectorAll(
+        ".tarjeta-partido"
+    );
+
+
+
+    tarjetas.forEach(tarjeta=>{
+
+
+        animarEntrada(
+            tarjeta
+        );
+
+
+    });
+
+
+
+}
+
+
+
+
+
+
+
+
+const renderAnteriorAnimado =
+renderizarVistaActual;
+
+
+
+renderizarVistaActual=function(){
+
+
+
+    renderAnteriorAnimado();
+
+
+
+    setTimeout(()=>{
+
+
+        activarAnimacionesTarjetas();
+
+
+
+    },100);
+
+
+
+};
+
+
+
+
+
+
+
+
+
+// =====================================
+// FEEDBACK BOTONES
+// =====================================
+
+
+
+document.addEventListener(
+
+"click",
+
+(e)=>{
+
+
+
+    if(
+        e.target.tagName==="BUTTON"
+    ){
+
+
+
+        e.target.style.transform=
+        "scale(.96)";
+
+
+
+        setTimeout(()=>{
+
+
+            e.target.style.transform=
+            "";
+
+
+        },120);
+
+
+
+    }
+
+
+
+}
+
+);
+
+
+
+
+
+
+
+
+// =====================================
+// MODO PANTALLA PEQUEÑA
+// =====================================
+
+
+
+function ajustarInterfazMovil(){
+
+
+
+    if(
+        window.innerWidth < 380
+    ){
+
+
+
+        document.body.style.fontSize=
+        "14px";
+
+
+
+    }else{
+
+
+
+        document.body.style.fontSize=
+        "";
+
+
+
+    }
+
+
+
+}
+
+
+
+
+
+
+
+window.addEventListener(
+
+"resize",
+
+ajustarInterfazMovil
+
+);
+
+
+
+ajustarInterfazMovil();
+    
+// =====================================
+// CONTROL FINAL DE LA APP
+// GREENPICKS PRO
+// =====================================
+
+
+
+
+
+function verificarElementosApp(){
+
+
+
+    const elementosNecesarios=[
+
+
+
+        "contenedor-partidos",
+
+        "detalle-cabecera",
+
+        "detalle-barras",
+
+        "panel-picks"
+
+
+
+    ];
+
+
+
+
+
+    let faltantes=[];
+
+
+
+
+
+    elementosNecesarios.forEach(id=>{
+
+
+
+        if(
+            !document.getElementById(id)
+        ){
+
+
+            faltantes.push(id);
+
+
+        }
+
+
+
+    });
+
+
+
+
+
+
+
+    if(faltantes.length>0){
+
+
+
+        console.log(
+
+            "Elementos faltantes:",
+
+            faltantes
+
+        );
+
+
+
+        return false;
+
+
+
+    }
+
+
+
+
+
+
+
+    return true;
+
+
+
+}
+
+
+
+
+
+
+
+
+function iniciarGreenPicks(){
+
+
+
+    const correcto =
+    verificarElementosApp();
+
+
+
+
+
+    if(!correcto){
+
+
+
+        console.log(
+            "Revisar estructura HTML"
+        );
+
+
+
+        return;
+
+
+
+    }
+
+
+
+
+
+
+    cargarEstadoLocal();
+
+
+
+    console.log(
+
+        "🟢 GreenPicks Pro iniciado"
+
+    );
+
+
+
+}
+
+
+
+
+
+
+
+
+window.addEventListener(
+
+"DOMContentLoaded",
+
+()=>{
+
+
+    iniciarGreenPicks();
+
+
+}
+
+);
+
+
+
+
+
+
+
+// =====================================
+// EVITAR DUPLICADOS EN PICKS
+// =====================================
+
+
+
+function limpiarPicksDuplicados(){
+
+
+
+    let nuevos=[];
+
+
+
+
+    picksGuardados.forEach(pick=>{
+
+
+
+        const existe =
+        nuevos.some(
+            p=>
+            p.partido===pick.partido
+        );
+
+
+
+        if(!existe){
+
+
+
+            nuevos.push(
+                pick
+            );
+
+
+
+        }
+
+
+
+    });
+
+
+
+
+
+    picksGuardados=nuevos;
+
+
+
+    guardarEstadoLocal();
+
+
+
+    actualizarPanelPicks();
+
+
+
+}
+
+
+
+
+
+
+
+setInterval(()=>{
+
+
+    limpiarPicksDuplicados();
+
+
+
+},60000);
+    
+
+
+// =====================================
+// CIERRE GREENPICKS PRO
+// =====================================
+
+
+
+console.log(
+    "🚀 GreenPicks Pro cargado correctamente"
+);
+
+
+
+</script>
+
+</body>
+
+</html>
+    
+    
