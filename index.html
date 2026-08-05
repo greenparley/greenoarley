@@ -59,7 +59,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.shell{width:min
     <div class="tabs"><button id="tabEvents" class="tab active">Partidos</button><button id="tabDaily" class="tab">Picks de hoy</button></div>
     <div class="meta"><span class="chip" id="leagueCount">0 ligas</span><span class="chip" id="eventCount">0 eventos</span><span class="chip green" id="cacheState">API</span><span class="chip gold" id="quotaState">Créditos: —</span></div>
     <div id="status"></div>
-    <section id="eventsPanel"><div id="events" class="events"></div></section>
+    <section id="eventsPanel"><div id="autoPick"></div><div id="events" class="events"></div></section>
     <section id="dailyPanel" class="hidden"><div id="dailyPicks"></div></section>
   </section>
 
@@ -71,9 +71,9 @@ button,input,select{font:inherit}.hidden{display:none!important}.shell{width:min
 </main>
 <script>
 'use strict';
-const API_KEYS=['b1068f561f80975166b5c1ab67a2888a','c7b062bf872742e25c086b5ad997ba0a','f900242e004a6964ac7d711eafca119c','12645d55775fe9919ad938d99af60474'];
+const API_KEYS=['b1068f561f80975166b5c1ab67a2888a','c7b062bf872742e25c086b5ad997ba0a','f900242e004a6964ac7d711eafca119c','12645d55775fe9919ad938d99af60474','90e01770670190f5825466ca707ea918'];
 const API_BASE='https://api.the-odds-api.com/v4';
-const CACHE_PREFIX='greenpicks_pro_v8:';
+const CACHE_PREFIX='greenpicks_pro_v9:';
 const CACHE_TTL=15*60*1000;
 let keyIndex=Number(localStorage.getItem(CACHE_PREFIX+'keyIndex')||0)%API_KEYS.length;
 let activeSport='futbol', sports=[], leagues=[], events=[], currentEvent=null, lastHeaders={};
@@ -115,6 +115,18 @@ const FIXED={
  ],
  basquet:['basketball_nba','basketball_euroleague'],tenis:[]
 };
+const LEAGUE_FALLBACKS={
+ 'soccer_uefa_europa_league':'UEFA Europa League',
+ 'soccer_uefa_europa_conference_league':'UEFA Conference League'
+};
+const LEAGUE_NAMES={
+ 'soccer_uefa_europa_league':'UEFA Europa League',
+ 'soccer_uefa_europa_conference_league':'UEFA Conference League',
+ 'soccer_uefa_europa_league_qualification':'Clasificación Europa League',
+ 'soccer_uefa_europa_league_qualifying':'Clasificación Europa League',
+ 'soccer_uefa_europa_conference_league_qualification':'Clasificación Conference League',
+ 'soccer_uefa_europa_conference_league_qualifying':'Clasificación Conference League'
+};
 function isWantedLeague(l){
  const key=String(l.key||'').toLowerCase(), text=((l.title||'')+' '+(l.description||'')).toLowerCase();
  if(activeSport==='tenis')return l.active&&key.startsWith('tennis_');
@@ -128,9 +140,16 @@ function isWantedLeague(l){
  return argentina||champs||europa||conference;
 }
 function leagueList(all){
- let list=all.filter(isWantedLeague);
- if(activeSport==='tenis')list=list.sort((a,b)=>a.title.localeCompare(b.title)).slice(0,8);
- return list.sort((a,b)=>a.title.localeCompare(b.title));
+ let list=all.filter(isWantedLeague).map(l=>({...l,title:LEAGUE_NAMES[l.key]||l.title}));
+ if(activeSport==='futbol'){
+  const present=new Set(list.map(l=>l.key));
+  for(const [key,title] of Object.entries(LEAGUE_FALLBACKS)){
+   if(!present.has(key)) list.push({key,title,description:title,active:true,manual:true});
+  }
+ }
+ const unique=[...new Map(list.map(l=>[l.key,l])).values()];
+ if(activeSport==='tenis')return unique.sort((a,b)=>a.title.localeCompare(b.title)).slice(0,8);
+ return unique.sort((a,b)=>a.title.localeCompare(b.title));
 }
 function sportTitle(){return activeSport==='futbol'?'Fútbol ⚽':activeSport==='basquet'?'Básquet 🏀':'Tenis 🎾'}
 const META={
@@ -156,20 +175,72 @@ function renderMarket(event,key){
  const point=top?.point!==undefined?' '+(Number(top.point)>0?'+':'')+top.point:'';
  return `<section class="market-section"><div class="market-section-head"><div class="market-ico">${META[key]?.[0]||'📌'}</div><div><h3>${esc(label(key))}</h3><p>${esc(META[key]?.[2]||'Mercado disponible para este partido.')}</p></div></div>${top?`<div class="featured"><div><small>Opción con mayor probabilidad</small><b>${esc(outcomeName(top.name,event)+point)}</b><span class="prob">Cuota ${Number(top.price).toFixed(2)}</span></div><div class="big">${top.prob.toFixed(1)}%</div></div>`:''}<div class="lines">${groups.map(g=>`<div class="line-block"><div class="line-label">${g.line==='principal'?'Opciones disponibles':'Línea '+esc(g.line)}</div><div class="outcomes">${g.outcomes.map((o,i)=>`<div class="outcome ${i===0?'best':''}"><div class="outcome-name">${esc(outcomeName(o.name,event))}${o.point!==undefined?' '+(Number(o.point)>0?'+':'')+o.point:''}</div><div class="outcome-row"><span class="odd">${Number(o.price).toFixed(2)}</span><span class="prob">${o.prob.toFixed(1)}%</span></div></div>`).join('')}</div></div>`).join('')}</div></section>`;
 }
-function extraKeys(){if(activeSport==='futbol')return['team_totals','alternate_team_totals','alternate_totals_corners','alternate_team_totals_corners','corners_1x2','alternate_totals_cards','alternate_spreads_cards'];if(activeSport==='tenis')return['h2h_s1','spreads_s1','alternate_spreads_s1','totals_s1','alternate_totals_s1'];return[]}
+function extraKeys(){if(activeSport==='futbol')return['team_totals','alternate_team_totals','alternate_totals_corners','alternate_team_totals_corners','corners_1x2','alternate_totals_cards','alternate_spreads_cards'];if(activeSport==='tenis')return['totals_s1','alternate_totals_s1','h2h_s1','spreads_s1','alternate_spreads_s1'];return[]}
 async function loadSports(force=false){sports=await apiFetch('/sports/?all=false',{force});leagues=leagueList(sports);$('leagueSelect').innerHTML=leagues.map(l=>`<option value="${esc(l.key)}">${esc(l.title)}</option>`).join('');$('leagueCount').textContent=leagues.length+' ligas';if(!leagues.length)throw new Error('No hay ligas seleccionadas activas para este deporte.')}
-async function loadLeague(force=false){const key=$('leagueSelect').value;if(!key)return;showStatus('Cargando partidos y mercados principales…');$('events').innerHTML='<div class="loader">Consultando datos actualizados…</div>';try{events=await apiFetch('/sports/'+encodeURIComponent(key)+'/odds/?regions=eu&markets=h2h,spreads,totals&oddsFormat=decimal&dateFormat=iso',{force});renderEvents();showStatus('')}catch(e){events=[];renderEvents();showStatus(e.message,'error')}}
+async function loadLeague(force=false){const key=$('leagueSelect').value;if(!key)return;showStatus('Cargando partidos y mercados principales…');$('events').innerHTML='<div class="loader">Consultando datos actualizados…</div>';renderAutoPick(null);try{events=await apiFetch('/sports/'+encodeURIComponent(key)+'/odds/?regions=eu&markets=h2h,spreads,totals&oddsFormat=decimal&dateFormat=iso',{force});renderEvents();showStatus('');loadDaily(force,true)}catch(e){events=[];renderEvents();showStatus(e.message,'error')}}
 function renderEvents(){const q=$('searchInput').value.trim().toLowerCase();const list=events.filter(e=>!q||[e.home_team,e.away_team,e.sport_title].join(' ').toLowerCase().includes(q));$('eventCount').textContent=list.length+' eventos';if(!list.length){$('events').innerHTML='<div class="empty">No hay partidos con cuotas disponibles para esta liga.</div>';return}$('events').innerHTML=list.map(e=>{const keys=[...new Set((e.bookmakers||[]).flatMap(b=>(b.markets||[]).map(m=>m.key)))];return `<article class="event" data-id="${esc(e.id)}"><div class="event-head"><span>${esc(e.sport_title)}</span><span>${esc(fmtDate(e.commence_time))}</span></div><div class="match"><div class="team"><div class="avatar">${esc(mono(e.home_team))}</div>${esc(e.home_team)}</div><div class="versus">VS</div><div class="team"><div class="avatar">${esc(mono(e.away_team))}</div>${esc(e.away_team)}</div></div><div class="market-chips">${keys.map(k=>`<span class="market-chip">${esc(label(k))}</span>`).join('')}</div></article>`}).join('');document.querySelectorAll('.event').forEach(x=>x.onclick=()=>openEvent(x.dataset.id))}
-async function openEvent(id){currentEvent=events.find(e=>String(e.id)===String(id));if(!currentEvent)return;$('eventsView').classList.add('hidden');$('detailView').classList.remove('hidden');renderDetail(false)}
+async function openEvent(id){
+ currentEvent=events.find(e=>String(e.id)===String(id));if(!currentEvent)return;
+ $('eventsView').classList.add('hidden');$('detailView').classList.remove('hidden');renderDetail(false);
+ if(activeSport==='tenis') await loadExtraMarkets(true);
+}
 function renderDetail(hasExtra){const e=currentEvent;const keys=[...new Set((e.bookmakers||[]).flatMap(b=>(b.markets||[]).map(m=>m.key)))];const ordered=['h2h','spreads','totals',...extraKeys()].filter(k=>keys.includes(k));$('detail').innerHTML=`<div class="detail-hero"><div class="event-head"><span>${esc(e.sport_title)}</span><span>${esc(fmtDate(e.commence_time))}</span></div><div class="match"><div class="team"><div class="avatar">${esc(mono(e.home_team))}</div>${esc(e.home_team)}</div><div class="versus">VS</div><div class="team"><div class="avatar">${esc(mono(e.away_team))}</div>${esc(e.away_team)}</div></div><div class="detail-meta"><span class="chip green">Probabilidades ajustadas</span><span class="chip">Cuotas decimales</span></div></div>${ordered.map(k=>renderMarket(e,k)).join('')}${!hasExtra&&extraKeys().length?`<div class="extra-action"><div><button id="loadExtra" class="primary">Ver mercados adicionales</button><div class="extra-note">Se realiza una consulta adicional solo para este partido.</div></div></div>`:''}`;if($('loadExtra'))$('loadExtra').onclick=loadExtraMarkets}
-async function loadExtraMarkets(){const btn=$('loadExtra');if(btn){btn.disabled=true;btn.textContent='Cargando…'}const keys=extraKeys();if(!keys.length)return;try{const extra=await apiFetch('/sports/'+encodeURIComponent(currentEvent.sport_key)+'/events/'+encodeURIComponent(currentEvent.id)+'/odds/?regions=eu&markets='+encodeURIComponent(keys.join(','))+'&oddsFormat=decimal&dateFormat=iso',{allowMarketError:true});if(extra?.bookmakers)mergeEvent(currentEvent,extra);renderDetail(true)}catch(e){renderDetail(true);showStatus(e.message,'error')}}
+async function loadExtraMarkets(automatic=false){const btn=$('loadExtra');if(btn){btn.disabled=true;btn.textContent=automatic?'Cargando juegos del 1° set…':'Cargando…'}const keys=extraKeys();if(!keys.length)return;try{const extra=await apiFetch('/sports/'+encodeURIComponent(currentEvent.sport_key)+'/events/'+encodeURIComponent(currentEvent.id)+'/odds/?regions=eu&markets='+encodeURIComponent(keys.join(','))+'&oddsFormat=decimal&dateFormat=iso',{allowMarketError:true});if(extra?.bookmakers)mergeEvent(currentEvent,extra);renderDetail(true)}catch(e){renderDetail(true);showStatus(e.message,'error')}}
 function mergeEvent(base,extra){const map=new Map((base.bookmakers||[]).map(b=>[b.key,b]));for(const b of extra.bookmakers||[]){if(!map.has(b.key)){map.set(b.key,b);continue}const target=map.get(b.key), existing=new Set((target.markets||[]).map(m=>m.key));for(const m of b.markets||[])if(!existing.has(m.key))target.markets.push(m)}base.bookmakers=[...map.values()]}
 function todayBounds(){const n=new Date(),s=new Date(n.getFullYear(),n.getMonth(),n.getDate(),0,0,0),e=new Date(n.getFullYear(),n.getMonth(),n.getDate(),23,59,59);return{from:s.toISOString(),to:e.toISOString()}}
-function candidates(event){const out=[];for(const key of ['h2h','spreads','totals'])for(const g of marketGroups(event,key))for(const o of g.outcomes){if(o.prob>=34&&o.prob<=88)out.push({event,key,name:outcomeName(o.name,event)+(o.point!==undefined?' '+(Number(o.point)>0?'+':'')+o.point:''),prob:o.prob,price:Number(o.price)})}return out}
+function candidates(event){const out=[];for(const key of ['h2h','spreads','totals'])for(const g of marketGroups(event,key))for(const o of g.outcomes){if(o.prob>=34&&o.prob<=88)out.push({event,key,name:outcomeName(o.name,event)+(o.point!==undefined?' '+(Number(o.point)>0?'+':'')+o.point:''),prob:o.prob,price:Number(o.price),edge:0,score:o.prob})}return out}
+function valueCandidates(event){
+ const result=[];
+ for(const key of ['h2h','spreads','totals']){
+  const bookMarkets=[];
+  for(const b of event.bookmakers||[]){
+   for(const m of (b.markets||[]).filter(m=>m.key===key)){
+    const byLine=new Map();
+    for(const o of m.outcomes||[]){const line=o.point??'principal';if(!byLine.has(line))byLine.set(line,[]);byLine.get(line).push(o)}
+    for(const [line,outs] of byLine){const norm=normalize(outs);if(norm.length)bookMarkets.push({line,norm})}
+   }
+  }
+  const aggregate=new Map();
+  for(const bm of bookMarkets)for(const o of bm.norm){
+   const id=o.name+'|'+(o.point??bm.line);
+   if(!aggregate.has(id))aggregate.set(id,{name:o.name,point:o.point,probs:[],prices:[]});
+   const a=aggregate.get(id);a.probs.push(o.prob);a.prices.push(Number(o.price));
+  }
+  for(const a of aggregate.values()){
+   if(!a.probs.length)continue;
+   const prob=a.probs.reduce((x,y)=>x+y,0)/a.probs.length;
+   const price=Math.max(...a.prices.filter(x=>x>1));
+   const edge=(prob/100)*price-1;
+   const score=prob+Math.max(0,edge*100)*1.8;
+   if(prob>=34&&prob<=88&&price>=1.2)result.push({event,key,name:outcomeName(a.name,event)+(a.point!==undefined?' '+(Number(a.point)>0?'+':'')+a.point:''),prob,price,edge,score});
+  }
+ }
+ return result;
+}
 function chooseDistinct(list,n,test){const out=[];for(const x of list.filter(test)){if(out.some(y=>y.event.id===x.event.id))continue;out.push(x);if(out.length===n)break}return out}
 function combined(legs){return legs.reduce((p,x)=>p*x.prob/100,1)*100}
 function dailyCard(title,cls,legs,note){if(!legs.length)return `<article class="daily-card ${cls}"><div class="daily-type">${esc(title)}</div><h3>Sin opciones suficientes</h3><p class="risk-note">No hay suficientes partidos del día dentro del perfil elegido.</p></article>`;const p=combined(legs);return `<article class="daily-card ${cls}"><div class="daily-type">${esc(title)}</div><div class="daily-prob">${p.toFixed(1)}%</div>${legs.map(l=>`<div class="leg"><b>${esc(l.event.home_team)} vs ${esc(l.event.away_team)}</b>${esc(label(l.key))}: ${esc(l.name)} · ${l.price.toFixed(2)} · ${l.prob.toFixed(1)}%</div>`).join('')}<div class="risk-note">${esc(note)}</div></article>`}
-async function loadDaily(force=false){$('dailyPicks').innerHTML='<div class="loader">Buscando partidos de hoy en la liga seleccionada…</div>';const key=$('leagueSelect').value,{from,to}=todayBounds();try{const data=await apiFetch('/sports/'+encodeURIComponent(key)+'/odds/?regions=eu&markets=h2h,spreads,totals&oddsFormat=decimal&dateFormat=iso&commenceTimeFrom='+encodeURIComponent(from)+'&commenceTimeTo='+encodeURIComponent(to),{force});const list=[...new Map((data||[]).map(e=>[e.id,e])).values()],all=list.flatMap(candidates).sort((a,b)=>b.prob-a.prob);const pick=all.slice(0,1),safe=chooseDistinct(all,2,x=>x.prob>=63&&x.price<=1.8),medium=chooseDistinct(all,3,x=>x.prob>=49&&x.prob<68&&x.price<=2.35),risky=chooseDistinct([...all].sort((a,b)=>b.price-a.price),3,x=>x.prob>=34&&x.prob<57&&x.price>=1.8);$('dailyPicks').innerHTML=`<div class="notice">Los picks se construyen solo con partidos de hoy de la liga seleccionada y mercados principales disponibles.</div><div class="daily-grid">${dailyCard('Pick del día','safe',pick,'Una selección con la mayor probabilidad disponible.')}${dailyCard('Asegurada','safe',safe,'Menor cuota y mayor probabilidad individual.')}${dailyCard('Moderada','medium',medium,'Equilibrio entre probabilidad y cuota.')}${dailyCard('Arriesgada','risky',risky,'Mayor cuota y menor probabilidad combinada.')}</div>`;$('eventCount').textContent=list.length+' eventos hoy'}catch(e){$('dailyPicks').innerHTML='<div class="notice error">'+esc(e.message)+'</div>'}}
+function renderAutoPick(pick){
+ if(!$('autoPick'))return;
+ if(!pick){$('autoPick').innerHTML='';return}
+ const edge=Math.max(0,pick.edge*100);
+ $('autoPick').innerHTML=`<section class="market-section" style="border-color:rgba(67,224,135,.55)"><div class="market-section-head"><div class="market-ico">⭐</div><div><h3>Pick del día</h3><p>La mejor combinación disponible entre probabilidad y valor de cuota en los partidos de hoy.</p></div></div><div class="featured"><div><small>${esc(pick.event.sport_title)}</small><b>${esc(pick.event.home_team)} vs ${esc(pick.event.away_team)}</b><span class="prob">${esc(label(pick.key))}: ${esc(pick.name)} · Cuota ${pick.price.toFixed(2)}${edge>0?' · Valor +'+edge.toFixed(1)+'%':''}</span></div><div class="big">${pick.prob.toFixed(1)}%</div></div></section>`;
+}
+async function loadDaily(force=false,background=false){
+ if(!background)$('dailyPicks').innerHTML='<div class="loader">Buscando partidos de hoy en la liga seleccionada…</div>';
+ const key=$('leagueSelect').value,{from,to}=todayBounds();
+ try{
+  const data=await apiFetch('/sports/'+encodeURIComponent(key)+'/odds/?regions=eu&markets=h2h,spreads,totals&oddsFormat=decimal&dateFormat=iso&commenceTimeFrom='+encodeURIComponent(from)+'&commenceTimeTo='+encodeURIComponent(to),{force});
+  const list=[...new Map((data||[]).map(e=>[e.id,e])).values()];
+  const valued=list.flatMap(valueCandidates).sort((a,b)=>b.score-a.score||b.prob-a.prob);
+  const all=list.flatMap(candidates).sort((a,b)=>b.prob-a.prob);
+  const pick=(valued.length?valued:all).slice(0,1);
+  renderAutoPick(pick[0]);
+  const safe=chooseDistinct(all,2,x=>x.prob>=63&&x.price<=1.8),medium=chooseDistinct(all,3,x=>x.prob>=49&&x.prob<68&&x.price<=2.35),risky=chooseDistinct([...all].sort((a,b)=>b.price-a.price),3,x=>x.prob>=34&&x.prob<57&&x.price>=1.8);
+  if(!background)$('dailyPicks').innerHTML=`<div class="notice">Los picks usan únicamente partidos de hoy y mercados disponibles en la liga seleccionada.</div><div class="daily-grid">${dailyCard('Pick del día','safe',pick,'Mayor equilibrio entre probabilidad y valor de cuota.')}${dailyCard('Asegurada','safe',safe,'Mayor probabilidad individual.')}${dailyCard('Moderada','medium',medium,'Equilibrio entre probabilidad y cuota.')}${dailyCard('Arriesgada','risky',risky,'Mayor cuota con probabilidad mínima aceptable.')}</div>`;
+  $('eventCount').textContent=list.length+' eventos hoy';
+ }catch(e){if(!background)$('dailyPicks').innerHTML='<div class="notice error">'+esc(e.message)+'</div>';renderAutoPick(null)}
+}
 function showStatus(msg,type=''){$('status').innerHTML=msg?`<div class="notice ${type}">${esc(msg)}</div>`:''}
 async function enterSport(s){activeSport=s;$('lobby').classList.add('hidden');$('eventsView').classList.remove('hidden');$('homeBtn').classList.remove('hidden');$('sportTitle').textContent=sportTitle();showStatus('Cargando ligas seleccionadas…');try{await loadSports();await loadLeague()}catch(e){showStatus(e.message,'error')}}
 function goHome(){$('eventsView').classList.add('hidden');$('detailView').classList.add('hidden');$('lobby').classList.remove('hidden');$('homeBtn').classList.add('hidden')}
